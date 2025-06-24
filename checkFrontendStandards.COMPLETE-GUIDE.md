@@ -1,12 +1,17 @@
-# CheckFrontendStandards - Guía Completa de Configuración
+# Frontend Standards Checker - Guía Completa de Configuración
 
-Esta guía contiene todos los ejemplos posibles para configurar reglas personalizadas en el script `checkFrontendStandards.mjs`.
+Esta guía contiene todos los ejemplos posibles para configurar reglas personalizadas en **Frontend Standards Checker v2.0** - la nueva versión modular y escalable.
 
 ## 📋 Tabla de Contenidos
 
-- [CheckFrontendStandards - Guía Completa de Configuración](#checkfrontendstandards---guía-completa-de-configuración)
+- [Frontend Standards Checker - Guía Completa de Configuración](#frontend-standards-checker---guía-completa-de-configuración)
   - [📋 Tabla de Contenidos](#-tabla-de-contenidos)
   - [🚀 Instrucciones de Uso](#-instrucciones-de-uso)
+  - [🏗️ Arquitectura Modular v2.0](#️-arquitectura-modular-v20)
+    - [Estructura del Proyecto](#estructura-del-proyecto)
+    - [CLI y Comandos Disponibles](#cli-y-comandos-disponibles)
+    - [Carga de Configuración](#carga-de-configuración)
+    - [Migración desde v1.0](#migración-desde-v10)
   - [📁 Configuración de Zonas](#-configuración-de-zonas)
     - [Incluir zonas packages/](#incluir-zonas-packages)
     - [Agregar zonas personalizadas](#agregar-zonas-personalizadas)
@@ -22,15 +27,94 @@ Esta guía contiene todos los ejemplos posibles para configurar reglas personali
   - [📋 Comandos Útiles](#-comandos-útiles)
     - [Configuración Básica](#configuración-básica)
     - [Validar Zonas Específicas](#validar-zonas-específicas)
+    - [Opciones Avanzadas del CLI](#opciones-avanzadas-del-cli)
   - [🎯 Ejemplo Activo para Probar](#-ejemplo-activo-para-probar)
+    - [Formatos de Configuración Soportados](#formatos-de-configuración-soportados)
   - [💡 Consejos](#-consejos)
+    - [Configuración](#configuración)
+    - [Uso del CLI](#uso-del-cli)
+    - [Mejores Prácticas](#mejores-prácticas)
+  - [📋 Lista Completa de Verificaciones](#-lista-completa-de-verificaciones)
+    - [🔍 Reglas de Código Base](#-reglas-de-código-base)
+    - [📁 Reglas de Estructura de Archivos](#-reglas-de-estructura-de-archivos)
+    - [🏗️ Reglas de Arquitectura](#️-reglas-de-arquitectura)
+    - [📝 Reglas de Nomenclatura](#-reglas-de-nomenclatura)
+    - [🔧 Reglas de Componentes React](#-reglas-de-componentes-react)
+    - [🎨 Reglas de Estilos](#-reglas-de-estilos)
+    - [📚 Reglas de Documentación](#-reglas-de-documentación)
+    - [⚙️ Reglas de Configuración](#️-reglas-de-configuración)
+  - [Resumen de Estadísticas Actuales](#resumen-de-estadísticas-actuales)
+  - [Estructura de Directorio Estándar](#estructura-de-directorio-estándar)
+  - [🆘 Ayuda y Solución de Problemas](#-ayuda-y-solución-de-problemas)
+    - [Problemas Comunes](#problemas-comunes)
+    - [Obtener Ayuda](#obtener-ayuda)
+    - [Depuración](#depuración)
 
 ## 🚀 Instrucciones de Uso
 
 1. Crea un archivo llamado `checkFrontendStandards.config.js`
 2. Copia el código de la sección que necesites (solo una a la vez)
 3. Modifica las reglas según tus necesidades
-4. Ejecuta el script normalmente
+4. Ejecuta la herramienta usando `npm start` o `./bin/cli.js`
+
+## 🏗️ Arquitectura Modular v2.0
+
+Frontend Standards Checker v2.0 utiliza una **arquitectura modular** con CLI nativo:
+
+### Estructura del Proyecto
+
+```
+frontend-standards/
+├── bin/
+│   └── cli.js              # Punto de entrada del CLI
+├── src/
+│   ├── core/              # Lógica central de validación
+│   ├── rules/             # Reglas de validación por defecto
+│   ├── utils/             # Utilidades auxiliares
+│   └── index.js           # Exportación principal
+├── checkFrontendStandards.config.js    # Tu configuración personalizada
+└── package.json           # Scripts npm configurados
+```
+
+### CLI y Comandos Disponibles
+
+La herramienta incluye un CLI nativo con múltiples opciones:
+
+```bash
+# Comandos equivalentes para ejecutar
+npm start                   # Script npm (recomendado)
+npm run cli                 # Script alternativo
+./bin/cli.js               # CLI directo
+
+# Flags disponibles
+-z, --zones <zones...>     # Zonas específicas a validar (separadas por espacio)
+-c, --config <file>        # Archivo de configuración personalizado
+-o, --output <file>        # Generar reporte en archivo JSON
+-v, --verbose              # Mostrar información detallada
+--skip-structure           # Omitir validación de estructura de directorios
+--skip-naming              # Omitir validación de convenciones de nomenclatura
+--skip-content             # Omitir validación de contenido de archivos
+--help                     # Mostrar ayuda
+```
+
+### Carga de Configuración
+
+El sistema de configuración es flexible y soporta:
+
+- **Exportación por defecto**: `export default [...]` o `export default {...}`
+- **Funciones de configuración**: `export default function(defaultRules) { ... }`
+- **Arrays de reglas**: Formato simple `[rule1, rule2, ...]`
+- **Objetos de configuración**: Con propiedades `rules`, `zones`, `merge`, etc.
+
+### Migración desde v1.0
+
+Si vienes del script monolítico (`checkFrontendStandards.mjs`):
+
+| Comando Anterior                            | Comando Nuevo                    |
+| ------------------------------------------- | -------------------------------- |
+| `node checkFrontendStandards.mjs`           | `npm start`                      |
+| `node checkFrontendStandards.mjs utils`     | `npm start -- --zones utils`     |
+| `node checkFrontendStandards.mjs utils api` | `npm start -- --zones utils api` |
 
 ## 📁 Configuración de Zonas
 
@@ -622,28 +706,66 @@ export default [
 
 ```bash
 # Ejecutar con configuración personalizada
-node checkFrontendStandards.mjs
+npm start
+
+# O usando el CLI directamente
+./bin/cli.js
+
+# O usando npm run
+npm run cli
 ```
 
 ### Validar Zonas Específicas
 
 ```bash
 # Validar una zona específica
-node checkFrontendStandards.mjs utils
-node checkFrontendStandards.mjs api
-node checkFrontendStandards.mjs features/auth
+npm start -- --zones utils
+npm start -- --zones api
+npm start -- --zones features/auth
 
-# Validar múltiples zonas
-node checkFrontendStandards.mjs utils api middleware
+# Usando el CLI directamente
+./bin/cli.js --zones utils
+./bin/cli.js --zones api
+./bin/cli.js --zones features/auth
 
-# Validar todo el proyecto
-node checkFrontendStandards.mjs
+# Validar múltiples zonas (separadas por espacio)
+npm start -- --zones utils api middleware
+./bin/cli.js --zones utils api middleware
+
+# Validar todo el proyecto (por defecto)
+npm start
+./bin/cli.js
+```
+
+### Opciones Avanzadas del CLI
+
+```bash
+# Usar archivo de configuración personalizado
+npm start -- --config mi-config.js
+./bin/cli.js --config mi-config.js
+
+# Generar reporte en archivo JSON
+npm start -- --output reporte.json
+./bin/cli.js --output reporte.json
+
+# Modo verbose para ver más detalles
+npm start -- --verbose
+./bin/cli.js --verbose
+
+# Omitir tipos específicos de validación
+npm start -- --skip-structure --skip-naming
+./bin/cli.js --skip-content --verbose
+
+# Combinar opciones
+npm start -- --zones api utils --config custom.config.js --verbose
+./bin/cli.js --zones api utils --config custom.config.js --output results.json
 ```
 
 ## 🎯 Ejemplo Activo para Probar
 
 ```javascript
 // Copia este código en checkFrontendStandards.config.js para empezar a probar
+// IMPORTANTE: Usa 'export default' (ES modules)
 
 export default [
   {
@@ -654,12 +776,235 @@ export default [
 ]
 ```
 
+### Formatos de Configuración Soportados
+
+```javascript
+// 1. Array simple de reglas (más común)
+export default [
+  { name: 'rule1', check: (content) => false, message: 'msg' },
+  { name: 'rule2', check: (content) => false, message: 'msg' },
+]
+
+// 2. Objeto con configuración completa
+export default {
+  zones: { includePackages: true, customZones: ['shared'] },
+  merge: true, // Combinar con reglas por defecto
+  rules: [
+    { name: 'rule1', check: (content) => false, message: 'msg' },
+  ],
+}
+
+// 3. Función para modificar reglas existentes
+export default function(defaultRules) {
+  return [...defaultRules, newRule]
+}
+```
+
 ## 💡 Consejos
+
+### Configuración
 
 1. **Empieza simple** - Usa la Sección 1 para agregar reglas básicas
 2. **Una sección a la vez** - No mezcles diferentes tipos de configuración
-3. **Prueba gradualmente** - Agrega reglas de una en una para verificar que funcionan
-4. **Personaliza los mensajes** - Haz que los mensajes sean claros y útiles para tu equipo
-5. **Documenta tus reglas** - Agrega comentarios explicando por qué cada regla es importante
+3. **Usa export default** - Asegúrate de exportar tu configuración con `export default`
+4. **Prueba gradualmente** - Agrega reglas de una en una para verificar que funcionan
+
+### Uso del CLI
+
+5. **Usa npm start** - Es la forma más simple y recomendada de ejecutar la herramienta
+6. **Aprovecha las opciones** - Usa `--zones` para validar solo partes específicas del proyecto
+7. **Modo verbose** - Usa `--verbose` para obtener información detallada durante el desarrollo
+
+### Mejores Prácticas
+
+8. **Personaliza los mensajes** - Haz que los mensajes sean claros y útiles para tu equipo
+9. **Documenta tus reglas** - Agrega comentarios explicando por qué cada regla es importante
+10. **Genera reportes** - Usa `--output` para crear reportes JSON y hacer seguimiento del progreso
 
 ¡Con esta guía puedes crear cualquier tipo de validación personalizada que necesites para tu proyecto!
+
+## 📋 Lista Completa de Verificaciones
+
+Esta sección contiene **todas las verificaciones que la herramienta realiza actualmente**. Estas son las reglas por defecto que se ejecutan cuando corres `npm start` o `./bin/cli.js`.
+
+### 🔍 Reglas de Código Base
+
+| Regla                                   | Descripción                                                                                 | Severidad |
+| --------------------------------------- | ------------------------------------------------------------------------------------------- | --------- |
+| **No console.log**                      | No se permite el uso de `console.log` en código de producción                               | ⚠️ Error  |
+| **No var**                              | Evitar usar `var`, utilizar `let` o `const`                                                 | ⚠️ Error  |
+| **No anonymous functions in callbacks** | Preferir arrow functions o funciones nombradas en callbacks                                 | ⚠️ Error  |
+| **No unused variables**                 | No debe haber variables declaradas pero no utilizadas (@typescript-eslint/no-unused-vars)   | ⚠️ Error  |
+| **No variable shadowing**               | No debe haber sombreado de variables (@typescript-eslint/no-shadow)                         | ⚠️ Error  |
+| **No unnecessary constructors**         | No debe haber constructores vacíos innecesarios (@typescript-eslint/no-useless-constructor) | ⚠️ Error  |
+| **No inline styles**                    | No usar estilos inline, utilizar archivos de estilo separados                               | ⚠️ Error  |
+| **No hardcoded data**                   | No tener datos hardcodeados (URLs, textos, configuraciones)                                 | ⚠️ Error  |
+
+### 📁 Reglas de Estructura de Archivos
+
+| Regla                   | Descripción                                     | Patrón Esperado              |
+| ----------------------- | ----------------------------------------------- | ---------------------------- |
+| **Folder structure**    | Validar estructura mínima de zonas por tipo     | Según `DEFAULT_STRUCTURE`    |
+| **Src structure**       | Validar estructura dentro de `/src/`            | Según `SRC_STRUCTURE`        |
+| **Tree structure**      | Validar árbol de carpetas ideal                 | Según `IDEAL_TREE`           |
+| **Directory naming**    | Directorios deben seguir camelCase o PascalCase | `camelCase` o `PascalCase`   |
+| **Component structure** | Componentes deben tener estructura específica   | `index.tsx` + subdirectorios |
+
+### 🏗️ Reglas de Arquitectura
+
+| Regla                     | Descripción                                              | Aplicación                             |
+| ------------------------- | -------------------------------------------------------- | -------------------------------------- |
+| **Enum outside of types** | Los enums deben estar en directorios `/types/`           | Archivos `.enum.ts`                    |
+| **Hook file extension**   | Hooks deben usar extensión correcta (.ts/.tsx)           | Según contenido JSX                    |
+| **Asset naming**          | Assets deben seguir kebab-case                           | `service-error.svg`                    |
+| **Component hook naming** | Hooks de componentes deben usar extensión correcta       | `.ts` si no hay JSX, `.tsx` si hay JSX |
+| **Function naming**       | Funciones deben seguir camelCase                         | `getUserData`, `handleClick`           |
+| **Interface naming**      | Interfaces exportadas deben empezar con 'I' + PascalCase | `IButtonProps`, `IUserData`            |
+
+### 📝 Reglas de Nomenclatura
+
+| Tipo de Archivo | Patrón Requerido                | Ejemplo                    | Ubicación      |
+| --------------- | ------------------------------- | -------------------------- | -------------- |
+| **Componentes** | PascalCase + .tsx               | `UserProfile.tsx`          | `/components/` |
+| **Hooks**       | use + PascalCase + .hook.ts/tsx | `useUserData.hook.ts`      | `/hooks/`      |
+| **Constantes**  | camelCase + .constant.ts        | `apiEndpoints.constant.ts` | `/constants/`  |
+| **Helpers**     | camelCase + .helper.ts          | `formatDate.helper.ts`     | `/helpers/`    |
+| **Types**       | camelCase + .type.ts            | `userProfile.type.ts`      | `/types/`      |
+| **Estilos**     | camelCase + .style.ts           | `userCard.style.ts`        | `/styles/`     |
+| **Enums**       | camelCase + .enum.ts            | `userStatus.enum.ts`       | `/enums/`      |
+| **Assets**      | kebab-case                      | `user-avatar.png`          | `/assets/`     |
+
+### 🔧 Reglas de Componentes React
+
+| Regla                      | Descripción                                              | Detalles                               |
+| -------------------------- | -------------------------------------------------------- | -------------------------------------- |
+| **Component type naming**  | Archivos de tipos deben terminar en `.type.ts`           | NO `.types.ts`                         |
+| **Component style naming** | Archivos de estilos deben terminar en `.style.ts`        | En directorio `/styles/`               |
+| **Component hook naming**  | Hooks deben usar extensión correcta según contenido      | `.ts` si no hay JSX, `.tsx` si hay JSX |
+| **Function naming**        | Funciones deben seguir camelCase                         | `getUserData`, `handleClick`           |
+| **Interface naming**       | Interfaces exportadas deben empezar con 'I' + PascalCase | `IButtonProps`, `IUserData`            |
+
+### 🎨 Reglas de Estilos
+
+| Regla                     | Descripción                                      | Ejemplo                       |
+| ------------------------- | ------------------------------------------------ | ----------------------------- |
+| **Style naming**          | Objetos de estilo deben terminar en 'Styles'     | `cardPreviewStyles`           |
+| **Style property naming** | Propiedades de estilo deben ser camelCase        | `backgroundColor`, `fontSize` |
+| **Style file naming**     | Archivos de estilo deben terminar en `.style.ts` | `userCard.style.ts`           |
+
+### 📚 Reglas de Documentación
+
+| Regla                                   | Descripción                                                    | Aplicación                    |
+| --------------------------------------- | -------------------------------------------------------------- | ----------------------------- |
+| **Should have TSDoc comments**          | Funciones y clases exportadas deben tener comentarios TSDoc    | Funciones/clases complejas    |
+| **Missing comment in complex function** | Funciones complejas deben tener comentarios explicativos       | Complejidad > umbral definido |
+| **Commented code**                      | No debe haber código comentado (código real, no explicaciones) | Detección inteligente         |
+
+### ⚙️ Reglas de Configuración
+
+| Regla                  | Descripción                                                   | Archivos           |
+| ---------------------- | ------------------------------------------------------------- | ------------------ |
+| **Naming**             | Validación general de nomenclatura según tipo de archivo      | Todos los archivos |
+| **Standard structure** | _(Nueva)_ Validar estructura según `estructura standards.txt` | Todo el proyecto   |
+
+## Resumen de Estadísticas Actuales
+
+Basado en la última ejecución del script:
+
+- **Total de errores encontrados**: 83
+- **Zonas validadas**: apps/auth, apps/configuration, apps/personalization, apps/web
+- **Regla más común**: Component type naming (33.7% de errores)
+- **Top 5 problemas**:
+  1. Component type naming: 28 ocurrencias
+  2. Naming: 24 ocurrencias
+  3. Missing comment in complex function: 15 ocurrencias
+  4. Component structure: 7 ocurrencias
+  5. Should have TSDoc comments: 4 ocurrencias
+
+## Estructura de Directorio Estándar
+
+La herramienta valida contra esta estructura estándar definida en `estructura standards.txt`:
+
+```
+src/
+├── assets/
+├── components/
+│   ├── SpecificComponent/
+│   │   ├── __test__/
+│   │   ├── hooks/
+│   │   ├── constants/
+│   │   ├── components/
+│   │   ├── enums/
+│   │   ├── types/
+│   │   ├── styles/
+│   │   └── index.tsx
+│   └── index.ts
+├── constants/
+│   ├── specificConstant.constant.ts
+│   └── index.ts
+├── modules/
+├── helpers/
+├── hooks/
+├── providers/
+├── styles/
+└── store/
+    ├── reducers/
+    ├── types/
+    ├── state.selector.ts
+    ├── state.interface.ts
+    └── store
+```
+
+## 🆘 Ayuda y Solución de Problemas
+
+### Problemas Comunes
+
+**Error: "Cannot resolve configuration file"**
+
+- Asegúrate de que `checkFrontendStandards.config.js` existe en la raíz del proyecto
+- Verifica que uses `export default` en tu configuración
+
+**Error: "Zones not found"**
+
+- Comprueba que las zonas especificadas existen en tu proyecto
+- Las zonas deben ser carpetas dentro de tu directorio de trabajo
+
+**Error: "Invalid rule configuration"**
+
+- Cada regla debe tener las propiedades: `name`, `check`, y `message`
+- La función `check` debe retornar un booleano
+
+### Obtener Ayuda
+
+```bash
+# Ver todas las opciones disponibles
+./bin/cli.js --help
+
+# Ejecutar en modo verbose para más información
+npm start -- --verbose
+
+# Generar reporte para análisis
+npm start -- --output debug-report.json
+```
+
+### Depuración
+
+Para depurar reglas personalizadas:
+
+```javascript
+export default [
+  {
+    name: 'Debug rule',
+    check: (content, filePath) => {
+      console.log('Checking file:', filePath);
+      console.log('Content preview:', content.slice(0, 100));
+      return false; // Cambiar lógica según necesites
+    },
+    message: 'Debug message',
+  },
+]
+```
+
+---
+
+**Frontend Standards Checker v2.0** - Una herramienta modular y extensible para mantener la calidad y consistencia en proyectos frontend.
