@@ -164,11 +164,66 @@ const DEFAULT_RULES = [
   },
   {
     name: 'Should have TSDoc comments',
-    check: (content) =>
-      /\/\*\*\s*\n\s*\* [^\n]+\n/.test(content) === false &&
-      /export (function|class|const|let|var)/.test(content),
+    check: (content, filePath) => {
+      // Skip configuration files, test files, and simple export files
+      if (
+        /\/(config|constants|types|styles|enums)\//.test(filePath) ||
+        /\.(config|constant|type|style|enum)\.ts$/.test(filePath) ||
+        /\.test\.|\.spec\./.test(filePath) ||
+        filePath.includes('index.ts') ||
+        filePath.includes('index.tsx')
+      ) {
+        return false
+      }
+
+      // Check if file has exports without JSDoc
+      const lines = content.split('\n')
+      let hasExportsWithoutTSDoc = false
+      let inTSDoc = false
+
+      for (let i = 0; i < lines.length; i++) {
+        const line = lines[i].trim()
+
+        // Track TSDoc state
+        if (/^\s*\/\*\*/.test(line)) {
+          inTSDoc = true
+          continue
+        }
+        if (inTSDoc && /\*\//.test(line)) {
+          inTSDoc = false
+          continue
+        }
+
+        // Check for complex exports that should have TSDoc
+        if (/^export\s+(function|class|const|let|var)\s+[a-zA-Z]/.test(line)) {
+          // Look back for TSDoc in the previous few lines
+          let hasTSDocAbove = false
+          for (let j = Math.max(0, i - 5); j < i; j++) {
+            if (/\/\*\*/.test(lines[j]) || /^\s*\*\s+/.test(lines[j])) {
+              hasTSDocAbove = true
+              break
+            }
+          }
+
+          // Check if this is a complex export (function or class)
+          if (/^export\s+(function|class)/.test(line) && !hasTSDocAbove) {
+            hasExportsWithoutTSDoc = true
+          }
+
+          // For const/let/var exports, check if they're functions
+          if (
+            /^export\s+(const|let|var)\s+[a-zA-Z][a-zA-Z0-9]*\s*=\s*(async\s+)?\(/.test(line) &&
+            !hasTSDocAbove
+          ) {
+            hasExportsWithoutTSDoc = true
+          }
+        }
+      }
+
+      return hasExportsWithoutTSDoc
+    },
     message:
-      'Exported functions, classes, and modules must have TSDoc comments (tsdoc/syntax rule).',
+      'Exported functions and classes should have TSDoc comments explaining their purpose and parameters.',
   },
   {
     name: 'Interface naming convention',
@@ -520,16 +575,94 @@ function checkCommentedCode(content, filePath) {
   const lines = content.split('\n')
   const errors = []
   let inJSDoc = false
+  let inMultiLineComment = false
+
   lines.forEach((line, idx) => {
-    if (/^\s*\/\*\*/.test(line)) inJSDoc = true
-    if (inJSDoc && /\*\//.test(line)) inJSDoc = false
-    if (!inJSDoc && /^\s*\/\//.test(line) && !/eslint|tslint|TODO|FIXME|@/.test(line)) {
-      errors.push({
-        rule: 'Commented code',
-        message: 'Leaving commented code in the repository is not allowed.',
-        file: filePath,
-        line: idx + 1,
-      })
+    const trimmedLine = line.trim()
+
+    // Track JSDoc comment state
+    if (/^\s*\/\*\*/.test(line)) {
+      inJSDoc = true
+      return
+    }
+    if (inJSDoc && /\*\//.test(line)) {
+      inJSDoc = false
+      return
+    }
+
+    // Track multi-line comment state
+    if (/^\s*\/\*/.test(line) && !/^\s*\/\*\*/.test(line)) {
+      inMultiLineComment = true
+      return
+    }
+    if (inMultiLineComment && /\*\//.test(line)) {
+      inMultiLineComment = false
+      return
+    }
+
+    // Skip if we're inside any comment block
+    if (inJSDoc || inMultiLineComment || /^\s*\*/.test(line)) {
+      return
+    }
+
+    // Check for single-line comments that might be commented code
+    if (/^\s*\/\//.test(line)) {
+      // Skip if it's a valid comment (not commented code)
+      const commentContent = trimmedLine.replace(/^\/\/\s*/, '')
+
+      // Skip common valid comment patterns
+      if (
+        // ESLint/TSLint directives
+        /eslint|tslint|@ts-|prettier/.test(line) ||
+        // TODO/FIXME/NOTE comments
+        /^(TODO|FIXME|NOTE|HACK|BUG|XXX):/i.test(commentContent) ||
+        // Documentation comments
+        /^(This|The|When|If|For|To|Used|Returns?|Handles?|Checks?|Sets?|Gets?)/.test(
+          commentContent
+        ) ||
+        // Explanation comments
+        /because|since|due to|in order to|to ensure|to avoid|to prevent|explanation|reason/i.test(
+          commentContent
+        ) ||
+        // Configuration comments
+        /config|setting|option|parameter|default|override/i.test(commentContent) ||
+        // Single word or very short explanatory comments
+        /^[A-Z][a-z]*(\s+[a-z]+){0,3}\.?$/.test(commentContent) ||
+        // Comments with common English sentence patterns
+        /^(and|or|but|however|therefore|thus|also|additionally)/.test(commentContent) ||
+        // Comments that end with periods (likely explanations)
+        /\.$/.test(commentContent.trim()) ||
+        // Comments that are clearly explanatory
+        (commentContent.length > 50 && !/^[a-z]+\(/.test(commentContent))
+      ) {
+        return
+      }
+
+      // Check if it looks like commented code
+      const looksLikeCode =
+        // Function calls
+        /^[a-zA-Z_$][a-zA-Z0-9_$]*\s*\(/.test(commentContent) ||
+        // Variable assignments
+        /^(const|let|var|[a-zA-Z_$][a-zA-Z0-9_$]*)\s*=/.test(commentContent) ||
+        // Return statements
+        /^return\s+/.test(commentContent) ||
+        // Import/export statements
+        /^(import|export)\s+/.test(commentContent) ||
+        // Object/array syntax
+        /^[\{\[].*[\}\]]$/.test(commentContent) ||
+        // Console statements
+        /^console\.[a-z]+\s*\(/.test(commentContent) ||
+        // Control flow statements with parentheses
+        /^(if|for|while|switch|try|catch)\s*\(/.test(commentContent)
+
+      if (looksLikeCode) {
+        errors.push({
+          rule: 'Commented code',
+          message: 'Leaving commented code in the repository is not allowed.',
+          file: filePath,
+          line: idx + 1,
+        })
+      }
     }
   })
   return errors
@@ -604,6 +737,40 @@ function checkHardcodedData(content, filePath) {
       /(className|class)\s*[:=]\s*['"`]/.test(line) ||
       /['"`]\s*\?\s*['"`][^'"`]*\d+[^'"`]*['"`]\s*:\s*['"`]/.test(line)
 
+    // Check for valid configuration contexts that should not be flagged as hardcoded data
+    const isValidConfiguration =
+      // Next.js font configuration (weight, subset properties)
+      /(weight|subsets|style|display)\s*:\s*\[/.test(line) ||
+      // Font-specific numeric values in arrays (like ['100', '300', '400'])
+      (/weight\s*:\s*\[/.test(
+        content.substring(Math.max(0, content.indexOf(line) - 200), content.indexOf(line) + 100)
+      ) &&
+        /['"][\d]{3}['"]/.test(line)) ||
+      // Configuration objects with numeric values that are library-specific
+      /\b(timeout|port|delay|duration|interval|retry|maxRetries|limit|size|width|height|fontSize|lineHeight)\s*:\s*['"]?\d+['"]?/.test(
+        line
+      ) ||
+      // Version numbers or semantic versioning
+      /['"](\d+\.){1,2}\d+['"]/.test(line) ||
+      // API endpoints with version numbers
+      /['"]\/api\/v\d+\//.test(line) ||
+      // Valid configuration properties in objects
+      /(from|to|via|offset|opacity|scale|rotate|skew|translate)\s*:\s*['"][\d-]+['"]/.test(line) ||
+      // Theme configuration values
+      /(fontSize|spacing|borderRadius|colors)\s*:\s*\{/.test(line) ||
+      // i18n/translation keys (like 'common.buttons.save', 'footer.success')
+      /\b(useTranslations|t)\s*\(\s*['"][a-zA-Z]+(\.[a-zA-Z]+)*['"]/.test(line) ||
+      // Toast/notification messages using translation keys
+      /\b(toast|notification)\.(success|error|info|warning)\s*\(\s*t\s*\(/.test(line) ||
+      // General translation key pattern (dotted notation)
+      /['"][a-zA-Z]+(\.[a-zA-Z]+){2,}['"]/.test(line)
+
+    // Check if the file is a configuration file that commonly contains valid numeric values
+    const isConfigurationFile =
+      /\/(config|configs|constants|theme|styles|fonts)\//.test(filePath) ||
+      /\.(config|constants|theme|styles|fonts)\.(ts|tsx|js|jsx)$/.test(filePath) ||
+      /\/fonts\//.test(filePath)
+
     if (
       hasHardcodedPattern &&
       !isCSSClass &&
@@ -613,7 +780,9 @@ function checkHardcodedData(content, filePath) {
       !isImportStatement &&
       !isURL &&
       !isSingleLineComment &&
-      !isMultiLineComment
+      !isMultiLineComment &&
+      !isValidConfiguration &&
+      !isConfigurationFile
     ) {
       errors.push({
         rule: 'Hardcoded data',
@@ -652,14 +821,21 @@ function checkFunctionComments(content, filePath) {
         continue
       }
 
+      // Skip simple getters/setters or single-line functions
+      if (line.includes('=>') && line.length < 80 && !line.includes('async')) {
+        continue
+      }
+
       // Look ahead to check if this function has complex logic
       let isComplex = false
+      let complexityScore = 0
       let functionBodyStart = i
       let braceCount = 0
       let inFunction = false
+      let linesInFunction = 0
 
       // Find the function body and check for complexity
-      for (let j = i; j < Math.min(i + 20, lines.length); j++) {
+      for (let j = i; j < Math.min(i + 30, lines.length); j++) {
         const bodyLine = lines[j]
 
         if (bodyLine.includes('{')) {
@@ -671,13 +847,35 @@ function checkFunctionComments(content, filePath) {
         }
 
         if (inFunction) {
-          // Check for complex patterns
+          linesInFunction++
+
+          // Check for complex patterns and assign complexity scores
+          if (/\b(if|else if|switch|case)\b/.test(bodyLine)) {
+            complexityScore += 1
+          }
+          if (/\b(for|while|do)\b/.test(bodyLine)) {
+            complexityScore += 2
+          }
+          if (/\b(try|catch|finally)\b/.test(bodyLine)) {
+            complexityScore += 2
+          }
           if (
-            /\b(if|for|while|switch|catch|try|await|async|Promise\.all|Promise\.resolve|Promise\.reject|\.then|\.catch|\.map|\.filter|\.reduce|\.forEach)\b/.test(
+            /\b(async|await|Promise\.all|Promise\.resolve|Promise\.reject|\.then|\.catch)\b/.test(
               bodyLine
             )
           ) {
-            isComplex = true
+            complexityScore += 2
+          }
+          if (/\.(map|filter|reduce|forEach|find|some|every)\s*\(/.test(bodyLine)) {
+            complexityScore += 1
+          }
+          if (/\?\s*[^:]*\s*:/.test(bodyLine)) {
+            // Ternary operators
+            complexityScore += 1
+          }
+          if (/&&|\|\|/.test(bodyLine)) {
+            // Logical operators
+            complexityScore += 0.5
           }
         }
 
@@ -686,23 +884,35 @@ function checkFunctionComments(content, filePath) {
         }
       }
 
+      // A function is complex if:
+      // - It has a complexity score >= 3, OR
+      // - It has more than 8 lines in the function body, OR
+      // - It has async operations with complexity score >= 2
+      isComplex =
+        complexityScore >= 3 ||
+        linesInFunction > 8 ||
+        (complexityScore >= 2 &&
+          /async|await|Promise/.test(content.substring(content.indexOf(line))))
+
       // If function is complex, check for comments
       if (isComplex) {
         let hasComment = false
 
         // Look for JSDoc comments or regular comments above the function
-        for (let k = Math.max(0, i - 10); k < i; k++) {
+        for (let k = Math.max(0, i - 15); k < i; k++) {
           const commentLine = lines[k].trim()
           if (
+            // JSDoc comments
             commentLine.includes('/**') ||
+            commentLine.includes('*/') ||
+            (commentLine.startsWith('*') && commentLine.length > 5) ||
+            // Multi-line comments
             commentLine.includes('/*') ||
-            (commentLine.startsWith('//') && commentLine.length > 10)
+            // Detailed single-line comments (more than just a word or two)
+            (commentLine.startsWith('//') &&
+              commentLine.length > 15 &&
+              !/^\s*\/\/\s*(TODO|FIXME|NOTE|HACK)/.test(commentLine))
           ) {
-            hasComment = true
-            break
-          }
-          // Multi-line JSDoc
-          if (commentLine.startsWith('*') && commentLine.length > 5) {
             hasComment = true
             break
           }
@@ -711,7 +921,7 @@ function checkFunctionComments(content, filePath) {
         if (!hasComment) {
           errors.push({
             rule: 'Missing comment in complex function',
-            message: 'Complex functions must have comments in English explaining their behavior.',
+            message: `Complex function '${functionName}' (complexity: ${complexityScore.toFixed(1)}, lines: ${linesInFunction}) must have comments explaining its behavior.`,
             file: `${filePath}:${i + 1}`,
           })
         }
@@ -1200,6 +1410,35 @@ async function main() {
       const total = totalCheckedByZone[zone]
       logLines.push(`- Zone: ${zone} | Errors: ${errorsByZone[zone] || 0}`)
     }
+
+    // Summary of errors by rule type
+    const errorsByRule = {}
+    let totalErrors = 0
+    for (const [zone, errors] of Object.entries(zoneErrors)) {
+      for (const error of errors) {
+        if (!error.message.startsWith('✅') && !error.message.startsWith('Presente:')) {
+          errorsByRule[error.rule] = (errorsByRule[error.rule] || 0) + 1
+          totalErrors++
+        }
+      }
+    }
+
+    if (totalErrors > 0) {
+      logLines.push('\n----------------------------------')
+      logLines.push('\nSummary of errors by rule type:')
+
+      // Sort by frequency (most common errors first)
+      const sortedRules = Object.entries(errorsByRule)
+        .sort(([, a], [, b]) => b - a)
+        .slice(0, 15) // Show top 15 most common errors
+
+      for (const [rule, count] of sortedRules) {
+        const percentage = ((count / totalErrors) * 100).toFixed(1)
+        logLines.push(`- ${rule}: ${count} occurrences (${percentage}%)`)
+      }
+
+      logLines.push(`\nTotal errors found: ${totalErrors}`)
+    }
   }
   writeLogAndPrint(logLines)
 }
@@ -1230,24 +1469,42 @@ function checkDirectoryNaming(dirPath) {
     currentDirName === 'static' ||
     currentDirName === 'temp' ||
     currentDirName === 'tmp' ||
-    currentDirName.startsWith('__')
+    currentDirName.startsWith('__') ||
+    // Skip framework-specific directories that are allowed to have different naming
+    currentDirName === 'api' ||
+    currentDirName === 'lib' ||
+    currentDirName === 'utils' ||
+    currentDirName === 'pages' ||
+    currentDirName === 'components' ||
+    currentDirName === 'styles' ||
+    currentDirName === 'types' ||
+    currentDirName === 'hooks' ||
+    currentDirName === 'constants' ||
+    currentDirName === 'helpers' ||
+    currentDirName === 'assets' ||
+    currentDirName === 'enums'
   ) {
     return errors
   }
 
   // Skip if it's the root directory or first level directories in monorepo (apps, packages, etc)
-  if (['apps', 'packages', 'config', 'k8s'].includes(currentDirName)) {
+  if (['apps', 'packages', 'config', 'k8s', 'src'].includes(currentDirName)) {
     return errors
   }
 
-  // Only check directories that are actually inside src and are meaningful directories
-  if (relativePath.includes('/src/')) {
+  // Only check directories that are actually inside meaningful project structure
+  if (relativePath.includes('/src/') && !relativePath.includes('/node_modules/')) {
     // Check if current directory follows camelCase convention
     // Allow PascalCase for component directories and camelCase for others
     const isCamelCase = /^[a-z][a-zA-Z0-9]*$/.test(currentDirName)
     const isPascalCase = /^[A-Z][a-zA-Z0-9]*$/.test(currentDirName)
 
-    if (!isCamelCase && !isPascalCase) {
+    // Special case: Allow kebab-case for route directories (Next.js routing)
+    const isValidRouteDir =
+      /^[a-z0-9]+(-[a-z0-9]+)*$/.test(currentDirName) &&
+      (relativePath.includes('/app/') || relativePath.includes('/pages/'))
+
+    if (!isCamelCase && !isPascalCase && !isValidRouteDir) {
       // Check if we've already flagged this directory name in any path
       const alreadyFlagged = Array.from(flaggedDirectories).some(
         (flaggedPath) => path.basename(flaggedPath) === currentDirName
@@ -1340,22 +1597,11 @@ function checkComponentStructure(componentDir) {
   if (fs.existsSync(hooksDir)) {
     const hookFiles = fs
       .readdirSync(hooksDir)
-      .filter(
-        (file) =>
-          file.startsWith(`use${componentName}.hook.`) &&
-          (file.endsWith('.ts') || file.endsWith('.tsx'))
-      )
+      .filter((file) => file.endsWith('.hook.ts') || file.endsWith('.hook.tsx'))
+      .filter((file) => !file.includes('.test.') && !file.includes('.spec.'))
 
-    if (hookFiles.length === 0) {
-      // No hook file found, suggest the basic .ts version
-      const expectedHookFile = path.join(hooksDir, `use${componentName}.hook.ts`)
-      errors.push({
-        rule: 'Component hook naming',
-        message: `Hook file should be named use${componentName}.hook.ts (or .tsx if it renders JSX)`,
-        file: expectedHookFile,
-      })
-    } else {
-      // Check if the existing hook file has the correct extension based on its content
+    if (hookFiles.length > 0) {
+      // Check if the existing hook files have the correct extension based on their content
       for (const hookFile of hookFiles) {
         const hookFilePath = path.join(hooksDir, hookFile)
         const hookContent = fs.readFileSync(hookFilePath, 'utf8')
@@ -1384,13 +1630,13 @@ function checkComponentStructure(componentDir) {
         if (shouldBeTsx && currentExtension === '.ts') {
           errors.push({
             rule: 'Component hook naming',
-            message: `Hook file should be named use${componentName}.hook.tsx because it renders JSX elements`,
+            message: `Hook file should have .tsx extension because it renders JSX elements`,
             file: hookFilePath,
           })
         } else if (shouldBeTs && currentExtension === '.tsx') {
           errors.push({
             rule: 'Component hook naming',
-            message: `Hook file should be named use${componentName}.hook.ts because it doesn't render JSX elements`,
+            message: `Hook file should have .ts extension because it doesn't render JSX elements`,
             file: hookFilePath,
           })
         }
@@ -1401,30 +1647,49 @@ function checkComponentStructure(componentDir) {
   // Check for styles directory and style file naming
   const stylesDir = path.join(componentDir, 'styles')
   if (fs.existsSync(stylesDir)) {
-    // Convert PascalCase component name to camelCase for style files
-    const camelCaseStyleName = componentName.charAt(0).toLowerCase() + componentName.slice(1)
-    const expectedStyleFile = path.join(stylesDir, `${camelCaseStyleName}.style.ts`)
-    if (!fs.existsSync(expectedStyleFile)) {
-      errors.push({
-        rule: 'Component style naming',
-        message: `Style file should be named ${camelCaseStyleName}.style.ts`,
-        file: expectedStyleFile,
-      })
+    const styleFiles = fs
+      .readdirSync(stylesDir)
+      .filter((file) => file.endsWith('.style.ts') || file.endsWith('.ts'))
+      .filter((file) => !file.includes('.test.') && !file.includes('.spec.'))
+
+    if (styleFiles.length > 0) {
+      for (const styleFile of styleFiles) {
+        if (!styleFile.endsWith('.style.ts')) {
+          const styleFilePath = path.join(stylesDir, styleFile)
+          errors.push({
+            rule: 'Component style naming',
+            message: `Style file should end with .style.ts`,
+            file: styleFilePath,
+          })
+        }
+      }
     }
   }
 
   // Check for types directory and type file naming
   const typesDir = path.join(componentDir, 'types')
   if (fs.existsSync(typesDir)) {
-    // Convert PascalCase component name to camelCase for type files
-    const camelCaseTypeName = componentName.charAt(0).toLowerCase() + componentName.slice(1)
-    const expectedTypeFile = path.join(typesDir, `${camelCaseTypeName}.type.ts`)
-    if (!fs.existsSync(expectedTypeFile)) {
-      errors.push({
-        rule: 'Component type naming',
-        message: `Type file should be named ${camelCaseTypeName}.type.ts`,
-        file: expectedTypeFile,
-      })
+    const typeFiles = fs
+      .readdirSync(typesDir)
+      .filter(
+        (file) =>
+          file.endsWith('.ts') &&
+          !file.includes('.test.') &&
+          !file.includes('.spec.') &&
+          file !== 'index.ts'
+      )
+
+    if (typeFiles.length > 0) {
+      for (const typeFile of typeFiles) {
+        if (!typeFile.endsWith('.type.ts')) {
+          const typeFilePath = path.join(typesDir, typeFile)
+          errors.push({
+            rule: 'Component type naming',
+            message: `Type file should end with .type.ts`,
+            file: typeFilePath,
+          })
+        }
+      }
     }
   }
 
