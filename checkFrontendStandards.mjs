@@ -927,39 +927,96 @@ function checkFunctionComments(content, filePath) {
   const lines = content.split('\n')
   /** @type {import('./checkFrontendStandards.types.js').ValidationError[]} */
   const errors = []
-  let inComplexFunction = false
-  let functionLine = 0
-  let inJSDocComment = false
 
-  lines.forEach((line, idx) => {
-    // Track JSDoc comment blocks
-    if (/^\s*\/\*\*/.test(line)) {
-      inJSDocComment = true
-    }
-    if (inJSDocComment && /\*\//.test(line)) {
-      inJSDocComment = false
-      return // Skip this line as it ends the JSDoc
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i].trim()
+
+    // Skip empty lines and comments
+    if (!line || line.startsWith('//') || line.startsWith('*') || line.startsWith('/*')) {
+      continue
     }
 
-    // Skip if we're inside a JSDoc comment or regular comment
-    if (inJSDocComment || /^\s*\*/.test(line) || /^\s*\/\//.test(line)) {
-      return
-    }
+    // Detect function declarations (including arrow functions and function expressions)
+    const functionMatch =
+      line.match(
+        /(export\s+)?(const|let|var|function)\s+([a-zA-Z_$][a-zA-Z0-9_$]*)\s*[:=]?\s*(\([^)]*\)\s*=>|\([^)]*\)\s*\{|async\s*\([^)]*\)\s*=>|function)/
+      ) || line.match(/(export\s+)?function\s+([a-zA-Z_$][a-zA-Z0-9_$]*)\s*\(/)
 
-    if (/function\s+\w+|const\s+\w+\s*=\s*\(/.test(line)) {
-      inComplexFunction = /if|for|while|switch|catch|try|await|async|Promise/.test(line)
-      functionLine = idx + 1
+    if (functionMatch) {
+      const functionName = functionMatch[3] || functionMatch[2]
+
+      // Skip if it's a type declaration or interface
+      if (line.includes('interface ') || line.includes('type ')) {
+        continue
+      }
+
+      // Look ahead to check if this function has complex logic
+      let isComplex = false
+      let functionBodyStart = i
+      let braceCount = 0
+      let inFunction = false
+
+      // Find the function body and check for complexity
+      for (let j = i; j < Math.min(i + 20, lines.length); j++) {
+        const bodyLine = lines[j]
+
+        if (bodyLine.includes('{')) {
+          braceCount += (bodyLine.match(/\{/g) || []).length
+          inFunction = true
+        }
+        if (bodyLine.includes('}')) {
+          braceCount -= (bodyLine.match(/\}/g) || []).length
+        }
+
+        if (inFunction) {
+          // Check for complex patterns
+          if (
+            /\b(if|for|while|switch|catch|try|await|async|Promise\.all|Promise\.resolve|Promise\.reject|\.then|\.catch|\.map|\.filter|\.reduce|\.forEach)\b/.test(
+              bodyLine
+            )
+          ) {
+            isComplex = true
+          }
+        }
+
+        if (inFunction && braceCount === 0) {
+          break
+        }
+      }
+
+      // If function is complex, check for comments
+      if (isComplex) {
+        let hasComment = false
+
+        // Look for JSDoc comments or regular comments above the function
+        for (let k = Math.max(0, i - 10); k < i; k++) {
+          const commentLine = lines[k].trim()
+          if (
+            commentLine.includes('/**') ||
+            commentLine.includes('/*') ||
+            (commentLine.startsWith('//') && commentLine.length > 10)
+          ) {
+            hasComment = true
+            break
+          }
+          // Multi-line JSDoc
+          if (commentLine.startsWith('*') && commentLine.length > 5) {
+            hasComment = true
+            break
+          }
+        }
+
+        if (!hasComment) {
+          errors.push({
+            rule: 'Missing comment in complex function',
+            message: 'Complex functions must have comments in English explaining their behavior.',
+            file: `${filePath}:${i + 1}`,
+          })
+        }
+      }
     }
-    if (inComplexFunction && !/\/\*/.test(lines[functionLine - 2] || '')) {
-      errors.push({
-        rule: 'Missing comment in complex function',
-        message: 'Complex functions must have comments in English explaining their behavior.',
-        file: filePath,
-        line: functionLine,
-      })
-      inComplexFunction = false
-    }
-  })
+  }
+
   return errors
 }
 
