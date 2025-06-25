@@ -1,17 +1,96 @@
+/**
+ * @fileoverview Frontend Standards Validation Script for Diners Club
+ * 
+ * This single-file validation script provides comprehensive frontend code standards checking
+ * while maintaining all logic in one place for simplicity, portability, and maintainability.
+ * 
+ * **Core Features:**
+ * - File and directory naming conventions validation (camelCase, PascalCase, kebab-case)
+ * - Code quality rules enforcement using AST-based analysis via Acorn parser
+ * - Project structure validation for both monorepos and single projects  
+ * - Component architecture compliance checking (hooks, styles, types organization)
+ * - Configurable rules system via checkFrontendStandards.config.js
+ * - Comprehensive logging with detailed error reporting and line numbers
+ * 
+ * **Architecture Principles:**
+ * - Single-file approach for maximum portability and simplified maintenance
+ * - Centralized type definitions in separate checkFrontendStandards.types.js
+ * - Zero external runtime dependencies beyond Node.js built-ins and Acorn
+ * - Monorepo-aware with configurable zone scanning (apps, packages, custom)
+ * 
+ * **Usage Examples:**
+ * ```bash
+ * # Validate entire project
+ * node checkFrontendStandards.mjs
+ * 
+ * # Validate specific zones in monorepo
+ * node checkFrontendStandards.mjs apps packages
+ * 
+ * # Results written to frontend-standards.log
+ * ```
+ * 
+ * @author Diners Club Frontend Team
+ * @version 1.0.0
+ * @since 2024-01-15
+ * @see {@link ./checkFrontendStandards.types.js} Centralized type definitions
+ * @see {@link ./checkFrontendStandards.config.js} Optional custom rules configuration
+ */
+
 import fs from 'fs'
 import path from 'path'
 import { fileURLToPath } from 'url'
 import * as acorn from 'acorn'
 import * as acornWalk from 'acorn-walk'
 
-// Support for __dirname in ES Modules
+/**
+ * Support for __dirname in ES Modules environments.
+ * Converts the current module URL to a file path for directory operations.
+ * @type {string}
+ * @readonly
+ */
 const __filename = fileURLToPath(import.meta.url)
 
+/**
+ * File extensions that are processed by the validation script.
+ * Includes JavaScript (.js), TypeScript (.ts), and JSX variants (.jsx, .tsx) 
+ * for comprehensive frontend code analysis.
+ * @type {string[]}
+ * @readonly
+ */
 const EXTENSIONS = ['.js', '.ts', '.jsx', '.tsx']
+
+/**
+ * Root directory of the project being analyzed.
+ * Determined dynamically from the current working directory where the script is executed.
+ * All file paths and validations are relative to this directory.
+ * @type {string}
+ * @readonly
+ */
 const ROOT_DIR = process.cwd()
+
+/**
+ * Path to the log file where validation results are written.
+ * Located in the project root for easy access and review.
+ * Contains detailed error reports with file paths and line numbers.
+ * @type {string}
+ * @readonly
+ */
 const LOG_FILE = path.join(ROOT_DIR, 'frontend-standards.log')
 
-// Project rules configuration
+/**
+ * Default validation rules applied to all files during analysis.
+ * These rules can be extended, modified, or completely overridden via 
+ * checkFrontendStandards.config.js configuration file.
+ * 
+ * Includes advanced rules for:
+ * - Code quality (no console.log, proper variable usage)
+ * - Variable shadowing detection with scope analysis
+ * - Naming conventions for interfaces and functions
+ * - TSDoc comment requirements for exported items
+ * 
+ * @type {import('./checkFrontendStandards.types.js').ValidationRule[]}
+ * @readonly
+ */
 const DEFAULT_RULES = [
   {
     name: 'No console.log',
@@ -34,13 +113,13 @@ const DEFAULT_RULES = [
     check: (content) =>
       /\b_?\w+\b\s*=\s*[^;]*;?\n/g.test(content) &&
       /\/\/\s*eslint-disable-next-line\s+@typescript-eslint\/no-unused-vars/.test(content) ===
-        false,
+      false,
     message:
       'There should be no declared and unused variables (@typescript-eslint/no-unused-vars rule).',
   },
   {
     name: 'No variable shadowing',
-    check: (content, filePath) => {
+    check: function (content, filePath) {
       // More sophisticated check for actual variable shadowing patterns
       // Look for common shadowing patterns, but exclude CSS classes and comments
 
@@ -56,6 +135,7 @@ const DEFAULT_RULES = [
 
       // Look for actual variable shadowing patterns
       const lines = content.split('\n')
+      /** @type {Array<Set<string>>} */
       const scopeStack = []
       let currentScope = new Set()
 
@@ -81,7 +161,10 @@ const DEFAULT_RULES = [
         }
         if (line.includes('}')) {
           if (scopeStack.length > 0) {
-            currentScope = scopeStack.pop()
+            const poppedScope = scopeStack.pop()
+            if (poppedScope !== undefined) {
+              currentScope = poppedScope
+            }
           }
         }
 
@@ -112,6 +195,7 @@ const DEFAULT_RULES = [
           line.match(/([a-zA-Z_$][a-zA-Z0-9_$]*)\s*=>/)
 
         if (funcParamMatches) {
+          /** @type {string[]} */
           let params = []
           if (funcParamMatches[1]) {
             // Handle regular function parameters
@@ -233,8 +317,8 @@ const DEFAULT_RULES = [
       if (interfaceMatches) {
         return interfaceMatches.some((match) => {
           const interfaceName = match.replace(/export\s+interface\s+/, '')
-          return !/^I[A-Z][a-zA-Z0-9]*$/.test(interfaceName)
-        })
+          return !/^I[A-Z][a-zA-Z0-9]*$/.test(interfaceName);
+        });
       }
       return false
     },
@@ -243,7 +327,39 @@ const DEFAULT_RULES = [
   },
 ]
 
-// Load custom rules from a config file if present, and allow merging with default rules
+/**
+ * Loads custom rules from `checkFrontendStandards.config.js` and merges them with default rules.
+ * The custom rules can be an array to be merged, an object with a `rules` property,
+ * or a function that receives the default rules and returns a new set of rules.
+ * 
+ * @returns {Promise<import('./checkFrontendStandards.types.js').ValidationRule[]>} A promise that resolves to the final array of validation rules.
+ * @since 1.0.0
+ * @example
+ * ```js
+ * // Simple array merge (checkFrontendStandards.config.js)
+ * export default [
+ *   { name: 'Custom rule', check: (content) => false, message: 'Custom message' }
+ * ]
+ * ```
+ * 
+ * @example
+ * ```js
+ * // Function-based configuration for advanced scenarios
+ * export default (defaultRules) => [
+ *   ...defaultRules,
+ *   { name: 'Override rule', check: customCheck, message: 'Custom logic' }
+ * ]
+ * ```
+ * 
+ * @example
+ * ```js
+ * // Complete replacement of default rules
+ * export default {
+ *   merge: false,
+ *   rules: [{ name: 'Only rule', check: () => false, message: 'Only this rule' }]
+ * }
+ * ```
+ */
 async function loadProjectRules() {
   const configPath = path.join(ROOT_DIR, 'checkFrontendStandards.config.js')
   if (fs.existsSync(configPath)) {
@@ -271,14 +387,23 @@ async function loadProjectRules() {
   return DEFAULT_RULES
 }
 
+/**
+ * Checks if the project is a monorepo by looking for common marker files and directories.
+ * @param {string} rootDir - The root directory of the project.
+ * @returns {boolean} True if the project is detected as a monorepo, false otherwise.
+ * @since 1.0.0
+ */
 function isMonorepo(rootDir) {
   const monorepoMarkers = ['packages', 'apps', 'lerna.json', 'turbo.json']
   return monorepoMarkers.some((marker) => fs.existsSync(path.join(rootDir, marker)))
 }
 
-// Read ignore patterns from .gitignore
+/**
+ * Reads ignore patterns from the project's `.gitignore` file and combines them with default patterns.
+ * @returns {string[]} An array of patterns to ignore during file scanning.
+ */
 function getIgnorePatterns() {
-  const ignore = ['node_modules', '.next', '.git', '__tests__', '__test__']
+  const ignore = ['node_modules', '.next', '.git', '__tests__', '__test__', 'checkFrontendStandards.config.js']
   const gitignorePath = path.join(ROOT_DIR, '.gitignore')
   if (fs.existsSync(gitignorePath)) {
     const lines = fs
@@ -291,6 +416,12 @@ function getIgnorePatterns() {
   return ignore
 }
 
+/**
+ * Determines if a file path should be ignored based on a list of patterns.
+ * @param {string} filePath - The path of the file to check.
+ * @param {string[]} ignorePatterns - An array of patterns to ignore.
+ * @returns {boolean} True if the file should be ignored, false otherwise.
+ */
 function shouldIgnore(filePath, ignorePatterns) {
   // Ignore if the path contains any ignored folder or pattern
   const lower = filePath.toLowerCase()
@@ -310,14 +441,39 @@ function shouldIgnore(filePath, ignorePatterns) {
   return ignorePatterns.some((pattern) => {
     if (pattern.endsWith('/')) {
       // Folder
-      return filePath.includes(path.sep + pattern.replace(/\/$/, ''))
+      return filePath.includes(path.sep + pattern.replace(/\/$/, ''));
     }
     // Simple file or pattern
     return filePath.includes(pattern)
-  })
+  });
 }
 
+/**
+ * Recursively gets all files with allowed extensions from a directory, respecting ignore patterns.
+ * @param {string} dir - The directory to start scanning from.
+ * @param {string[]} [files=[]] - An array to accumulate the file paths (used for recursion).
+ * @param {string[]} [ignorePatterns=getIgnorePatterns()] - The patterns to ignore.
+ * @returns {string[]} An array of absolute paths to all found files.
+ * @throws {TypeError} When dir is not a string
+ * @throws {Error} When directory doesn't exist or cannot be read
+ * @example
+ * ```js
+ * const files = getAllFiles('./src')
+ * console.log(`Found ${files.length} files to validate`)
+ * ```
+ */
 function getAllFiles(dir, files = [], ignorePatterns = getIgnorePatterns()) {
+  // Parameter validation
+  if (typeof dir !== 'string') {
+    throw new TypeError('Directory path must be a string')
+  }
+  if (!fs.existsSync(dir)) {
+    throw new Error(`Directory does not exist: ${dir}`)
+  }
+  if (!fs.statSync(dir).isDirectory()) {
+    throw new Error(`Path is not a directory: ${dir}`)
+  }
+
   for (const file of fs.readdirSync(dir)) {
     const fullPath = path.join(dir, file)
     if (shouldIgnore(fullPath, ignorePatterns)) continue
@@ -330,6 +486,13 @@ function getAllFiles(dir, files = [], ignorePatterns = getIgnorePatterns()) {
   return files
 }
 
+/**
+ * Recursively gets all subdirectories from a directory, respecting ignore patterns.
+ * @param {string} dir - The directory to start scanning from.
+ * @param {string[]} [directories=[]] - An array to accumulate the directory paths (used for recursion).
+ * @param {string[]} [ignorePatterns=getIgnorePatterns()] - The patterns to ignore.
+ * @returns {string[]} An array of absolute paths to all found directories.
+ */
 function getAllDirectories(dir, directories = [], ignorePatterns = getIgnorePatterns()) {
   for (const file of fs.readdirSync(dir)) {
     const fullPath = path.join(dir, file)
@@ -342,8 +505,38 @@ function getAllDirectories(dir, directories = [], ignorePatterns = getIgnorePatt
   return directories
 }
 
+/**
+ * Checks a single file against a set of validation rules and performs additional hardcoded checks.
+ * @param {string} filePath - The path to the file to check.
+ * @param {import('./checkFrontendStandards.types.js').ValidationRule[]} rules - The array of rules to validate against.
+ * @returns {import('./checkFrontendStandards.types.js').ValidationError[]} An array of error objects for any violations found in the file.
+ * @throws {TypeError} When filePath is not a string or is empty
+ * @throws {TypeError} When rules is not an array
+ * @throws {Error} When file cannot be read or doesn't exist
+ * @since 1.0.0
+ * @example
+ * ```js
+ * const rules = await loadProjectRules()
+ * const errors = checkFile('./src/Button.tsx', rules)
+ * if (errors.length > 0) console.log('Violations found:', errors)
+ * ```
+ */
 function checkFile(filePath, rules) {
-  const content = fs.readFileSync(filePath, 'utf8')
+  // Parameter validation
+  if (typeof filePath !== 'string' || filePath.trim() === '') {
+    throw new TypeError('filePath must be a non-empty string')
+  }
+  if (!Array.isArray(rules)) {
+    throw new TypeError('rules must be an array of ValidationRule objects')
+  }
+
+  let content
+  try {
+    content = fs.readFileSync(filePath, 'utf8')
+  } catch (error) {
+    throw new Error(`Cannot read file ${filePath}: ${error.message}`)
+  }
+  /** @type {import('./checkFrontendStandards.types.js').ValidationError[]} */
   const errors = []
   const fileName = path.basename(filePath)
 
@@ -406,23 +599,54 @@ function checkFile(filePath, rules) {
   return errors
 }
 
+/**
+ * Gets the command-line arguments passed to the script, which are expected to be zone names.
+ * @returns {string[]} An array of zone names.
+ */
 function getZonesFromArgs() {
   return process.argv.slice(2)
 }
 
+/**
+ * Writes a log file with the provided lines and prints a confirmation message to the console.
+ * @param {string[]} logLines - An array of strings to be written to the log file.
+ * @returns {void}
+ */
 function writeLogAndPrint(logLines) {
   fs.writeFileSync(LOG_FILE, logLines.join('\n'))
   // eslint-disable-next-line no-console
   console.info(`Validation completed. Check the log at: ${LOG_FILE}`)
 }
 
-// Expected structure by zone type
+/**
+ * Expected directory structure by zone type for project validation.
+ * Defines minimum required directories for different types of project zones.
+ * 
+ * Zone types:
+ * - `app`: Frontend applications (requires pages, components, public)
+ * - `package`: Reusable packages/libraries (requires src, package.json)
+ * - `other`: Unrecognized structures (no validation applied)
+ * 
+ * @type {import('./checkFrontendStandards.types.js').ZoneStructure}
+ * @readonly
+ */
 const DEFAULT_STRUCTURE = {
   app: ['pages', 'components', 'public'],
   package: ['src', 'package.json'],
 }
 
-// Expected structure for src and subfolders
+/**
+ * Expected structure for src directory and its subfolders.
+ * Enforces standardized organization within source directories for consistency
+ * and maintainability across all projects.
+ * 
+ * Each key represents a required subdirectory, and the array value contains
+ * required files within that subdirectory. Empty arrays indicate the directory
+ * should exist but may contain any files following naming conventions.
+ * 
+ * @type {import('./checkFrontendStandards.types.js').SrcStructure}
+ * @readonly
+ */
 const SRC_STRUCTURE = {
   assets: [],
   components: ['index.ts'],
@@ -435,7 +659,23 @@ const SRC_STRUCTURE = {
   store: ['reducers', 'types', 'state.selector.ts', 'state.interface.ts', 'store'],
 }
 
-// Naming conventions by file type
+/**
+ * Naming conventions by file type and directory context.
+ * Each rule defines expected patterns for different types of files based on their location.
+ * 
+ * Naming patterns enforced:
+ * - Components: PascalCase with .tsx extension
+ * - Hooks: use + PascalCase with .hook.ts/.tsx extension
+ * - Constants: camelCase with .constant.ts extension
+ * - Helpers: camelCase with .helper.ts extension
+ * - Types: camelCase with .type.ts extension
+ * - Styles: camelCase with .style.ts extension
+ * - Enums: camelCase with .enum.ts extension
+ * - Assets: kebab-case with appropriate image extensions
+ * 
+ * @type {import('./checkFrontendStandards.types.js').NamingConventionRule[]}
+ * @readonly
+ */
 const NAMING_RULES = [
   {
     dir: 'components',
@@ -484,6 +724,11 @@ const NAMING_RULES = [
   },
 ]
 
+/**
+ * Detects the type of a project zone ('app', 'package', or 'other') based on its file structure.
+ * @param {string} zonePath - The absolute path to the zone directory.
+ * @returns {'app' | 'package' | 'other'} The detected zone type.
+ */
 function detectZoneType(zonePath) {
   // Simple heuristic: if it has package.json and src, it's a package; if it has pages, it's an app
   const hasPackageJson = fs.existsSync(path.join(zonePath, 'package.json'))
@@ -494,7 +739,15 @@ function detectZoneType(zonePath) {
   return 'other'
 }
 
+/**
+ * Checks if a zone's directory structure contains the expected items for its type.
+ * @param {string} zonePath - The path to the zone directory.
+ * @param {'app' | 'package' | 'other'} zoneType - The type of the zone.
+ * @param {import('./checkFrontendStandards.types.js').ZoneStructure} [expectedStructure=DEFAULT_STRUCTURE] - The structure to validate against.
+ * @returns {string[]} An array of missing item names.
+ */
 function checkZoneStructure(zonePath, zoneType, expectedStructure = DEFAULT_STRUCTURE) {
+  /** @type {string[]} */
   const missing = []
   const expected = expectedStructure[zoneType] || []
   for (const item of expected) {
@@ -503,7 +756,13 @@ function checkZoneStructure(zonePath, zoneType, expectedStructure = DEFAULT_STRU
   return missing
 }
 
+/**
+ * Checks if a `src` directory has the standard folder structure defined in `SRC_STRUCTURE`.
+ * @param {string} srcPath - The path to the `src` directory.
+ * @returns {import('./checkFrontendStandards.types.js').ValidationError[]} An array of error objects for any missing folders or files.
+ */
 function checkSrcStructure(srcPath) {
+  /** @type {import('./checkFrontendStandards.types.js').ValidationError[]} */
   const errors = []
   for (const [dir, required] of Object.entries(SRC_STRUCTURE)) {
     const fullDir = path.join(srcPath, dir)
@@ -528,6 +787,11 @@ function checkSrcStructure(srcPath) {
   return errors
 }
 
+/**
+ * Checks if a file's name conforms to the project's naming conventions.
+ * @param {string} filePath - The absolute path to the file.
+ * @returns {import('./checkFrontendStandards.types.js').ValidationError | null} An error object if the naming is incorrect, otherwise null.
+ */
 function checkNamingConventions(filePath) {
   const rel = filePath.split(path.sep)
   const fname = rel[rel.length - 1]
@@ -554,8 +818,15 @@ function checkNamingConventions(filePath) {
 }
 
 // Additional validations
+/**
+ * Checks for the use of inline styles in the code.
+ * @param {string} content - The content of the file to check.
+ * @param {string} filePath - The path to the file.
+ * @returns {import('./checkFrontendStandards.types.js').ValidationError[]} An array of error objects for any inline styles found.
+ */
 function checkInlineStyles(content, filePath) {
   const lines = content.split('\n')
+  /** @type {import('./checkFrontendStandards.types.js').ValidationError[]} */
   const errors = []
   lines.forEach((line, idx) => {
     // Detects style={{ ... }} and style=\"...\"
@@ -571,8 +842,15 @@ function checkInlineStyles(content, filePath) {
   return errors
 }
 
+/**
+ * Checks for commented-out code, ignoring linter directives and TODOs.
+ * @param {string} content - The content of the file to check.
+ * @param {string} filePath - The path to the file.
+ * @returns {import('./checkFrontendStandards.types.js').ValidationError[]} An array of error objects for any commented code found.
+ */
 function checkCommentedCode(content, filePath) {
   const lines = content.split('\n')
+  /** @type {import('./checkFrontendStandards.types.js').ValidationError[]} */
   const errors = []
   let inJSDoc = false
   let inMultiLineComment = false
@@ -668,6 +946,11 @@ function checkCommentedCode(content, filePath) {
   return errors
 }
 
+/**
+ * Checks if enum files (`.enum.ts`) are incorrectly placed inside a `types` directory.
+ * @param {string} filePath - The path to the file to check.
+ * @returns {import('./checkFrontendStandards.types.js').ValidationError | null} An error object if the rule is violated, otherwise null.
+ */
 function checkEnumsOutsideTypes(filePath) {
   // Check if enum files are incorrectly placed inside types directory
   if (filePath.includes('types') && filePath.endsWith('.enum.ts')) {
@@ -680,8 +963,15 @@ function checkEnumsOutsideTypes(filePath) {
   return null
 }
 
+/**
+ * Checks for hardcoded data and magic strings, ignoring test files, URLs, and comments.
+ * @param {string} content - The content of the file to check.
+ * @param {string} filePath - The path to the file.
+ * @returns {import('./checkFrontendStandards.types.js').ValidationError[]} An array of error objects for any hardcoded data found.
+ */
 function checkHardcodedData(content, filePath) {
   const lines = content.split('\n')
+  /** @type {import('./checkFrontendStandards.types.js').ValidationError[]} */
   const errors = []
 
   // Track JSDoc comment blocks
@@ -795,8 +1085,16 @@ function checkHardcodedData(content, filePath) {
   return errors
 }
 
+/**
+ * Checks if complex functions have explanatory comments.
+ * A function is considered complex if it contains control flow statements like if, for, while, etc.
+ * @param {string} content - The content of the file to check.
+ * @param {string} filePath - The path to the file.
+ * @returns {import('./checkFrontendStandards.types.js').ValidationError[]} An array of error objects for complex functions without comments.
+ */
 function checkFunctionComments(content, filePath) {
   const lines = content.split('\n')
+  /** @type {import('./checkFrontendStandards.types.js').ValidationError[]} */
   const errors = []
 
   for (let i = 0; i < lines.length; i++) {
@@ -932,6 +1230,11 @@ function checkFunctionComments(content, filePath) {
   return errors
 }
 
+/**
+ * Validates that React hooks that render JSX have a `.tsx` extension, and those that don't have a `.ts` extension.
+ * @param {string} filePath - The path to the hook file.
+ * @returns {import('./checkFrontendStandards.types.js').ValidationError | null} An error object if the extension is incorrect, otherwise null.
+ */
 function checkHookFileExtension(filePath) {
   // Only check for hooks (use*.hook.ts[x]?)
   const fileName = path.basename(filePath)
@@ -960,6 +1263,13 @@ function checkHookFileExtension(filePath) {
   return null
 }
 
+/**
+ * Builds a string representation of a directory tree for logging purposes.
+ * @param {string} dir - The directory to build the tree from.
+ * @param {string[]} ignorePatterns - An array of patterns to ignore.
+ * @param {string} [prefix=''] - The prefix for the current tree level (used for recursion).
+ * @returns {string} A string representing the directory tree.
+ */
 function buildTree(dir, ignorePatterns, prefix = '') {
   let tree = ''
   const items = fs
@@ -977,6 +1287,10 @@ function buildTree(dir, ignorePatterns, prefix = '') {
 }
 
 // Ideal tree based on provided images
+/**
+ * Defines the ideal project structure to be enforced.
+ * @type {import('./checkFrontendStandards.types.js').Tree}
+ */
 const IDEAL_TREE = {
   src: {
     assets: {},
@@ -1075,6 +1389,15 @@ const IDEAL_TREE = {
   'README.md': true,
 }
 
+
+
+/**
+ * Recursively compares an actual directory tree with the ideal structure.
+ * @param {import('./checkFrontendStandards.types.js').Tree} actual - The actual directory tree object.
+ * @param {import('./checkFrontendStandards.types.js').Tree} ideal - The ideal directory tree object to compare against.
+ * @param {string} [basePath=''] - The base path for the current comparison level (used for recursion).
+ * @returns {import('./checkFrontendStandards.types.js').ValidationError[]} An array of error objects for missing files or directories.
+ */
 function compareTree(actual, ideal, basePath = '') {
   const errors = []
   for (const key in ideal) {
@@ -1084,16 +1407,25 @@ function compareTree(actual, ideal, basePath = '') {
         message: `Missing '${key}' in '${basePath || '.'}' according to the standard.`,
         file: path.join(basePath, key),
       })
-    } else if (typeof ideal[key] === 'object' && ideal[key] !== true) {
-      // Recursive for subfolders
-      errors.push(...compareTree(actual[key] || {}, ideal[key], path.join(basePath, key)))
+    } else if (typeof ideal[key] === 'object' && ideal[key] !== null && typeof actual[key] === 'object' && actual[key] !== null) {
+      // Recursive for subfolders, ensuring both are objects.
+      errors.push(...compareTree(actual[key], ideal[key], path.join(basePath, key)))
     }
   }
   return errors
 }
 
+/**
+ * Recursively compares an actual directory tree with the ideal structure, tracking both successes and failures.
+ * @param {import('./checkFrontendStandards.types.js').Tree} actual - The actual directory tree object.
+ * @param {import('./checkFrontendStandards.types.js').Tree} ideal - The ideal directory tree object to compare against.
+ * @param {string} [basePath=''] - The base path for the current comparison level (used for recursion).
+ * @returns {import('./checkFrontendStandards.types.js').ComparisonResult} An object containing arrays of errors and successful checks.
+ */
 function compareTreeWithSuccess(actual, ideal, basePath = '') {
+  /** @type {import('./checkFrontendStandards.types.js').ValidationError[]} */
   const errors = []
+  /** @type {Array<{rule: string, message: string, file: string}>} */
   const oks = []
   for (const key in ideal) {
     if (!(key in actual)) {
@@ -1102,10 +1434,10 @@ function compareTreeWithSuccess(actual, ideal, basePath = '') {
         message: `Missing '${key}' in '${basePath || '.'}' according to the standard.`,
         file: path.join(basePath, key),
       })
-    } else if (typeof ideal[key] === 'object' && ideal[key] !== true) {
-      // Recursive for subfolders
+    } else if (typeof ideal[key] === 'object' && ideal[key] !== null && typeof actual[key] === 'object' && actual[key] !== null) {
+      // Recursive for subfolders, ensuring both are objects.
       const { errors: subErrors, oks: subOks } = compareTreeWithSuccess(
-        actual[key] || {},
+        actual[key],
         ideal[key],
         path.join(basePath, key)
       )
@@ -1122,7 +1454,14 @@ function compareTreeWithSuccess(actual, ideal, basePath = '') {
   return { errors, oks }
 }
 
+/**
+ * Builds an actual directory tree object from the file system.
+ * @param {string} dir - The directory to build the tree from.
+ * @param {string[]} ignorePatterns - An array of patterns to ignore.
+ * @returns {import('./checkFrontendStandards.types.js').Tree} An object representing the actual directory tree.
+ */
 function buildActualTree(dir, ignorePatterns) {
+  /** @type {import('./checkFrontendStandards.types.js').Tree} */
   const tree = {}
   const items = fs
     .readdirSync(dir)
@@ -1138,7 +1477,14 @@ function buildActualTree(dir, ignorePatterns) {
   return tree
 }
 
+/**
+ * Checks for unused variables in a file using an Abstract Syntax Tree (AST).
+ * @param {string} content - The file content to analyze.
+ * @param {string} filePath - The path to the file.
+ * @returns {import('./checkFrontendStandards.types.js').ValidationError[]} An array of error objects for any unused variables found.
+ */
 function checkUnusedVariables(content, filePath) {
+  /** @type {import('./checkFrontendStandards.types.js').ValidationError[]} */
   const errors = []
   try {
     // Enable location tracking to get line numbers
@@ -1146,7 +1492,8 @@ function checkUnusedVariables(content, filePath) {
       ecmaVersion: 'latest',
       sourceType: 'module',
       locations: true, // Important for line numbers
-      plugins: { jsx: true }, // Enable JSX parsing
+      // @ts-ignore - Acorn types don't officially include plugins, but it's needed for JSX
+      plugins: { jsx: true },
       allowImportExportEverywhere: true,
     })
 
@@ -1159,14 +1506,19 @@ function checkUnusedVariables(content, filePath) {
       ExportNamedDeclaration(node) {
         if (node.specifiers) {
           for (const specifier of node.specifiers) {
+            // @ts-ignore
             exportedViaSpecifier.add(specifier.local.name)
           }
         }
       },
       ExportDefaultDeclaration(node) {
+        // @ts-ignore
         if (node.declaration && node.declaration.name) {
+          // @ts-ignore
           exportedViaSpecifier.add(node.declaration.name)
+          // @ts-ignore
         } else if (node.declaration && node.declaration.type === 'Identifier') {
+          // @ts-ignore
           exportedViaSpecifier.add(node.declaration.name)
         }
       },
@@ -1237,6 +1589,50 @@ function checkUnusedVariables(content, filePath) {
   return errors
 }
 
+/**
+ * The main function of the script that orchestrates the entire validation process.
+ * 
+ * **Process Flow:**
+ * 1. Loads custom rules from configuration file (if exists)
+ * 2. Detects project type (monorepo vs single project)
+ * 3. Determines zones to validate (from CLI args or auto-detection)
+ * 4. Validates directory structure for each zone
+ * 5. Checks file naming conventions and code quality rules
+ * 6. Compares actual structure against ideal patterns
+ * 7. Generates comprehensive report with errors and successes
+ * 8. Writes results to log file for review
+ * 
+ * **Monorepo Support:**
+ * - Auto-detects apps/ and packages/ directories
+ * - Configurable via checkFrontendStandards.config.js
+ * - Supports custom zone directories
+ * 
+ * **Output:**
+ * - Detailed log file (frontend-standards.log) with file:line format
+ * - Console summary with zone-by-zone error counts
+ * - Directory tree visualization for structural issues
+ * 
+ * @returns {Promise<void>} A promise that resolves when validation is complete
+ * @since 1.0.0
+ * @example
+ * ```js
+ * // Run validation on entire project
+ * await main()
+ * ```
+ * 
+ * @example
+ * ```bash
+ * # Run validation on specific zones (via CLI)
+ * node checkFrontendStandards.mjs apps packages
+ * ```
+ * 
+ * @example
+ * ```bash
+ * # Check results
+ * # Output written to frontend-standards.log
+ * # Console shows: "Validation completed. Check the log at: ..."
+ * ```
+ */
 async function main() {
   // Clear the flagged directories set at the beginning of each run
   flaggedDirectories.clear()
@@ -1367,6 +1763,7 @@ async function main() {
   }
 
   // Log agrupado por zona
+  /** @type {string[]} */
   const logLines = []
   const oksByZone = {}
   const errorsByZone = {}
@@ -1447,7 +1844,15 @@ async function main() {
 const flaggedDirectories = new Set()
 
 // Validation for directory naming (camelCase)
+/**
+ * Checks if a directory's name follows the camelCase or PascalCase convention.
+ * It ignores common non-code directories (e.g., node_modules, .git, public) and special monorepo folders.
+ * Only directories inside a `src` folder are actively checked.
+ * @param {string} dirPath - The absolute path to the directory to check.
+ * @returns {import('./checkFrontendStandards.types.js').ValidationError[]} An array of error objects if the naming is incorrect, otherwise an empty array.
+ */
 function checkDirectoryNaming(dirPath) {
+  /** @type {import('./checkFrontendStandards.types.js').ValidationError[]} */
   const errors = []
   const relativePath = path.relative(ROOT_DIR, dirPath)
   const currentDirName = path.basename(dirPath)
@@ -1532,7 +1937,13 @@ function checkDirectoryNaming(dirPath) {
   return errors
 }
 
-// Validation for assets naming (kebab-case)
+
+/**
+ * Checks if a file within an 'assets' directory follows the kebab-case naming convention.
+ * Validation for assets naming (kebab-case)
+ * @param {string} filePath - The absolute path to the asset file.
+ * @returns {import('./checkFrontendStandards.types.js').ValidationError | null} An error object if the naming is incorrect, otherwise null.
+ */
 function checkAssetNaming(filePath) {
   const fileName = path.basename(filePath)
   const fileExt = path.extname(fileName)
@@ -1556,7 +1967,14 @@ function checkAssetNaming(filePath) {
 }
 
 // Validation for component structure
+/**
+ * Validates the internal structure of a component directory.
+ * It checks for the presence and correct naming of index files, hooks, styles, and types directories.
+ * @param {string} componentDir - The absolute path to the component directory.
+ * @returns {import('./checkFrontendStandards.types.js').ValidationError[]} An array of error objects for any structural issues found.
+ */
 function checkComponentStructure(componentDir) {
+  /** @type {import('./checkFrontendStandards.types.js').ValidationError[]} */
   const errors = []
   const componentName = path.basename(componentDir)
 
@@ -1697,7 +2115,15 @@ function checkComponentStructure(componentDir) {
 }
 
 // Validation for function naming (camelCase)
+/**
+ * Checks if function names follow the camelCase convention.
+ * It ignores React components (PascalCase) and hooks (starting with 'use').
+ * @param {string} content - The file content to analyze.
+ * @param {string} filePath - The path to the file.
+ * @returns {import('./checkFrontendStandards.types.js').ValidationError[]} An array of error objects for any functions with incorrect naming.
+ */
 function checkFunctionNaming(content, filePath) {
+  /** @type {import('./checkFrontendStandards.types.js').ValidationError[]} */
   const errors = []
   const lines = content.split('\n')
 
@@ -1709,23 +2135,26 @@ function checkFunctionNaming(content, filePath) {
 
     if (functionMatches) {
       functionMatches.forEach((match) => {
-        const functionName = match.match(
+        const functionNameMatch = match.match(
           /(?:function\s+|const\s+|let\s+|var\s+)([a-zA-Z_$][a-zA-Z0-9_$]*)/
-        )[1]
+        )
+        if (functionNameMatch && functionNameMatch[1]) {
+          const functionName = functionNameMatch[1]
 
-        // Skip React components (PascalCase) and hooks (start with 'use')
-        if (/^[A-Z]/.test(functionName) || functionName.startsWith('use')) {
-          return
-        }
+          // Skip React components (PascalCase) and hooks (start with 'use')
+          if (/^[A-Z]/.test(functionName) || functionName.startsWith('use')) {
+            return
+          }
 
-        // Function should follow camelCase
-        if (!/^[a-z][a-zA-Z0-9]*$/.test(functionName)) {
-          errors.push({
-            rule: 'Function naming',
-            message: 'Functions must follow camelCase convention (e.g., getProvinces)',
-            file: filePath,
-            line: idx + 1,
-          })
+          // Function should follow camelCase
+          if (!/^[a-z][a-zA-Z0-9]*$/.test(functionName)) {
+            errors.push({
+              rule: 'Function naming',
+              message: 'Functions must follow camelCase convention (e.g., getProvinces)',
+              file: filePath,
+              line: idx + 1,
+            })
+          }
         }
       })
     }
@@ -1735,7 +2164,14 @@ function checkFunctionNaming(content, filePath) {
 }
 
 // Enhanced interface validation
+/**
+ * Checks if exported interface names follow the 'I' + PascalCase convention (e.g., IButtonProps).
+ * @param {string} content - The file content to analyze.
+ * @param {string} filePath - The path to the file.
+ * @returns {import('./checkFrontendStandards.types.js').ValidationError[]} An array of error objects for any interfaces with incorrect naming.
+ */
 function checkInterfaceNaming(content, filePath) {
+  /** @type {import('./checkFrontendStandards.types.js').ValidationError[]} */
   const errors = []
   const lines = content.split('\n')
 
@@ -1745,17 +2181,20 @@ function checkInterfaceNaming(content, filePath) {
 
     if (interfaceMatch) {
       interfaceMatch.forEach((match) => {
-        const interfaceName = match.match(/export\s+interface\s+([a-zA-Z_$][a-zA-Z0-9_$]*)/)[1]
+        const interfaceNameMatch = match.match(/export\s+interface\s+([a-zA-Z_$][a-zA-Z0-9_$]*)/)
+        if (interfaceNameMatch && interfaceNameMatch[1]) {
+          const interfaceName = interfaceNameMatch[1]
 
-        // Interface should start with 'I' and follow PascalCase
-        if (!/^I[A-Z][a-zA-Z0-9]*$/.test(interfaceName)) {
-          errors.push({
-            rule: 'Interface naming',
-            message:
-              'Exported interfaces must start with "I" and follow PascalCase (e.g., IButtonProps)',
-            file: filePath,
-            line: idx + 1,
-          })
+          // Interface should start with 'I' and follow PascalCase
+          if (!/^I[A-Z][a-zA-Z0-9]*$/.test(interfaceName)) {
+            errors.push({
+              rule: 'Interface naming',
+              message:
+                'Exported interfaces must start with "I" and follow PascalCase (e.g., IButtonProps)',
+              file: filePath,
+              line: idx + 1,
+            })
+          }
         }
       })
     }
@@ -1765,7 +2204,16 @@ function checkInterfaceNaming(content, filePath) {
 }
 
 // Validation for style file content and naming
+/**
+ * Checks for style conventions in `.style.ts` files.
+ * It validates that style objects are named in camelCase ending with 'Styles' (e.g., cardStyles).
+ * It also validates that style properties are in camelCase.
+ * @param {string} content - The file content to analyze.
+ * @param {string} filePath - The path to the file.
+ * @returns {import('./checkFrontendStandards.types.js').ValidationError[]} An array of error objects for any style convention violations.
+ */
 function checkStyleConventions(content, filePath) {
+  /** @type {import('./checkFrontendStandards.types.js').ValidationError[]} */
   const errors = []
 
   // Only check .style.ts files
@@ -1818,6 +2266,11 @@ function checkStyleConventions(content, filePath) {
   return errors
 }
 
+/**
+ * Loads the zone configuration from `checkFrontendStandards.config.js`.
+ * This determines which high-level directories (like 'apps' or 'packages') should be scanned.
+ * @returns {Promise<import('./checkFrontendStandards.types.js').ZoneConfig>} A promise that resolves to the zone configuration object.
+ */
 async function loadZoneConfiguration() {
   const configPath = path.join(ROOT_DIR, 'checkFrontendStandards.config.js')
   if (fs.existsSync(configPath)) {
