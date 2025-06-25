@@ -4,7 +4,6 @@ import {
   checkCommentedCode,
   checkHardcodedData,
   checkFunctionComments,
-  checkUnusedVariables,
   checkFunctionNaming,
   checkInterfaceNaming,
   checkStyleConventions,
@@ -88,7 +87,8 @@ export class RuleEngine {
         errors.push(...checkCommentedCode(content, filePath));
         errors.push(...checkHardcodedData(content, filePath));
         errors.push(...checkFunctionComments(content, filePath));
-        errors.push(...checkUnusedVariables(content, filePath));
+        // Note: checkUnusedVariables is excluded here to match original script behavior
+        // The original script runs this validation only under specific conditions
         errors.push(...checkFunctionNaming(content, filePath));
         errors.push(...checkInterfaceNaming(content, filePath));
         errors.push(...checkStyleConventions(content, filePath));
