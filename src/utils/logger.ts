@@ -1,24 +1,41 @@
 /**
  * Logger utility for consistent logging across the application
  */
+
+export enum LogLevel {
+  ERROR = 0,
+  WARN = 1,
+  INFO = 2,
+  DEBUG = 3,
+}
+
+export interface LogLevels {
+  ERROR: LogLevel.ERROR;
+  WARN: LogLevel.WARN;
+  INFO: LogLevel.INFO;
+  DEBUG: LogLevel.DEBUG;
+}
+
 export class Logger {
-  constructor(verbose = false) {
+  private verbose: boolean;
+  private readonly levels: LogLevels;
+  private currentLevel: LogLevel;
+
+  constructor(verbose: boolean = false) {
     this.verbose = verbose;
     this.levels = {
-      ERROR: 0,
-      WARN: 1,
-      INFO: 2,
-      DEBUG: 3,
+      ERROR: LogLevel.ERROR,
+      WARN: LogLevel.WARN,
+      INFO: LogLevel.INFO,
+      DEBUG: LogLevel.DEBUG,
     };
     this.currentLevel = verbose ? this.levels.DEBUG : this.levels.INFO;
   }
 
   /**
    * Log an error message
-   * @param {string} message Error message
-   * @param {any} details Additional details
    */
-  error(message, details = null) {
+  error(message: string, details: unknown = null): void {
     if (this.currentLevel >= this.levels.ERROR) {
       console.error(`❌ ${message}`);
       if (details && this.verbose) {
@@ -29,10 +46,8 @@ export class Logger {
 
   /**
    * Log a warning message
-   * @param {string} message Warning message
-   * @param {any} details Additional details
    */
-  warn(message, details = null) {
+  warn(message: string, details: unknown = null): void {
     if (this.currentLevel >= this.levels.WARN) {
       console.warn(`⚠️  ${message}`);
       if (details && this.verbose) {
@@ -43,10 +58,8 @@ export class Logger {
 
   /**
    * Log an info message
-   * @param {string} message Info message
-   * @param {any} details Additional details
    */
-  info(message, details = null) {
+  info(message: string, details: unknown = null): void {
     if (this.currentLevel >= this.levels.INFO) {
       console.log(`ℹ️  ${message}`);
       if (details && this.verbose) {
@@ -57,10 +70,8 @@ export class Logger {
 
   /**
    * Log a debug message
-   * @param {string} message Debug message
-   * @param {any} details Additional details
    */
-  debug(message, details = null) {
+  debug(message: string, details: unknown = null): void {
     if (this.currentLevel >= this.levels.DEBUG) {
       console.log(`🐛 ${message}`);
       if (details) {
@@ -71,10 +82,8 @@ export class Logger {
 
   /**
    * Log a success message
-   * @param {string} message Success message
-   * @param {any} details Additional details
    */
-  success(message, details = null) {
+  success(message: string, details: unknown = null): void {
     if (this.currentLevel >= this.levels.INFO) {
       console.log(`✅ ${message}`);
       if (details && this.verbose) {
@@ -85,10 +94,9 @@ export class Logger {
 
   /**
    * Set the logging level
-   * @param {string} level Logging level (ERROR, WARN, INFO, DEBUG)
    */
-  setLevel(level) {
-    const upperLevel = level.toUpperCase();
+  setLevel(level: string): void {
+    const upperLevel = level.toUpperCase() as keyof LogLevels;
     if (this.levels[upperLevel] !== undefined) {
       this.currentLevel = this.levels[upperLevel];
     } else {
@@ -98,17 +106,15 @@ export class Logger {
 
   /**
    * Check if verbose mode is enabled
-   * @returns {boolean} True if verbose
    */
-  isVerbose() {
+  isVerbose(): boolean {
     return this.verbose;
   }
 
   /**
    * Enable or disable verbose mode
-   * @param {boolean} enabled Verbose mode enabled
    */
-  setVerbose(enabled) {
+  setVerbose(enabled: boolean): void {
     this.verbose = enabled;
     this.currentLevel = enabled ? this.levels.DEBUG : this.levels.INFO;
   }

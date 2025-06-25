@@ -1,21 +1,30 @@
-import fs from 'fs';
-import path from 'path';
+import fs from "fs";
+import path from "path";
+import { Logger } from "../utils/logger.js";
+import type {
+  IProjectInfo,
+  IProjectZone,
+  ProjectType,
+  IPackageJson,
+} from "../types/project.types.js";
 
 /**
  * Project analyzer for detecting project type, structure, and zones
  */
 export class ProjectAnalyzer {
-  constructor(rootDir, logger) {
+  private rootDir: string;
+  private logger: Logger;
+
+  constructor(rootDir: string, logger: Logger) {
     this.rootDir = rootDir;
     this.logger = logger;
   }
 
   /**
    * Analyze the project structure and return project information
-   * @returns {Promise<Object>} Project analysis results
    */
-  async analyze() {
-    const projectInfo = {
+  async analyze(): Promise<IProjectInfo> {
+    const projectInfo: IProjectInfo = {
       type: this.detectProjectType(),
       isMonorepo: this.isMonorepo(),
       zones: [],
@@ -27,38 +36,35 @@ export class ProjectAnalyzer {
     } else {
       projectInfo.zones = [
         {
-          name: 'root',
+          name: "root",
           path: this.rootDir,
           type: projectInfo.type,
         },
       ];
     }
 
-    this.logger.debug('Project analysis result:', projectInfo);
+    this.logger.debug("Project analysis result:", projectInfo);
     return projectInfo;
   }
 
   /**
    * Detect the type of project (app, package, library, etc.)
-   * @param {string} projectPath Path to analyze (defaults to root)
-   * @returns {string} Project type
    */
-  detectProjectType(projectPath = this.rootDir) {
-    const packageJsonPath = path.join(projectPath, 'package.json');
+  detectProjectType(projectPath: string = this.rootDir): ProjectType {
+    const packageJsonPath = path.join(projectPath, "package.json");
     const hasPackageJson = fs.existsSync(packageJsonPath);
 
     if (hasPackageJson) {
       try {
-        const packageJson = JSON.parse(
-          fs.readFileSync(packageJsonPath, 'utf8')
-        );
+        const packageJsonContent = fs.readFileSync(packageJsonPath, "utf8");
+        const packageJson: IPackageJson = JSON.parse(packageJsonContent);
 
         // Check for Next.js app
         if (
           packageJson.dependencies?.next ||
           packageJson.devDependencies?.next
         ) {
-          return 'nextjs-app';
+          return "nextjs-app";
         }
 
         // Check for React app
@@ -66,52 +72,51 @@ export class ProjectAnalyzer {
           packageJson.dependencies?.react ||
           packageJson.devDependencies?.react
         ) {
-          return fs.existsSync(path.join(projectPath, 'src'))
-            ? 'react-app'
-            : 'react-component';
+          return fs.existsSync(path.join(projectPath, "src"))
+            ? "react-app"
+            : "react-component";
         }
 
         // Check for Node.js package
         if (packageJson.main || packageJson.exports) {
-          return 'node-package';
+          return "node-package";
         }
       } catch (error) {
-        this.logger.warn('Failed to parse package.json:', error.message);
+        const errorMessage =
+          error instanceof Error ? error.message : "Unknown error";
+        this.logger.warn("Failed to parse package.json:", errorMessage);
       }
     }
 
     // Fallback heuristics
-    const hasSrc = fs.existsSync(path.join(projectPath, 'src'));
-    const hasPages = fs.existsSync(path.join(projectPath, 'pages'));
-    const hasApp = fs.existsSync(path.join(projectPath, 'app'));
+    const hasSrc = fs.existsSync(path.join(projectPath, "src"));
+    const hasPages = fs.existsSync(path.join(projectPath, "pages"));
+    const hasApp = fs.existsSync(path.join(projectPath, "app"));
 
-    if (hasPages || hasApp) return 'app';
-    if (hasPackageJson && hasSrc) return 'package';
+    if (hasPages || hasApp) return "app";
+    if (hasPackageJson && hasSrc) return "package";
 
-    return 'other';
+    return "other";
   }
 
   /**
    * Detect zone type for a specific path
-   * @param {string} zonePath Path to analyze
-   * @returns {string} Zone type
    */
-  detectZoneType(zonePath) {
+  detectZoneType(zonePath: string): ProjectType {
     return this.detectProjectType(zonePath);
   }
 
   /**
    * Check if the project is a monorepo
-   * @returns {boolean} True if monorepo
    */
-  isMonorepo() {
+  isMonorepo(): boolean {
     const monorepoMarkers = [
-      'packages',
-      'apps',
-      'lerna.json',
-      'turbo.json',
-      'nx.json',
-      'rush.json',
+      "packages",
+      "apps",
+      "lerna.json",
+      "turbo.json",
+      "nx.json",
+      "rush.json",
     ];
 
     return monorepoMarkers.some((marker) =>
@@ -121,11 +126,10 @@ export class ProjectAnalyzer {
 
   /**
    * Detect zones in a monorepo
-   * @returns {Promise<Array>} Array of zone objects
    */
-  async detectMonorepoZones() {
-    const zones = [];
-    const candidates = ['apps', 'packages', 'libs', 'projects'];
+  async detectMonorepoZones(): Promise<IProjectZone[]> {
+    const zones: IProjectZone[] = [];
+    const candidates = ["apps", "packages", "libs", "projects"];
 
     for (const candidate of candidates) {
       const candidatePath = path.join(this.rootDir, candidate);
@@ -153,16 +157,15 @@ export class ProjectAnalyzer {
 
   /**
    * Get expected structure for a project type
-   * @param {string} projectType Type of project
-   * @returns {Array} Expected folders/files
    */
-  getExpectedStructure(projectType) {
-    const structures = {
-      app: ['pages', 'components', 'public'],
-      'nextjs-app': ['app', 'components', 'public', 'src'],
-      'react-app': ['src', 'public'],
-      package: ['src', 'package.json'],
-      'node-package': ['src', 'package.json', 'lib'],
+  getExpectedStructure(projectType: ProjectType): string[] {
+    const structures: Record<ProjectType, string[]> = {
+      app: ["pages", "components", "public"],
+      "nextjs-app": ["app", "components", "public", "src"],
+      "react-app": ["src", "public"],
+      package: ["src", "package.json"],
+      "node-package": ["src", "package.json", "lib"],
+      "react-component": ["src", "package.json"],
       other: [],
     };
 
@@ -171,24 +174,23 @@ export class ProjectAnalyzer {
 
   /**
    * Get expected src structure
-   * @returns {Object} Expected src structure
    */
-  getExpectedSrcStructure() {
+  getExpectedSrcStructure(): Record<string, string[]> {
     return {
       assets: [],
-      components: ['index.ts'],
-      constants: ['index.ts'],
+      components: ["index.ts"],
+      constants: ["index.ts"],
       modules: [],
-      helpers: ['index.ts'],
-      hooks: ['index.ts'],
-      providers: ['index.ts'],
-      styles: ['index.ts'],
+      helpers: ["index.ts"],
+      hooks: ["index.ts"],
+      providers: ["index.ts"],
+      styles: ["index.ts"],
       store: [
-        'reducers',
-        'types',
-        'state.selector.ts',
-        'state.interface.ts',
-        'store',
+        "reducers",
+        "types",
+        "state.selector.ts",
+        "state.interface.ts",
+        "store",
       ],
     };
   }

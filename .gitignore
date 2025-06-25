@@ -123,7 +123,7 @@ out
 
 # Nuxt.js build / generate output
 .nuxt
-dist
+# dist - Commented out: we build executables in dist/ but they're too large for git
 
 # Gatsby files
 .cache/
@@ -172,3 +172,24 @@ dist
 .svelte-kit
 
 # End of https://www.toptal.com/developers/gitignore/api/node,macos
+
+### Bun Executables & Build Artifacts ###
+# Build directory with executables (too large for git)
+dist/
+
+# Local development executables
+check-frontend-standards
+check-frontend-standards-*
+frontend-standards-checker
+frontend-standards-checker-*
+
+# Source maps for executables only (not TypeScript maps)
+dist/**/*.map
+*.exe.map
+
+# Test executables
+test-executable*
+
+# Build logs
+frontend-standards.log
+*.log

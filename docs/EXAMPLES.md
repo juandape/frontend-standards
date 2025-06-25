@@ -459,3 +459,473 @@ export default [
   }
 ];
 ```
+
+# 📚 Frontend Standards Checker - Ejemplos y Casos de Uso
+
+## 🔄 **Flujo de Ejecución Completo**
+
+```mermaid
+flowchart TD
+    Start([npm run check:standards]) --> ScriptLookup{package.json<br/>scripts lookup}
+    
+    ScriptLookup --> Command["frontend-standards-checker"]
+    
+    Command --> BinResolution{Resolve bin command}
+    
+    BinResolution --> LinkCheck{Is linked locally?<br/>link:frontend-standards-checker}
+    
+    LinkCheck -->|Yes - Local Link| LocalPath["/path/to/local/frontend-standards"]
+    LinkCheck -->|No - NPM Registry| NPMPath["node_modules/frontend-standards-checker"]
+    
+    LocalPath --> PackageJSON1[Read local package.json]
+    NPMPath --> PackageJSON2[Read installed package.json]
+    
+    PackageJSON1 --> BinField1["bin: launcher.cjs"]
+    PackageJSON2 --> BinField2["bin: launcher.cjs"]
+    
+    BinField1 --> Launcher1[Execute ./launcher.cjs]
+    BinField2 --> Launcher2[Execute ./launcher.cjs]
+    
+    Launcher1 --> Detection[Platform Detection<br/>detectExecutable function]
+    Launcher2 --> Detection
+    
+    Detection --> HasExecutable{Executable exists?<br/>dist/bin/frontend-standards-*}
+    
+    HasExecutable -->|Yes - Bun Built| UseExecutable[Use Standalone Executable<br/>./dist/bin/frontend-standards-darwin-arm64]
+    HasExecutable -->|No - Fallback| FallbackTS[fallbackToTypeScript function]
+    
+    UseExecutable --> ExecResult[🚀 Maximum Performance<br/>Single Binary Execution]
+    
+    FallbackTS --> CompiledCheck{Compiled JS exists?<br/>dist/bin/cli.js}
+    
+    CompiledCheck -->|Yes| NodeJS[node dist/bin/cli.js]
+    CompiledCheck -->|No| TSCheck{TypeScript runtime?}
+    
+    TSCheck -->|ts-node available| TSNode[npx ts-node bin/cli.ts]
+    TSCheck -->|tsx available| TSX[npx tsx bin/cli.ts]
+    TSCheck -->|None available| Error[❌ Error: TypeScript runtime not available]
+    
+    NodeJS --> JSResult[📝 Node.js Execution<br/>Compiled TypeScript]
+    TSNode --> TSResult[🏃 Direct TypeScript<br/>Runtime Compilation]
+    TSX --> TSResult
+    
+    ExecResult --> Validation[Frontend Standards Validation]
+    JSResult --> Validation
+    TSResult --> Validation
+    
+    Validation --> ConfigLoad[Load checkFrontendStandards.config.js]
+    ConfigLoad --> ProjectAnalysis[Analyze Project Structure]
+    ProjectAnalysis --> RuleEngine[Apply Validation Rules]
+    RuleEngine --> Report[Generate Report]
+    
+    Report --> Success[✅ Validation Complete]
+    Error --> Failure[❌ Execution Failed]
+    
+    classDef startNode fill:#e1f5fe
+    classDef processNode fill:#f3e5f5
+    classDef decisionNode fill:#fff3e0
+    classDef successNode fill:#e8f5e8
+    classDef errorNode fill:#ffebee
+    classDef execNode fill:#f1f8e9
+    
+    class Start startNode
+    class Command,LocalPath,NPMPath,Detection,Validation,ConfigLoad,ProjectAnalysis,RuleEngine,Report processNode
+    class ScriptLookup,BinResolution,LinkCheck,HasExecutable,CompiledCheck,TSCheck decisionNode
+    class ExecResult,JSResult,TSResult,Success execNode
+    class Error,Failure errorNode
+```
+
+## 🔗 **Desarrollo Local con Links**
+
+### **Setup con Bun Link**
+```bash
+# En el directorio del paquete frontend-standards
+cd /path/to/frontend-standards
+bun link
+
+# En tu proyecto de prueba
+cd /path/to/test-project
+bun link frontend-standards-checker
+
+# O añadir manualmente en package.json:
+{
+  "devDependencies": {
+    "frontend-standards-checker": "link:frontend-standards-checker"
+  }
+}
+```
+
+### **Setup con npm/yarn Link**
+```bash
+# En el directorio del paquete frontend-standards
+cd /path/to/frontend-standards
+npm link
+
+# En tu proyecto de prueba
+cd /path/to/test-project
+npm link frontend-standards-checker
+
+# O usar dependencia local directa:
+{
+  "devDependencies": {
+    "frontend-standards-checker": "link:../frontend-standards"
+  }
+}
+```
+
+### **Testing Iterativo**
+```bash
+# 1. Hacer cambios en frontend-standards
+cd /path/to/frontend-standards
+# ... editar código TypeScript ...
+
+# 2. Build opcional (el launcher tiene fallbacks automáticos)
+npm run build:cross-platform  # Con Bun → ejecutables standalone
+npm run build:ts              # Solo TypeScript → archivos .js
+
+# 3. Probar inmediatamente (sin reinstalar)
+cd /path/to/test-project
+npm run check:standards       # ✅ Usa tu versión local automáticamente
+```
+
+## ⚙️ **Configuración Básica**
+
+### **Configuración Mínima**
+```javascript
+// checkFrontendStandards.config.js
+export default {
+  projectType: 'react',
+  
+  structure: {
+    enforceStructure: true,
+    allowedDirectories: ['src', 'public', 'assets']
+  },
+  
+  naming: {
+    files: 'kebab-case',
+    directories: 'kebab-case',
+    components: 'PascalCase'
+  }
+};
+```
+
+### **Configuración Avanzada**
+```javascript
+// checkFrontendStandards.config.js
+export default {
+  projectType: 'react',
+  
+  structure: {
+    enforceStructure: true,
+    allowedDirectories: ['src', 'public', 'assets', 'docs'],
+    disallowedPatterns: ['temp/', '*.tmp', 'legacy/']
+  },
+  
+  naming: {
+    files: 'kebab-case',
+    directories: 'kebab-case', 
+    components: 'PascalCase',
+    utilities: 'camelCase'
+  },
+  
+  zones: {
+    'src/components': {
+      allowedExtensions: ['.tsx', '.ts'],
+      naming: 'PascalCase',
+      maxDepth: 3,
+      requiredFiles: ['index.ts']
+    },
+    'src/utils': {
+      allowedExtensions: ['.ts'],
+      naming: 'camelCase',
+      disallowedPatterns: ['*.test.ts']
+    },
+    'src/hooks': {
+      allowedExtensions: ['.ts', '.tsx'],
+      naming: 'camelCase',
+      prefix: 'use'
+    },
+    'src/services': {
+      allowedExtensions: ['.ts'],
+      naming: 'camelCase',
+      suffix: 'Service'
+    }
+  },
+  
+  // Reglas personalizadas
+  customRules: [
+    {
+      name: 'No console statements',
+      pattern: /console\.(log|warn|error)/,
+      message: 'Remove console statements from production code',
+      severity: 'warning'
+    },
+    {
+      name: 'Prefer const over let',
+      pattern: /let\s+/,
+      message: 'Use const instead of let when possible',
+      severity: 'info'
+    }
+  ]
+};
+```
+
+## 🎯 **Casos de Uso Específicos**
+
+### **1. Proyecto React con TypeScript**
+```javascript
+// checkFrontendStandards.config.js
+export default {
+  projectType: 'react',
+  
+  zones: {
+    'src/components': {
+      allowedExtensions: ['.tsx'],
+      naming: 'PascalCase',
+      requiredFiles: ['index.ts']
+    },
+    'src/hooks': {
+      allowedExtensions: ['.ts'],
+      naming: 'camelCase',
+      prefix: 'use'
+    },
+    'src/pages': {
+      allowedExtensions: ['.tsx'],
+      naming: 'PascalCase',
+      suffix: 'Page'
+    }
+  }
+};
+```
+
+### **2. Monorepo con Múltiples Apps**
+```javascript
+// checkFrontendStandards.config.js
+export default {
+  projectType: 'monorepo',
+  
+  zones: {
+    'apps/*/src/components': {
+      allowedExtensions: ['.tsx', '.ts'],
+      naming: 'PascalCase'
+    },
+    'packages/*/src': {
+      allowedExtensions: ['.ts'],
+      naming: 'camelCase'
+    },
+    'libs/*/src': {
+      allowedExtensions: ['.ts'],
+      naming: 'kebab-case'
+    }
+  }
+};
+```
+
+### **3. Validación Estricta para Producción**
+```javascript
+// checkFrontendStandards.config.js
+export default {
+  projectType: 'react',
+  strict: true,
+  
+  structure: {
+    enforceStructure: true,
+    allowedDirectories: ['src', 'public'],
+    disallowedPatterns: ['temp/', 'test/', '*.tmp']
+  },
+  
+  customRules: [
+    {
+      name: 'No debugging statements',
+      pattern: /(console\.|debugger|alert\()/,
+      message: 'Remove debugging statements',
+      severity: 'error'
+    },
+    {
+      name: 'No TODO comments',
+      pattern: /(TODO|FIXME|HACK)/i,
+      message: 'Resolve TODO comments before production',
+      severity: 'warning'
+    }
+  ]
+};
+```
+
+## 📊 **Scripts de Integración**
+
+### **Pre-commit Hook (Husky)**
+```json
+{
+  "husky": {
+    "hooks": {
+      "pre-commit": "npx frontend-standards-checker --quiet"
+    }
+  }
+}
+```
+
+### **CI/CD Integration**
+```yaml
+# .github/workflows/frontend-standards.yml
+name: Frontend Standards Check
+
+on: [push, pull_request]
+
+jobs:
+  standards:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Check frontend standards
+        run: npx frontend-standards-checker --quiet
+```
+
+### **Package.json Scripts**
+```json
+{
+  "scripts": {
+    "lint:structure": "frontend-standards-checker",
+    "lint:structure:fix": "frontend-standards-checker --fix",
+    "pre-build": "npm run lint:structure",
+    "check:all": "npm run lint:structure && npm run test",
+    "standards:verbose": "frontend-standards-checker --verbose",
+    "standards:zones": "frontend-standards-checker --zones src components"
+  }
+}
+```
+
+## 🚀 **Diferentes Modos de Ejecución**
+
+### **1. Modo Estándar**
+```bash
+# Validación completa con configuración por defecto
+npx frontend-standards-checker
+
+# Con configuración personalizada
+npx frontend-standards-checker --config ./custom-config.js
+```
+
+### **2. Modo Verbose**
+```bash
+# Salida detallada con información de depuración
+npx frontend-standards-checker --verbose
+
+# Solo mostrar errores
+npx frontend-standards-checker --quiet
+```
+
+### **3. Validación por Zonas**
+```bash
+# Validar zonas específicas
+npx frontend-standards-checker --zones src components utils
+
+# Saltar validaciones específicas
+npx frontend-standards-checker --skip-structure --skip-naming
+```
+
+### **4. Modo de Desarrollo**
+```bash
+# Con archivo de salida para análisis
+npx frontend-standards-checker --output ./standards-report.log
+
+# Combinando opciones
+npx frontend-standards-checker --verbose --zones src --output ./report.log
+```
+
+## 🐛 **Troubleshooting Common Issues**
+
+### **Problema: "Command not found"**
+```bash
+# Solución 1: Verificar instalación
+npm list frontend-standards-checker
+
+# Solución 2: Usar npx directamente
+npx frontend-standards-checker --help
+
+# Solución 3: Reinstalar
+npm uninstall frontend-standards-checker
+npm install frontend-standards-checker
+```
+
+### **Problema: "TypeScript runtime not available"**
+```bash
+# Solución 1: Instalar ts-node
+npm install -g ts-node typescript
+
+# Solución 2: Usar tsx (más rápido)
+npm install -g tsx
+
+# Solución 3: Compilar TypeScript
+npm run build:ts
+```
+
+### **Problema: Ejecutables no se crean**
+```bash
+# Solución 1: Instalar Bun
+curl -fsSL https://bun.sh/install | bash
+
+# Solución 2: Build manual
+npm run build:cross-platform
+
+# Solución 3: Usar solo TypeScript
+npm run build:ts
+```
+
+## 🎨 **Personalización Avanzada**
+
+### **Reglas Personalizadas con Funciones**
+```javascript
+// checkFrontendStandards.config.js
+export default {
+  customRules: [
+    {
+      name: 'Component file structure',
+      check: (content, filePath) => {
+        if (filePath.includes('/components/') && filePath.endsWith('.tsx')) {
+          const hasExport = /export default/.test(content);
+          const hasInterface = /interface.*Props/.test(content);
+          return !hasExport || !hasInterface;
+        }
+        return false;
+      },
+      message: 'Components must have default export and Props interface',
+      severity: 'error'
+    }
+  ]
+};
+```
+
+### **Configuración Condicional por Entorno**
+```javascript
+// checkFrontendStandards.config.js
+export default function(env) {
+  const baseConfig = {
+    projectType: 'react',
+    structure: { enforceStructure: true }
+  };
+  
+  if (env === 'production') {
+    return {
+      ...baseConfig,
+      strict: true,
+      customRules: [
+        {
+          name: 'No console statements',
+          pattern: /console\./,
+          message: 'Remove console statements',
+          severity: 'error'
+        }
+      ]
+    };
+  }
+  
+  return baseConfig;
+}
+```

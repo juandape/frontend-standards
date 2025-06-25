@@ -3,17 +3,36 @@
   "version": "1.0.0",
   "description": "A comprehensive frontend standards validation tool",
   "type": "module",
-  "main": "src/index.js",
+  "main": "launcher.cjs",
+  "types": "dist/src/index.d.ts",
   "bin": {
-    "check-frontend-standards": "./bin/cli.js"
+    "frontend-standards": "./launcher.cjs",
+    "check-frontend-standards": "./launcher.cjs",
+    "frontend-standards-checker": "./launcher.cjs"
   },
+  "files": [
+    "launcher.cjs",
+    "bin/",
+    "src/",
+    "scripts/",
+    "tsconfig.json",
+    "checkFrontendStandards.config.example.js",
+    "README.md",
+    "LICENSE"
+  ],
   "scripts": {
-    "start": "node src/index.js",
-    "dev": "node --watch src/index.js",
-    "cli": "node bin/cli.js",
-    "build": "echo 'Build complete'",
-    "test": "echo 'No tests yet'",
-    "lint": "echo 'No linting yet'"
+    "build": "node scripts/build-cross-platform.js",
+    "build:ts": "tsc",
+    "build:executable": "node scripts/build-executable.js",
+    "build:cross-platform": "node scripts/build-cross-platform.js",
+    "build:production": "NODE_ENV=production node scripts/build-cross-platform.js",
+    "dev": "node launcher.cjs",
+    "start": "node launcher.cjs",
+    "test": "echo \"No tests yet\" && exit 0",
+    "test:executable": "node launcher.cjs --help",
+    "postinstall": "node scripts/post-install.js",
+    "check": "node launcher.cjs",
+    "frontend-standards": "node launcher.cjs"
   },
   "keywords": [
     "frontend",
@@ -34,5 +53,8 @@
   "engines": {
     "node": ">=18.0.0"
   },
-  "packageManager": "bun@1.2.17"
+  "devDependencies": {
+    "@types/node": "^24.0.4",
+    "typescript": "^5.8.3"
+  }
 }

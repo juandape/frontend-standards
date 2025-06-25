@@ -1,338 +1,239 @@
-# Frontend Standards Checker
+# 🛡️ Frontend Standards Checker
 
-Una herramienta escalable y modular para validar estándares de frontend en proyectos JavaScript/TypeScript.
+Una herramienta completa para validar y mantener estándares de frontend en proyectos React, Angular, Vue y Vanilla.
 
-## 🚀 Características
+## 🚀 **Instalación**
 
-- **Arquitectura modular**: Cada componente tiene una responsabilidad específica
-- **Escalable**: Fácil agregar nuevas reglas y validadores
-- **Configurable**: Configuración flexible mediante archivo de configuración
-- **CLI amigable**: Interfaz de línea de comandos con opciones detalladas
-- **Reportes detallados**: Genera reportes comprensivos en formato texto y JSON
-- **Soporte para monorepos**: Detecta y valida múltiples zonas automáticamente
-
-## 📦 Instalación Rápida
-
-### Para usar en tu proyecto
-
-#### Script automático (Recomendado)
-
+### **Opción 1: Estándar (npm/yarn/pnpm)**
 ```bash
-curl -fsSL https://raw.githubusercontent.com/juandape/frontend-standards/main/install.sh | bash
+# Con npm
+npm install frontend-standards-checker
+
+# Con yarn 
+yarn add frontend-standards-checker
+
+# Con pnpm
+pnpm add frontend-standards-checker
 ```
 
-#### Manual con NPM
-
+### **Opción 2: Con Ejecutables Standalone (Bun)**
 ```bash
-npm install --save-dev git+https://github.com/juandape/frontend-standards.git
+# Instalar Bun (si no lo tienes)
+curl -fsSL https://bun.sh/install | bash
+
+# Instalar el paquete
+bun add frontend-standards-checker
+# O con tu package manager preferido después de instalar Bun
 ```
 
-#### Manual con Bun
+## 📋 **Compatibilidad**
 
+| Funcionalidad | npm/yarn/pnpm | Bun |
+|---|:---:|:---:|
+| ✅ Validación de estándares | ✅ | ✅ |
+| ✅ Configuración personalizada | ✅ | ✅ |
+| ✅ Reportes detallados | ✅ | ✅ |
+| ✅ Integración CI/CD | ✅ | ✅ |
+| 📦 Ejecutables standalone | ❌ | ✅ |
+| ⚡ Rendimiento máximo | ⭐ | ⭐⭐⭐ |
+
+## 🏃 **Uso**
+
+### **Ejecución Básica (Todos los Package Managers)**
 ```bash
-bun add --dev frontend-standards-checker@https://github.com/juandape/frontend-standards.git
+# Directamente
+npx frontend-standards-checker --help
+
+# Con script del proyecto
+node launcher.cjs --help
+
+# Si está en tu PATH
+frontend-standards-checker --help
 ```
 
-### Para desarrollo de la herramienta
-
+### **Ejecución con Ejecutables (Solo Bun)**
 ```bash
-git clone https://github.com/juandape/frontend-standards.git
-cd frontend-standards
-npm install
+# Auto-detecta tu plataforma
+./dist/bin/frontend-standards-[platform]
 ```
 
-## 🚀 Uso Rápido
-
-Una vez instalado en tu proyecto:
-
+### **Comandos Principales**
 ```bash
-# Con NPM
-npm run lint:standards
+# Verificar proyecto actual
+npx frontend-standards-checker
 
-# Con Bun
-bun run lint:standards
-
-# Validar zonas específicas
-npm run lint:standards -- --zones src components
-bun run lint:standards:zones src components
-```
-
-# Validar zonas específicas
-
-./bin/cli.js --zones apps/frontend packages/ui
+# Con configuración específica
+npx frontend-standards-checker --config ./custom-config.js
 
 # Modo verbose
+npx frontend-standards-checker --verbose
 
-./bin/cli.js --verbose
-
-# Saltar validaciones específicas
-
-./bin/cli.js --skip-structure --skip-naming
-
-# Configuración personalizada
-
-./bin/cli.js --config ./my-config.js --output ./my-report.log
-
-````
-
-### Como módulo
-
-```javascript
-import { FrontendStandardsChecker } from './src/index.js';
-
-const checker = new FrontendStandardsChecker({
-  zones: ['apps/frontend'],
-  verbose: true,
-  skipStructure: false
-});
-
-const results = await checker.run();
-console.log(`Found ${results.totalErrors} violations`);
-````
-
-### Scripts npm
-
-```bash
-# Ejecutar validación
-npm start
-
-# Modo desarrollo con watch
-npm run dev
-
-# Ejecutar CLI
-npm run cli
+# Solo errores
+npx frontend-standards-checker --quiet
 ```
 
-## ⚙️ Configuración
+## ⚙️ **Configuración**
 
 Crea un archivo `checkFrontendStandards.config.js` en la raíz de tu proyecto:
 
 ```javascript
 export default {
-  // Reglas personalizadas (se agregan a las predeterminadas)
-  rules: [
-    {
-      name: 'Custom rule',
-      check: (content) => content.includes('forbidden-pattern'),
-      message: 'This pattern is not allowed'
-    }
-  ],
-
-  // Configuración de zonas
-  zones: {
-    includePackages: true,
-    customZones: ['libs', 'tools']
+  projectType: 'react', // 'react' | 'angular' | 'vue' | 'vanilla'
+  
+  structure: {
+    enforceStructure: true,
+    allowedDirectories: ['src', 'public', 'assets'],
+    disallowedPatterns: ['temp/', '*.tmp']
   },
-
-  // Extensiones de archivo a validar
-  extensions: ['.js', '.ts', '.jsx', '.tsx'],
-
-  // Patrones a ignorar
-  ignorePatterns: [
-    'build',
-    'dist',
-    '*.config.js'
-  ]
+  
+  naming: {
+    files: 'kebab-case',    // 'kebab-case' | 'camelCase' | 'PascalCase'
+    directories: 'kebab-case',
+    components: 'PascalCase'
+  },
+  
+  zones: {
+    'src/components': {
+      allowedExtensions: ['.tsx', '.ts'],
+      naming: 'PascalCase',
+      maxDepth: 3
+    },
+    'src/utils': {
+      allowedExtensions: ['.ts'],
+      naming: 'camelCase'
+    }
+  }
 };
 ```
 
-### Configuración avanzada con función
+## 🔧 **Desarrollo y Build**
 
-```javascript
-export default function(defaultRules) {
-  return {
-    rules: [
-      // Modificar reglas existentes
-      ...defaultRules.filter(rule => rule.name !== 'No console.log'),
+### **Para Usuarios (Solo uso)**
+```bash
+# Instalar y usar
+npm install frontend-standards-checker
+npx frontend-standards-checker --help
+```
 
-      // Agregar reglas personalizadas
-      {
-        name: 'My custom rule',
-        check: (content, filePath) => {
-          // Lógica personalizada
-          return content.includes('bad-pattern');
-        },
-        message: 'Custom validation failed'
-      }
-    ],
+### **Para Desarrolladores (Contribuir)**
+```bash
+# Clonar repositorio
+git clone <repo-url>
+cd frontend-standards
 
-    // Configuración adicional
-    zones: {
-      includePackages: false
+# Instalar dependencias
+npm install
+# O con Bun para funcionalidad completa
+bun install
+
+# Compilar TypeScript
+npm run build:ts
+
+# Crear ejecutables (requiere Bun)
+npm run build:cross-platform
+```
+
+## 🎯 **Scripts Disponibles**
+
+```bash
+# Compilación
+npm run build              # Build inteligente (Bun o TypeScript)
+npm run build:ts           # Solo TypeScript
+npm run build:cross-platform  # Ejecutables multiplataforma
+
+# Ejecución
+npm start                  # Ejecutar con launcher
+npm run dev                # Modo desarrollo
+npm run test:executable    # Probar funcionamiento
+
+# Utilidad
+npm run check              # Validar proyecto actual
+```
+
+## 🔍 **Detección Automática de Entorno**
+
+El launcher detecta automáticamente:
+
+1. **🍞 Ejecutables Bun**: Máximo rendimiento
+2. **📝 TypeScript compilado**: Compatibilidad estándar
+3. **🏃 TypeScript directo**: Con ts-node/tsx
+
+## 📊 **Ejemplos de Uso**
+
+### **CI/CD Pipeline**
+```yaml
+# .github/workflows/frontend-standards.yml
+- name: Check Frontend Standards
+  run: |
+    npm install frontend-standards-checker
+    npx frontend-standards-checker --quiet
+```
+
+### **Pre-commit Hook**
+```json
+{
+  "husky": {
+    "hooks": {
+      "pre-commit": "npx frontend-standards-checker"
     }
-  };
+  }
 }
 ```
 
-## 🏗️ Arquitectura
-
-El proyecto está estructurado de manera modular:
-
-```
-src/
-├── index.js                 # Clase principal y punto de entrada
-├── core/
-│   ├── config-loader.js     # Carga y manejo de configuración
-│   ├── project-analyzer.js  # Análisis de estructura del proyecto
-│   ├── rule-engine.js       # Motor de validación de reglas
-│   └── reporter.js          # Generación de reportes
-└── utils/
-    ├── file-scanner.js      # Escaneo y filtrado de archivos
-    └── logger.js            # Sistema de logging
-```
-
-### Componentes principales
-
-#### FrontendStandardsChecker
-
-La clase principal que orquesta todo el proceso de validación.
-
-#### ConfigLoader
-
-Maneja la carga de configuración desde archivos personalizados y proporciona configuración por defecto.
-
-#### ProjectAnalyzer
-
-Analiza la estructura del proyecto, detecta si es monorepo, identifica zonas y tipos de proyecto.
-
-#### RuleEngine
-
-Motor de validación que ejecuta reglas contra archivos y contenido.
-
-#### Reporter
-
-Genera reportes detallados en múltiples formatos.
-
-#### FileScanner
-
-Utilidad para escanear archivos y directorios con patrones de exclusión.
-
-#### Logger
-
-Sistema de logging consistente con niveles configurables.
-
-## 📝 Reglas por defecto
-
-- **No console.log**: Previene console.log en código de producción
-- **No var**: Fuerza uso de let/const en lugar de var
-- **No funciones anónimas en callbacks**: Prefiere arrow functions
-- **No variables sin usar**: Detecta variables declaradas pero no utilizadas
-- **Convención de nombres de interfaces**: Interfaces deben empezar con 'I'
-- **Estilos inline**: Prohíbe estilos inline
-- **Código comentado**: Detecta código comentado
-- **Datos hardcodeados**: Identifica datos hardcodeados
-- **Comentarios en funciones complejas**: Requiere documentación en funciones complejas
-- **Convenciones de nombres**: Valida naming conventions por tipo de archivo
-
-## 🎯 Opciones de CLI
-
-```
-Options:
-  -z, --zones <zones...>     Zonas específicas a verificar
-  -c, --config <path>        Ruta a archivo de configuración personalizado
-  -o, --output <path>        Ruta para archivo de log de salida
-  -v, --verbose              Mostrar salida detallada
-  --skip-structure           Saltar validación de estructura de directorios
-  --skip-naming              Saltar validación de convenciones de nombres
-  --skip-content             Saltar validación de contenido
-  -h, --help                 Mostrar ayuda
-  --version                  Mostrar versión
-```
-
-## 🔧 Desarrollo
-
-### Agregar nuevas reglas
-
-1. Crea una nueva regla en el `RuleEngine`:
-
-```javascript
-// En src/core/rule-engine.js
-this.validators.set('my-validator', this.validateMyRule.bind(this));
-
-async validateMyRule(content, filePath) {
-  const errors = [];
-  // Tu lógica de validación aquí
-  return errors;
+### **Integración npm scripts**
+```json
+{
+  "scripts": {
+    "lint:structure": "npx frontend-standards-checker",
+    "pre-build": "npm run lint:structure"
+  }
 }
 ```
 
-2. O agrega reglas a través de configuración:
+## 🐛 **Solución de Problemas**
 
-```javascript
-// En checkFrontendStandards.config.js
-export default {
-  rules: [
-    {
-      name: 'Mi regla personalizada',
-      check: (content, filePath) => {
-        // Lógica de validación
-        return content.includes('patron-prohibido');
-      },
-      message: 'Este patrón no está permitido'
-    }
-  ]
-};
+### **Error: Command not found**
+```bash
+# Verificar instalación
+npm list frontend-standards-checker
+
+# Reinstalar si es necesario
+npm install frontend-standards-checker
 ```
 
-### Agregar nuevos validadores
+### **Error: TypeScript runtime not available**
+```bash
+# Instalar ts-node
+npm install -g ts-node typescript
 
-Los validadores especializados se pueden agregar en `RuleEngine.initializeValidators()`:
-
-```javascript
-initializeValidators() {
-  // Validadores existentes...
-  this.validators.set('mi-validador', this.validateMiRegla.bind(this));
-}
+# O alternativa más rápida
+npm install -g tsx
 ```
 
-## 📊 Reportes
+### **Builds fallan sin Bun**
+```bash
+# Instalar Bun para funcionalidad completa
+curl -fsSL https://bun.sh/install | bash
 
-La herramienta genera reportes detallados que incluyen:
+# O usar solo TypeScript
+npm run build:ts
+```
 
-- **Resumen ejecutivo**: Estadísticas generales
-- **Resultados por zona**: Estado de cada zona validada
-- **Violaciones detalladas**: Lista completa de errores con ubicación
-- **Estadísticas de errores**: Tipos de errores más frecuentes
-- **Recomendaciones**: Sugerencias para mejorar
+## 📚 **Documentación**
 
-### Formatos de salida
+- [📖 Guía Completa](./docs/COMPLETE-GUIDE.md)
+- [🔧 Ejemplos y Casos de Uso](./docs/EXAMPLES.md)
+- [📋 Sistema de Configuración](./docs/CONFIGURATION.md)
+- [📋 Changelog](./docs/CHANGELOG.md)
 
-- **Texto**: Reporte legible para humanos (`.log`)
-- **JSON**: Datos estructurados para integración (`.json`)
+## 🤝 **Contribuir**
 
-## 🤝 Contribución
+1. Fork el repositorio
+2. Crea una rama: `git checkout -b feature/nueva-funcionalidad`
+3. Commit: `git commit -m 'Agregar nueva funcionalidad'`
+4. Push: `git push origin feature/nueva-funcionalidad`
+5. Crear Pull Request
 
-1. Fork el proyecto
-2. Crea una rama para tu feature (`git checkout -b feature/nueva-funcionalidad`)
-3. Commit tus cambios (`git commit -am 'Agregar nueva funcionalidad'`)
-4. Push a la rama (`git push origin feature/nueva-funcionalidad`)
-5. Crear un Pull Request
+## 📄 **Licencia**
 
-## 📄 Licencia
-
-MIT
-
-## 🆚 Diferencias con la versión anterior
-
-### Mejoras de escalabilidad
-
-- **Arquitectura modular**: Separación clara de responsabilidades
-- **Inyección de dependencias**: Fácil testing y extensibilidad
-- **Configuración flexible**: Soporte para configuraciones complejas
-- **Logging estructurado**: Sistema de logging consistente
-- **Manejo de errores robusto**: Mejor recuperación de errores
-
-### Nuevas características
-
-- **CLI completo**: Interfaz de línea de comandos con múltiples opciones
-- **Reportes mejorados**: Reportes más detallados y en múltiples formatos
-- **Detección automática de proyecto**: Identifica automáticamente tipo y estructura
-- **Soporte para monorepos mejorado**: Mejor manejo de proyectos complejos
-- **Validadores especializados**: Sistema extensible de validadores
-
-### Mantenibilidad
-
-- **Código más limpio**: Funciones más pequeñas y enfocadas
-- **Mejor documentación**: JSDoc completo en todas las funciones
-- **Testing facilitado**: Arquitectura que facilita pruebas unitarias
-- **Configuración centralizada**: Un solo punto de configuración
+MIT License - ver [LICENSE](LICENSE) para detalles.

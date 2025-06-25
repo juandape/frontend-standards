@@ -1,41 +1,47 @@
-import fs from 'fs';
-import path from 'path';
+import fs from "fs";
+import path from "path";
+import { Logger } from "./logger.js";
 
 /**
  * File scanner utility for finding and filtering project files
  */
 export class FileScanner {
-  constructor(rootDir, logger) {
+  private rootDir: string;
+  private logger: Logger;
+  private extensions: string[];
+  private defaultIgnorePatterns: string[];
+
+  constructor(rootDir: string, logger: Logger) {
     this.rootDir = rootDir;
     this.logger = logger;
-    this.extensions = ['.js', '.ts', '.jsx', '.tsx'];
+    this.extensions = [".js", ".ts", ".jsx", ".tsx"];
     this.defaultIgnorePatterns = [
-      'node_modules',
-      '.next',
-      '.git',
-      '__tests__',
-      '__test__',
-      'coverage',
-      'dist',
-      'build',
-      '.nyc_output',
-      'tmp',
-      'temp',
+      "node_modules",
+      ".next",
+      ".git",
+      "__tests__",
+      "__test__",
+      "coverage",
+      "dist",
+      "build",
+      ".nyc_output",
+      "tmp",
+      "temp",
     ];
   }
 
   /**
    * Get all files in a directory that match the criteria
-   * @param {string} dirPath Directory to scan
-   * @param {Array} customIgnorePatterns Additional patterns to ignore
-   * @returns {Promise<Array>} Array of file paths
    */
-  async getFiles(dirPath = this.rootDir, customIgnorePatterns = []) {
+  async getFiles(
+    dirPath: string = this.rootDir,
+    customIgnorePatterns: string[] = []
+  ): Promise<string[]> {
     const ignorePatterns = [
       ...this.defaultIgnorePatterns,
       ...customIgnorePatterns,
     ];
-    const files = [];
+    const files: string[] = [];
 
     await this.scanDirectory(dirPath, files, ignorePatterns);
 
@@ -45,16 +51,16 @@ export class FileScanner {
 
   /**
    * Get all directories in a path
-   * @param {string} dirPath Directory to scan
-   * @param {Array} customIgnorePatterns Additional patterns to ignore
-   * @returns {Promise<Array>} Array of directory paths
    */
-  async getDirectories(dirPath = this.rootDir, customIgnorePatterns = []) {
+  async getDirectories(
+    dirPath: string = this.rootDir,
+    customIgnorePatterns: string[] = []
+  ): Promise<string[]> {
     const ignorePatterns = [
       ...this.defaultIgnorePatterns,
       ...customIgnorePatterns,
     ];
-    const directories = [];
+    const directories: string[] = [];
 
     await this.scanDirectories(dirPath, directories, ignorePatterns);
 
@@ -64,11 +70,12 @@ export class FileScanner {
 
   /**
    * Recursively scan directory for files
-   * @param {string} dir Directory to scan
-   * @param {Array} files Array to accumulate files
-   * @param {Array} ignorePatterns Patterns to ignore
    */
-  async scanDirectory(dir, files, ignorePatterns) {
+  private async scanDirectory(
+    dir: string,
+    files: string[],
+    ignorePatterns: string[]
+  ): Promise<void> {
     try {
       const items = fs.readdirSync(dir);
 
@@ -88,17 +95,20 @@ export class FileScanner {
         }
       }
     } catch (error) {
-      this.logger.warn(`Failed to scan directory ${dir}:`, error.message);
+      const errorMessage =
+        error instanceof Error ? error.message : "Unknown error";
+      this.logger.warn(`Failed to scan directory ${dir}:`, errorMessage);
     }
   }
 
   /**
    * Recursively scan for directories
-   * @param {string} dir Directory to scan
-   * @param {Array} directories Array to accumulate directories
-   * @param {Array} ignorePatterns Patterns to ignore
    */
-  async scanDirectories(dir, directories, ignorePatterns) {
+  private async scanDirectories(
+    dir: string,
+    directories: string[],
+    ignorePatterns: string[]
+  ): Promise<void> {
     try {
       const items = fs.readdirSync(dir);
 
@@ -117,45 +127,44 @@ export class FileScanner {
         }
       }
     } catch (error) {
-      this.logger.warn(`Failed to scan directories in ${dir}:`, error.message);
+      const errorMessage =
+        error instanceof Error ? error.message : "Unknown error";
+      this.logger.warn(`Failed to scan directories in ${dir}:`, errorMessage);
     }
   }
 
   /**
    * Check if a file path should be ignored
-   * @param {string} filePath File path to check
-   * @param {Array} ignorePatterns Patterns to ignore
-   * @returns {boolean} True if should be ignored
    */
-  shouldIgnore(filePath, ignorePatterns) {
+  shouldIgnore(filePath: string, ignorePatterns: string[]): boolean {
     const lower = filePath.toLowerCase();
     const base = path.basename(filePath);
 
     // Check for test files
-    if (base.includes('.test') || base.includes('.spec')) {
+    if (base.includes(".test") || base.includes(".spec")) {
       return true;
     }
 
     // Check for system files
-    if (base.startsWith('.') && base !== '.gitignore') {
+    if (base.startsWith(".") && base !== ".gitignore") {
       return true;
     }
 
     // Check for common ignored patterns
     if (
-      lower.includes('config.ts') ||
-      lower.includes('setup') ||
-      lower.includes('eslint') ||
-      lower.includes('package')
+      lower.includes("config.ts") ||
+      lower.includes("setup") ||
+      lower.includes("eslint") ||
+      lower.includes("package")
     ) {
       return true;
     }
 
     // Check custom ignore patterns
     return ignorePatterns.some((pattern) => {
-      if (pattern.endsWith('/')) {
+      if (pattern.endsWith("/")) {
         // Folder pattern
-        return filePath.includes(path.sep + pattern.replace(/\/$/, ''));
+        return filePath.includes(path.sep + pattern.replace(/\/$/, ""));
       }
       // File or general pattern
       return filePath.includes(pattern);
@@ -164,35 +173,33 @@ export class FileScanner {
 
   /**
    * Check if a file is valid for processing
-   * @param {string} filePath File path to check
-   * @returns {boolean} True if valid
    */
-  isValidFile(filePath) {
+  isValidFile(filePath: string): boolean {
     const ext = path.extname(filePath);
     return this.extensions.includes(ext);
   }
 
   /**
    * Load ignore patterns from .gitignore
-   * @param {string} dirPath Directory to look for .gitignore
-   * @returns {Array} Array of ignore patterns
    */
-  loadGitIgnorePatterns(dirPath = this.rootDir) {
-    const gitignorePath = path.join(dirPath, '.gitignore');
-    const patterns = [];
+  loadGitIgnorePatterns(dirPath: string = this.rootDir): string[] {
+    const gitignorePath = path.join(dirPath, ".gitignore");
+    const patterns: string[] = [];
 
     if (fs.existsSync(gitignorePath)) {
       try {
-        const content = fs.readFileSync(gitignorePath, 'utf8');
+        const content = fs.readFileSync(gitignorePath, "utf8");
         const lines = content
-          .split('\n')
+          .split("\n")
           .map((line) => line.trim())
-          .filter((line) => line && !line.startsWith('#'));
+          .filter((line) => line && !line.startsWith("#"));
 
         patterns.push(...lines);
         this.logger.debug(`Loaded ${lines.length} patterns from .gitignore`);
       } catch (error) {
-        this.logger.warn(`Failed to read .gitignore: ${error.message}`);
+        const errorMessage =
+          error instanceof Error ? error.message : "Unknown error";
+        this.logger.warn(`Failed to read .gitignore: ${errorMessage}`);
       }
     }
 
@@ -201,17 +208,15 @@ export class FileScanner {
 
   /**
    * Set custom file extensions
-   * @param {Array} extensions Array of file extensions
    */
-  setExtensions(extensions) {
+  setExtensions(extensions: string[]): void {
     this.extensions = extensions;
   }
 
   /**
    * Add custom ignore patterns
-   * @param {Array} patterns Array of patterns to ignore
    */
-  addIgnorePatterns(patterns) {
+  addIgnorePatterns(patterns: string[]): void {
     this.defaultIgnorePatterns.push(...patterns);
   }
 }

@@ -1,13 +1,21 @@
-import fs from 'fs';
-import path from 'path';
-import { fileURLToPath } from 'url';
+import fs from "fs";
+import path from "path";
+import { fileURLToPath } from "url";
 
-import { ConfigLoader } from './core/config-loader.js';
-import { ProjectAnalyzer } from './core/project-analyzer.js';
-import { RuleEngine } from './core/rule-engine.js';
-import { Reporter } from './core/reporter.js';
-import { FileScanner } from './utils/file-scanner.js';
-import { Logger } from './utils/logger.js';
+import { ConfigLoader } from "./core/config-loader.js";
+import { ProjectAnalyzer } from "./core/project-analyzer.js";
+import { RuleEngine } from "./core/rule-engine.js";
+import { Reporter } from "./core/reporter.js";
+import { FileScanner } from "./utils/file-scanner.js";
+import { Logger } from "./utils/logger.js";
+
+import type {
+  ICheckerOptions,
+  IValidationError,
+  IValidationResults,
+} from "./types/frontend-standards-checker.types.js";
+import type { IProjectInfo, IProjectZone } from "./types/project.types.js";
+import type { IProjectConfig } from "./types/config.types.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -17,7 +25,15 @@ const __dirname = path.dirname(__filename);
  * Orchestrates the validation process and coordinates all modules
  */
 export class FrontendStandardsChecker {
-  constructor(options = {}) {
+  private options: Required<ICheckerOptions>;
+  private logger: Logger;
+  private configLoader: ConfigLoader;
+  private projectAnalyzer: ProjectAnalyzer;
+  private fileScanner: FileScanner;
+  private ruleEngine: RuleEngine;
+  private reporter: Reporter;
+
+  constructor(options: ICheckerOptions = {}) {
     this.options = {
       zones: [],
       configPath: null,
@@ -47,33 +63,32 @@ export class FrontendStandardsChecker {
 
   /**
    * Main execution method
-   * @returns {Promise<Object>} Results object with errors and statistics
    */
-  async run() {
+  async run(): Promise<IValidationResults> {
     try {
-      this.logger.info('🚀 Starting Frontend Standards Validation');
+      this.logger.info("🚀 Starting Frontend Standards Validation");
 
       // Load configuration
       const config = await this.configLoader.load(this.options.configPath);
-      this.logger.debug('Configuration loaded:', config);
+      this.logger.debug("Configuration loaded:", config);
 
       // Analyze project structure
       const projectInfo = await this.projectAnalyzer.analyze();
-      this.logger.debug('Project analysis complete:', projectInfo);
+      this.logger.debug("Project analysis complete:", projectInfo);
 
       // Determine zones to check
       const zones = this.determineZones(projectInfo);
       this.logger.info(
         `📂 Checking ${zones.length} zones: ${zones
           .map((z) => z.name)
-          .join(', ')}`
+          .join(", ")}`
       );
 
       // Initialize rule engine with configuration
       await this.ruleEngine.initialize(config.rules);
 
       // Validate each zone
-      const zoneErrors = {};
+      const zoneErrors: Record<string, IValidationError[]> = {};
       for (const zone of zones) {
         this.logger.info(`🔍 Validating zone: ${zone.name}`);
         const errors = await this.validateZone(zone, config);
@@ -94,19 +109,19 @@ export class FrontendStandardsChecker {
       );
       return results;
     } catch (error) {
-      this.logger.error('Fatal error during validation:', error);
+      this.logger.error("Fatal error during validation:", error);
       throw error;
     }
   }
 
   /**
    * Validate a specific zone
-   * @param {Object} zone Zone information
-   * @param {Object} config Configuration object
-   * @returns {Promise<Array>} Array of validation errors
    */
-  async validateZone(zone, config) {
-    const errors = [];
+  private async validateZone(
+    zone: IProjectZone,
+    config: IProjectConfig
+  ): Promise<IValidationError[]> {
+    const errors: IValidationError[] = [];
 
     try {
       // Structure validation
@@ -127,10 +142,12 @@ export class FrontendStandardsChecker {
         errors.push(...namingErrors);
       }
     } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : "Unknown error";
       this.logger.error(`Error validating zone ${zone.name}:`, error);
       errors.push({
-        rule: 'Zone validation error',
-        message: `Failed to validate zone: ${error.message}`,
+        rule: "Zone validation error",
+        message: `Failed to validate zone: ${errorMessage}`,
         file: zone.path,
       });
     }
@@ -141,7 +158,10 @@ export class FrontendStandardsChecker {
   /**
    * Validate zone structure
    */
-  async validateStructure(zone, config) {
+  private async validateStructure(
+    zone: IProjectZone,
+    config: IProjectConfig
+  ): Promise<IValidationError[]> {
     // Implementation will be moved to structure validator
     return [];
   }
@@ -149,8 +169,11 @@ export class FrontendStandardsChecker {
   /**
    * Validate file content
    */
-  async validateContent(zone, config) {
-    const errors = [];
+  private async validateContent(
+    zone: IProjectZone,
+    config: IProjectConfig
+  ): Promise<IValidationError[]> {
+    const errors: IValidationError[] = [];
     const files = await this.fileScanner.getFiles(zone.path);
 
     for (const file of files) {
@@ -164,7 +187,10 @@ export class FrontendStandardsChecker {
   /**
    * Validate naming conventions
    */
-  async validateNaming(zone, config) {
+  private async validateNaming(
+    zone: IProjectZone,
+    config: IProjectConfig
+  ): Promise<IValidationError[]> {
     // Implementation will be moved to naming validator
     return [];
   }
@@ -172,17 +198,19 @@ export class FrontendStandardsChecker {
   /**
    * Determine which zones to check based on project structure and options
    */
-  determineZones(projectInfo) {
+  private determineZones(projectInfo: IProjectInfo): IProjectZone[] {
     if (this.options.zones.length > 0) {
       // Use specified zones
       return this.options.zones
-        .map((zoneName) => ({
-          name: zoneName,
-          path: path.join(this.options.rootDir, zoneName),
-          type: this.projectAnalyzer.detectZoneType(
-            path.join(this.options.rootDir, zoneName)
-          ),
-        }))
+        .map(
+          (zoneName): IProjectZone => ({
+            name: zoneName,
+            path: path.join(this.options.rootDir, zoneName),
+            type: this.projectAnalyzer.detectZoneType(
+              path.join(this.options.rootDir, zoneName)
+            ),
+          })
+        )
         .filter((zone) => fs.existsSync(zone.path));
     }
 
@@ -190,7 +218,7 @@ export class FrontendStandardsChecker {
     return (
       projectInfo.zones || [
         {
-          name: 'root',
+          name: "root",
           path: this.options.rootDir,
           type: projectInfo.type,
         },
