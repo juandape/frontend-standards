@@ -57,8 +57,8 @@ export class FrontendStandardsChecker {
       const config = await this.configLoader.load(this.options.configPath);
       this.logger.debug('Configuration loaded:', config);
 
-      // Analyze project structure
-      const projectInfo = await this.projectAnalyzer.analyze();
+      // Analyze project structure with configuration
+      const projectInfo = await this.projectAnalyzer.analyze(config);
       this.logger.debug('Project analysis complete:', projectInfo);
 
       // Determine zones to check

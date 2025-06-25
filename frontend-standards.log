@@ -1,0 +1,78 @@
+================================================================================
+FRONTEND STANDARDS VALIDATION REPORT
+================================================================================
+Generated: 2025-06-25T14:57:19.940Z
+Project: frontend-standards
+Project Type: node-package
+Monorepo: No
+
+SUMMARY: 8 violations found across 1 zones
+
+RESULTS BY ZONE:
+----------------------------------------
+
+📂 Zone: root
+   Errors: 8
+   Status: ❌ FAILED
+
+
+DETAILED VIOLATIONS:
+----------------------------------------
+
+📂 Zone: root
+
+  📄 /Users/juan.pena/Projects/frontend-standards/checkFrontendStandards.config.js:56
+     Rule: Commented code
+     Issue: Leaving commented code in the repository is not allowed.
+     --------------------------------------------------
+
+  📄 /Users/juan.pena/Projects/frontend-standards/migrate.js:85
+     Rule: Hardcoded data
+     Issue: No hardcoded data should be left in the code except in mocks.
+     --------------------------------------------------
+
+  📄 /Users/juan.pena/Projects/frontend-standards/src/core/config-loader.js:105
+     Rule: Hardcoded data
+     Issue: No hardcoded data should be left in the code except in mocks.
+     --------------------------------------------------
+
+  📄 /Users/juan.pena/Projects/frontend-standards/src/core/config-loader.js:106
+     Rule: Hardcoded data
+     Issue: No hardcoded data should be left in the code except in mocks.
+     --------------------------------------------------
+
+  📄 /Users/juan.pena/Projects/frontend-standards/src/core/rule-engine.js:414
+     Rule: Hardcoded data
+     Issue: No hardcoded data should be left in the code except in mocks.
+     --------------------------------------------------
+
+  📄 /Users/juan.pena/Projects/frontend-standards/src/utils/file-scanner.js:16
+     Rule: Hardcoded data
+     Issue: No hardcoded data should be left in the code except in mocks.
+     --------------------------------------------------
+
+  📄 /Users/juan.pena/Projects/frontend-standards/src/utils/file-scanner.js:17
+     Rule: Hardcoded data
+     Issue: No hardcoded data should be left in the code except in mocks.
+     --------------------------------------------------
+
+  📄 /Users/juan.pena/Projects/frontend-standards/src/utils/file-scanner.js:135
+     Rule: Hardcoded data
+     Issue: No hardcoded data should be left in the code except in mocks.
+     --------------------------------------------------
+
+
+ERROR STATISTICS:
+----------------------------------------
+• Hardcoded data: 7 occurrences (87.5%)
+• Commented code: 1 occurrences (12.5%)
+
+Total violations: 8
+
+
+RECOMMENDATIONS:
+----------------------------------------
+• Focus on the most frequent violation types shown above
+• Review and update your development practices
+• Consider setting up pre-commit hooks to catch violations early
+• Regular team training on coding standards can help reduce violations

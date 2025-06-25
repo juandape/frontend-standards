@@ -57,10 +57,10 @@ export default [
 ```json
 {
   "scripts": {
-    "lint:standards": "frontend-standards-checker",
-    "lint:standards:zones": "frontend-standards-checker --zones",
-    "lint:standards:verbose": "frontend-standards-checker --verbose",
-    "lint:standards:report": "frontend-standards-checker --output standards-report.json"
+    "lint:standards": "check-frontend-standards",
+    "lint:standards:zones": "check-frontend-standards --zones",
+    "lint:standards:verbose": "check-frontend-standards --verbose",
+    "lint:standards:report": "check-frontend-standards --output standards-report.json"
   }
 }
 ```

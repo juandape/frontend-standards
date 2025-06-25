@@ -12,9 +12,10 @@ export class ProjectAnalyzer {
 
   /**
    * Analyze the project structure and return project information
+   * @param {Object} config - Configuration object with zone settings
    * @returns {Promise<Object>} Project analysis results
    */
-  async analyze() {
+  async analyze(config = {}) {
     const projectInfo = {
       type: this.detectProjectType(),
       isMonorepo: this.isMonorepo(),
@@ -23,7 +24,7 @@ export class ProjectAnalyzer {
     };
 
     if (projectInfo.isMonorepo) {
-      projectInfo.zones = await this.detectMonorepoZones();
+      projectInfo.zones = await this.detectMonorepoZones(config.zones);
     } else {
       projectInfo.zones = [
         {
@@ -121,30 +122,94 @@ export class ProjectAnalyzer {
 
   /**
    * Detect zones in a monorepo
+   * @param {Object} zoneConfig - Zone configuration with includePackages flag
    * @returns {Promise<Array>} Array of zone objects
    */
-  async detectMonorepoZones() {
+  async detectMonorepoZones(zoneConfig = {}) {
     const zones = [];
-    const candidates = ['apps', 'packages', 'libs', 'projects'];
 
-    for (const candidate of candidates) {
-      const candidatePath = path.join(this.rootDir, candidate);
+    // Process standard zones
+    const standardZones = this.getStandardZones(zoneConfig);
+    for (const zoneName of standardZones) {
+      zones.push(...this.processZoneDirectory(zoneName));
+    }
+
+    // Process custom zones
+    zones.push(...this.processCustomZones(zoneConfig.customZones));
+
+    return zones;
+  }
+
+  /**
+   * Get list of standard zones to process based on configuration
+   * @param {Object} zoneConfig - Zone configuration
+   * @returns {Array} Array of zone names to process
+   */
+  getStandardZones(zoneConfig) {
+    const zones = ['apps', 'libs', 'projects']; // Always include these
+
+    if (zoneConfig.includePackages === true) {
+      zones.push('packages'); // Only include if explicitly enabled
+    }
+
+    return zones;
+  }
+
+  /**
+   * Process a zone directory and return its sub-zones
+   * @param {string} zoneName - Name of the zone directory
+   * @returns {Array} Array of zone objects
+   */
+  processZoneDirectory(zoneName) {
+    const zones = [];
+    const candidatePath = path.join(this.rootDir, zoneName);
+
+    if (
+      !fs.existsSync(candidatePath) ||
+      !fs.statSync(candidatePath).isDirectory()
+    ) {
+      return zones;
+    }
+
+    const subDirs = fs
+      .readdirSync(candidatePath)
+      .map((dir) => path.join(candidatePath, dir))
+      .filter((dirPath) => fs.statSync(dirPath).isDirectory());
+
+    for (const subDir of subDirs) {
+      zones.push({
+        name: path.relative(this.rootDir, subDir),
+        path: subDir,
+        type: this.detectZoneType(subDir),
+      });
+    }
+
+    return zones;
+  }
+
+  /**
+   * Process custom zones from configuration
+   * @param {Array} customZones - Array of custom zone names
+   * @returns {Array} Array of zone objects
+   */
+  processCustomZones(customZones) {
+    const zones = [];
+
+    if (!Array.isArray(customZones)) {
+      return zones;
+    }
+
+    for (const customZone of customZones) {
+      const customZonePath = path.join(this.rootDir, customZone);
       if (
-        fs.existsSync(candidatePath) &&
-        fs.statSync(candidatePath).isDirectory()
+        fs.existsSync(customZonePath) &&
+        fs.statSync(customZonePath).isDirectory()
       ) {
-        const subDirs = fs
-          .readdirSync(candidatePath)
-          .map((dir) => path.join(candidatePath, dir))
-          .filter((dirPath) => fs.statSync(dirPath).isDirectory());
-
-        for (const subDir of subDirs) {
-          zones.push({
-            name: path.relative(this.rootDir, subDir),
-            path: subDir,
-            type: this.detectZoneType(subDir),
-          });
-        }
+        zones.push({
+          name: customZone,
+          path: customZonePath,
+          type: this.detectZoneType(customZonePath),
+        });
       }
     }
 
