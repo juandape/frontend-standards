@@ -2,14 +2,21 @@
 
 import { Command } from 'commander';
 import chalk from 'chalk';
+import { readFileSync } from 'fs';
+import { dirname, join } from 'path';
+import { fileURLToPath } from 'url';
 import { FrontendStandardsChecker } from '../src/index.js';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+const packageJson = JSON.parse(readFileSync(join(__dirname, '../package.json'), 'utf8'));
 
 const program = new Command();
 
 program
   .name('check-frontend-standards')
   .description('A comprehensive frontend standards validation tool')
-  .version('1.0.0')
+  .version(packageJson.version)
   .option(
     '-z, --zones <zones...>',
     'Specific zones to check (space-separated)',
@@ -24,7 +31,7 @@ program
   .option('--skip-content', 'Skip content validation')
   .action(async (options) => {
     try {
-      console.log(chalk.blue('🔍 Frontend Standards Checker v1.0.0'));
+      console.log(chalk.blue(`🔍 Frontend Standards Checker v${packageJson.version}`));
       console.log(chalk.gray('Analyzing your frontend project...\n'));
 
       const checker = new FrontendStandardsChecker({
