@@ -11,35 +11,69 @@ Una herramienta escalable y modular para validar estándares de frontend en proy
 - **Reportes detallados**: Genera reportes comprensivos en formato texto y JSON
 - **Soporte para monorepos**: Detecta y valida múltiples zonas automáticamente
 
-## 📦 Instalación
+## 📦 Instalación Rápida
+
+### Para usar en tu proyecto
+
+#### Script automático (Recomendado)
 
 ```bash
+curl -fsSL https://raw.githubusercontent.com/juandape/frontend-standards/main/install.sh | bash
+```
+
+#### Manual con NPM
+
+```bash
+npm install --save-dev git+https://github.com/juandape/frontend-standards.git
+```
+
+#### Manual con Yarn
+
+```bash
+yarn add --dev frontend-standards-checker@https://github.com/juandape/frontend-standards.git
+```
+
+### Para desarrollo de la herramienta
+
+```bash
+git clone https://github.com/juandape/frontend-standards.git
+cd frontend-standards
 npm install
 ```
 
-## 🛠️ Uso
+## 🚀 Uso Rápido
 
-### Como ejecutable directo
+Una vez instalado en tu proyecto:
 
 ```bash
-# Hacer el CLI ejecutable
-chmod +x bin/cli.js
+# Con NPM
+npm run lint:standards
 
-# Ejecutar validación completa
-./bin/cli.js
+# Con Yarn
+yarn lint:standards
 
 # Validar zonas específicas
+npm run lint:standards -- --zones src components
+yarn lint:standards:zones src components
+```
+
+# Validar zonas específicas
+
 ./bin/cli.js --zones apps/frontend packages/ui
 
 # Modo verbose
+
 ./bin/cli.js --verbose
 
 # Saltar validaciones específicas
+
 ./bin/cli.js --skip-structure --skip-naming
 
 # Configuración personalizada
+
 ./bin/cli.js --config ./my-config.js --output ./my-report.log
-```
+
+````
 
 ### Como módulo
 
@@ -54,7 +88,7 @@ const checker = new FrontendStandardsChecker({
 
 const results = await checker.run();
 console.log(`Found ${results.totalErrors} violations`);
-```
+````
 
 ### Scripts npm
 

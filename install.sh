@@ -67,7 +67,8 @@ echo "✅ Encontrado package.json"
 # Instalar el paquete
 echo "📥 Instalando frontend-standards-checker..."
 if [ "$PACKAGE_MANAGER" = "yarn" ]; then
-    yarn add --dev git+https://github.com/juandape/frontend-standards.git
+    # Yarn requiere un formato específico para repos de Git
+    yarn add --dev frontend-standards-checker@https://github.com/juandape/frontend-standards.git
 else
     npm install --save-dev git+https://github.com/juandape/frontend-standards.git
 fi

@@ -30,8 +30,10 @@ npm install --save-dev git+https://github.com/juandape/frontend-standards.git
 #### Con Yarn
 
 ```bash
-yarn add --dev git+https://github.com/juandape/frontend-standards.git
+yarn add --dev frontend-standards-checker@https://github.com/juandape/frontend-standards.git
 ```
+
+> **Nota**: Yarn y NPM usan formatos diferentes para instalar desde repositorios Git. El script automático maneja esto automáticamente.
 
 ## ⚙️ Configuración Manual
 
@@ -378,6 +380,14 @@ yarn install
 yarn run --help
 # Ejecutar directamente si el script no está configurado
 yarn frontend-standards-checker
+```
+
+**Error: "git+https://... didn't match the required format"**
+
+```bash
+# Usar el formato correcto para Yarn
+yarn add --dev frontend-standards-checker@https://github.com/juandape/frontend-standards.git
+# NO usar: yarn add --dev git+https://...
 ```
 
 ### Obtener Ayuda

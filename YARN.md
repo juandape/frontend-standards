@@ -12,7 +12,7 @@ curl -fsSL https://raw.githubusercontent.com/juandape/frontend-standards/main/in
 ### Opción 2: Manual
 
 ```bash
-yarn add --dev git+https://github.com/juandape/frontend-standards.git
+yarn add --dev frontend-standards-checker@https://github.com/juandape/frontend-standards.git
 ```
 
 ## ⚙️ Configuración Rápida
@@ -90,7 +90,7 @@ yarn workspaces run lint:standards
 yarn workspace my-app lint:standards
 
 # Instalar en workspace específico
-yarn workspace my-app add --dev git+https://github.com/juandape/frontend-standards.git
+yarn workspace my-app add --dev frontend-standards-checker@https://github.com/juandape/frontend-standards.git
 ```
 
 ## 🪝 Git Hooks con Yarn
@@ -235,6 +235,11 @@ yarn config set prefix ~/.yarn
 
 # Conflictos de versiones
 yarn install --check-files
+
+# Error de formato Git (MUY COMÚN)
+# ❌ INCORRECTO: yarn add --dev git+https://...
+# ✅ CORRECTO:   yarn add --dev package-name@https://...
+yarn add --dev frontend-standards-checker@https://github.com/juandape/frontend-standards.git
 ```
 
 ### Performance
