@@ -6,7 +6,18 @@ Esta guía contiene todos los ejemplos posibles para configurar reglas personali
 
 - [Frontend Standards Checker - Guía Completa de Configuración](#frontend-standards-checker---guía-completa-de-configuración)
   - [📋 Tabla de Contenidos](#-tabla-de-contenidos)
-  - [🚀 Instrucciones de Uso](#-instrucciones-de-uso)
+  - [� Instalación y Configuración](#-instalación-y-configuración)
+    - [🚀 Instalación Rápida](#-instalación-rápida)
+    - [⚙️ Configuración del Proyecto](#️-configuración-del-proyecto)
+    - [🔧 Uso en el Proyecto](#-uso-en-el-proyecto)
+    - [🏢 Configuración para Equipos](#-configuración-para-equipos)
+    - [🔗 Integración con CI/CD](#-integración-con-cicd)
+    - [🔄 Integración con Git Hooks](#-integración-con-git-hooks)
+    - [📋 Configuraciones Predefinidas por Tipo de Proyecto](#-configuraciones-predefinidas-por-tipo-de-proyecto)
+    - [🛠️ Configuración Avanzada para Monorepos](#️-configuración-avanzada-para-monorepos)
+    - [📚 Documentación para el Equipo](#-documentación-para-el-equipo)
+    - [⚡ Troubleshooting Común](#-troubleshooting-común)
+  - [�🚀 Instrucciones de Uso](#-instrucciones-de-uso)
   - [🏗️ Arquitectura Modular v2.0](#️-arquitectura-modular-v20)
     - [Estructura del Proyecto](#estructura-del-proyecto)
     - [CLI y Comandos Disponibles](#cli-y-comandos-disponibles)
@@ -49,6 +60,17 @@ Esta guía contiene todos los ejemplos posibles para configurar reglas personali
     - [Problemas Comunes](#problemas-comunes)
     - [Obtener Ayuda](#obtener-ayuda)
     - [Depuración](#depuración)
+  - [📦 Instalación y Configuración](#-instalación-y-configuración)
+    - [🚀 Instalación Rápida](#-instalación-rápida)
+    - [⚙️ Configuración del Proyecto](#-configuración-del-proyecto)
+    - [🔧 Uso en el Proyecto](#-uso-en-el-proyecto)
+    - [🏢 Configuración para Equipos](#-configuración-para-equipos)
+    - [🔗 Integración con CI/CD](#-integración-con-cicd)
+    - [🔄 Integración con Git Hooks](#-integración-con-git-hooks)
+    - [📋 Configuraciones Predefinidas por Tipo de Proyecto](#-configuraciones-predefinidas-por-tipo-de-proyecto)
+    - [🛠️ Configuración Avanzada para Monorepos](#-configuración-avanzada-para-monorepos)
+    - [📚 Documentación para el Equipo](#-documentación-para-el-equipo)
+    - [⚡ Troubleshooting Común](#-troubleshooting-común)
 
 ## 🚀 Instrucciones de Uso
 
@@ -1005,6 +1027,450 @@ export default [
 ]
 ```
 
----
+## 📦 Instalación y Configuración
 
-**Frontend Standards Checker v2.0** - Una herramienta modular y extensible para mantener la calidad y consistencia en proyectos frontend.
+### 🚀 Instalación Rápida
+
+#### Opción 1: Instalar desde NPM (Recomendado)
+
+```bash
+# Con npm
+npm install --save-dev frontend-standards-checker
+
+# Con yarn
+yarn add --dev frontend-standards-checker
+```
+
+#### Opción 2: Instalar desde GitHub
+
+```bash
+# Con npm
+npm install --save-dev git+https://github.com/tu-usuario/frontend-standards.git
+
+# Con yarn
+yarn add --dev git+https://github.com/tu-usuario/frontend-standards.git
+```
+
+#### Opción 3: Clonar e Instalar Localmente
+
+```bash
+# Clonar el repositorio
+git clone https://github.com/tu-usuario/frontend-standards.git
+
+# Navegar al directorio
+cd frontend-standards
+
+# Instalar dependencias
+npm install
+# o
+yarn install
+
+# Enlazar globalmente (opcional)
+npm link
+# o
+yarn link
+```
+
+### ⚙️ Configuración del Proyecto
+
+#### 1. Agregar Scripts a package.json
+
+```json
+{
+  "scripts": {
+    "lint:standards": "frontend-standards-checker",
+    "lint:standards:zones": "frontend-standards-checker --zones",
+    "lint:standards:verbose": "frontend-standards-checker --verbose",
+    "lint:standards:report": "frontend-standards-checker --output standards-report.json"
+  },
+  "devDependencies": {
+    "frontend-standards-checker": "^2.0.0"
+  }
+}
+```
+
+#### 2. Crear Archivo de Configuración
+
+Crea `checkFrontendStandards.config.js` en la raíz de tu proyecto:
+
+```javascript
+// checkFrontendStandards.config.js
+export default [
+  {
+    name: 'No console statements',
+    check: (content) => /console\.(log|warn|error|info|debug)/.test(content),
+    message: 'Remove console statements before committing to production.',
+  },
+  // Agregar más reglas según necesites
+]
+```
+
+#### 3. Configurar .gitignore (Opcional)
+
+```gitignore
+# Standards reports
+standards-report.json
+*-standards-report.json
+```
+
+### 🔧 Uso en el Proyecto
+
+#### Comandos Básicos
+
+```bash
+# Ejecutar validación completa
+npm run lint:standards
+
+# Validar zonas específicas
+npm run lint:standards -- --zones src components
+
+# Modo verbose
+npm run lint:standards:verbose
+
+# Generar reporte
+npm run lint:standards:report
+```
+
+#### Integración con Scripts Existentes
+
+```json
+{
+  "scripts": {
+    "lint": "eslint . && npm run lint:standards",
+    "test": "jest && npm run lint:standards",
+    "pre-commit": "npm run lint:standards",
+    "ci": "npm run lint && npm run test && npm run lint:standards"
+  }
+}
+```
+
+### 🏢 Configuración para Equipos
+
+#### 1. Configuración Compartida en el Repositorio
+
+```javascript
+// checkFrontendStandards.config.js - Configuración del equipo
+export default {
+  zones: {
+    includePackages: false,
+    customZones: ['shared', 'utils'],
+  },
+  rules: [
+    // Reglas específicas del proyecto/equipo
+    {
+      name: 'Team coding standard',
+      check: (content) => {
+        // Lógica de validación del equipo
+        return false;
+      },
+      message: 'Follow team coding standards.',
+    },
+  ],
+}
+```
+
+#### 2. Configuración por Ambiente
+
+```javascript
+// checkFrontendStandards.config.js
+const isDevelopment = process.env.NODE_ENV === 'development';
+const isCI = process.env.CI === 'true';
+
+export default {
+  rules: [
+    // Reglas básicas para todos
+    {
+      name: 'No console.log',
+      check: (content) => /console\.log/.test(content),
+      message: 'Remove console.log statements.',
+    },
+
+    // Reglas más estrictas solo en CI
+    ...(isCI ? [
+      {
+        name: 'Strict documentation',
+        check: (content, filePath) => {
+          if (!filePath.endsWith('.tsx')) return false;
+          return !content.includes('/**');
+        },
+        message: 'Components must have JSDoc documentation in CI.',
+      },
+    ] : []),
+
+    // Reglas más relajadas en desarrollo
+    ...(isDevelopment ? [] : [
+      {
+        name: 'No TODO comments',
+        check: (content) => /TODO|FIXME|HACK/.test(content),
+        message: 'TODO comments not allowed in production.',
+      },
+    ]),
+  ],
+}
+```
+
+### 🔗 Integración con CI/CD
+
+#### GitHub Actions
+
+```yaml
+# .github/workflows/frontend-standards.yml
+name: Frontend Standards Check
+
+on:
+  pull_request:
+    branches: [ main, develop ]
+  push:
+    branches: [ main ]
+
+jobs:
+  standards-check:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '18'
+        cache: 'npm'
+
+    - name: Install dependencies
+      run: npm ci
+
+    - name: Run Frontend Standards Check
+      run: npm run lint:standards:report
+
+    - name: Upload Standards Report
+      uses: actions/upload-artifact@v3
+      if: always()
+      with:
+        name: standards-report
+        path: standards-report.json
+```
+
+#### GitLab CI
+
+```yaml
+# .gitlab-ci.yml
+frontend_standards:
+  stage: test
+  image: node:18
+  script:
+    - npm ci
+    - npm run lint:standards:report
+  artifacts:
+    reports:
+      junit: standards-report.json
+    when: always
+    expire_in: 1 week
+  only:
+    - merge_requests
+    - main
+```
+
+### 🔄 Integración con Git Hooks
+
+#### Usando husky + lint-staged
+
+```bash
+# Instalar husky y lint-staged
+npm install --save-dev husky lint-staged
+
+# Configurar husky
+npx husky install
+npx husky add .husky/pre-commit "npx lint-staged"
+```
+
+```json
+// package.json
+{
+  "lint-staged": {
+    "*.{js,jsx,ts,tsx}": [
+      "frontend-standards-checker --zones",
+      "eslint --fix",
+      "git add"
+    ]
+  }
+}
+```
+
+### 📋 Configuraciones Predefinidas por Tipo de Proyecto
+
+#### React + TypeScript
+
+```javascript
+// checkFrontendStandards.config.js
+export default [
+  {
+    name: 'React functional components only',
+    check: (content, filePath) => {
+      if (!filePath.endsWith('.tsx')) return false;
+      return /class\s+\w+\s+extends\s+(React\.)?Component/.test(content);
+    },
+    message: 'Use functional components instead of class components.',
+  },
+  {
+    name: 'TypeScript strict types',
+    check: (content) => /:\s*any\b/.test(content),
+    message: 'Avoid using "any" type. Use specific types instead.',
+  },
+  {
+    name: 'Component prop types',
+    check: (content, filePath) => {
+      if (!filePath.endsWith('.tsx')) return false;
+      if (!content.includes('export') || !content.includes('function')) return false;
+      return !content.includes('interface') && !content.includes('type');
+    },
+    message: 'React components must define prop types.',
+  },
+];
+```
+
+#### Vue.js + TypeScript
+
+```javascript
+export default [
+  {
+    name: 'Vue composition API',
+    check: (content, filePath) => {
+      if (!filePath.endsWith('.vue')) return false;
+      return content.includes('Vue.extend') || content.includes('options API');
+    },
+    message: 'Use Composition API instead of Options API.',
+  },
+  {
+    name: 'Script setup syntax',
+    check: (content, filePath) => {
+      if (!filePath.endsWith('.vue')) return false;
+      return content.includes('<script>') && !content.includes('<script setup>');
+    },
+    message: 'Use <script setup> syntax for better TypeScript support.',
+  },
+];
+```
+
+#### Node.js + Express
+
+```javascript
+export default [
+  {
+    name: 'Express error handling',
+    check: (content, filePath) => {
+      if (!filePath.includes('route') && !filePath.includes('controller')) return false;
+      return content.includes('app.') && !content.includes('try') && !content.includes('catch');
+    },
+    message: 'API routes must have proper error handling with try/catch.',
+  },
+  {
+    name: 'Environment variables',
+    check: (content) => /process\.env\./.test(content) && !/process\.env\.\w+\s*\|\|/.test(content),
+    message: 'Environment variables should have fallback values.',
+  },
+];
+```
+
+### 🛠️ Configuración Avanzada para Monorepos
+
+#### Configuración para Lerna/Nx
+
+```javascript
+// checkFrontendStandards.config.js (raíz del monorepo)
+export default function(defaultRules) {
+  const packagePath = process.cwd();
+  const isSharedPackage = packagePath.includes('/packages/shared');
+  const isAppPackage = packagePath.includes('/apps/');
+
+  const baseRules = [...defaultRules];
+
+  if (isSharedPackage) {
+    baseRules.push({
+      name: 'Shared package exports',
+      check: (content, filePath) => {
+        if (!filePath.endsWith('index.ts')) return false;
+        return !content.includes('export');
+      },
+      message: 'Shared packages must export their public API through index.ts',
+    });
+  }
+
+  if (isAppPackage) {
+    baseRules.push({
+      name: 'App-specific imports',
+      check: (content) => /import.*from.*['"]@shared/.test(content),
+      message: 'Apps should import from shared packages, not directly from other apps.',
+    });
+  }
+
+  return baseRules;
+}
+```
+
+### 📚 Documentación para el Equipo
+
+#### README.md del Proyecto
+
+```markdown
+## 🔍 Frontend Standards
+
+Este proyecto utiliza Frontend Standards Checker para mantener la calidad del código.
+
+### Ejecutar Validaciones
+
+\`\`\`bash
+# Validar todo el proyecto
+npm run lint:standards
+
+# Validar zonas específicas
+npm run lint:standards -- --zones src components
+
+# Ver detalles verbose
+npm run lint:standards:verbose
+\`\`\`
+
+### Reglas del Proyecto
+
+- No console.log en producción
+- Componentes React deben ser funcionales
+- TypeScript estricto (no any)
+- Documentación JSDoc requerida
+
+### Configuración Personalizada
+
+Ver \`checkFrontendStandards.config.js\` para reglas específicas del proyecto.
+```
+
+### ⚡ Troubleshooting Común
+
+#### Error: "Module not found"
+
+```bash
+# Reinstalar dependencias
+rm -rf node_modules package-lock.json
+npm install
+
+# O con yarn
+rm -rf node_modules yarn.lock
+yarn install
+```
+
+#### Error: "Configuration file not found"
+
+```bash
+# Verificar que existe el archivo de configuración
+ls -la checkFrontendStandards.config.js
+
+# Crear archivo básico si no existe
+echo 'export default [];' > checkFrontendStandards.config.js
+```
+
+#### Error en CI/CD
+
+```bash
+# Verificar versión de Node.js
+node --version
+
+# Asegurar que las dependencias están instaladas
+npm ci  # En lugar de npm install en CI
+```
