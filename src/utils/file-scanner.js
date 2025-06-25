@@ -31,8 +31,10 @@ export class FileScanner {
    * @returns {Promise<Array>} Array of file paths
    */
   async getFiles(dirPath = this.rootDir, customIgnorePatterns = []) {
+    const gitIgnorePatterns = this.loadGitIgnorePatterns(dirPath);
     const ignorePatterns = [
       ...this.defaultIgnorePatterns,
+      ...gitIgnorePatterns,
       ...customIgnorePatterns,
     ];
     const files = [];
@@ -50,8 +52,10 @@ export class FileScanner {
    * @returns {Promise<Array>} Array of directory paths
    */
   async getDirectories(dirPath = this.rootDir, customIgnorePatterns = []) {
+    const gitIgnorePatterns = this.loadGitIgnorePatterns(dirPath);
     const ignorePatterns = [
       ...this.defaultIgnorePatterns,
+      ...gitIgnorePatterns,
       ...customIgnorePatterns,
     ];
     const directories = [];
@@ -130,13 +134,14 @@ export class FileScanner {
   shouldIgnore(filePath, ignorePatterns) {
     const lower = filePath.toLowerCase();
     const base = path.basename(filePath);
+    const relativePath = path.relative(this.rootDir, filePath);
 
     // Check for test files
     if (base.includes('.test') || base.includes('.spec')) {
       return true;
     }
 
-    // Check for system files
+    // Check for system files (but allow .gitignore)
     if (base.startsWith('.') && base !== '.gitignore') {
       return true;
     }
@@ -151,14 +156,32 @@ export class FileScanner {
       return true;
     }
 
-    // Check custom ignore patterns
+    // Check against ignore patterns
     return ignorePatterns.some((pattern) => {
-      if (pattern.endsWith('/')) {
-        // Folder pattern
-        return filePath.includes(path.sep + pattern.replace(/\/$/, ''));
+      // Handle glob patterns
+      if (pattern.includes('*')) {
+        const regex = pattern.replace(/\*/g, '.*');
+        return (
+          new RegExp(regex).test(relativePath) || new RegExp(regex).test(base)
+        );
       }
-      // File or general pattern
-      return filePath.includes(pattern);
+
+      // Handle directory patterns (ending with /)
+      if (pattern.endsWith('/')) {
+        const dirPattern = pattern.replace(/\/$/, '');
+        return (
+          relativePath.includes(dirPattern + '/') ||
+          relativePath.startsWith(dirPattern + '/')
+        );
+      }
+
+      // Handle exact file matches
+      if (base === pattern) {
+        return true;
+      }
+
+      // Handle path contains pattern
+      return relativePath.includes(pattern) || filePath.includes(pattern);
     });
   }
 

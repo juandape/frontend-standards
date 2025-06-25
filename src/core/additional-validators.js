@@ -274,6 +274,17 @@ export function checkHardcodedData(content, filePath) {
   return errors;
 }
 
+/**
+ * Check for missing comments in complex functions
+ * This function analyzes JavaScript/TypeScript code to identify functions with high complexity
+ * that lack proper documentation. It calculates complexity based on control flow structures,
+ * async operations, array methods, and function length. Functions exceeding complexity
+ * thresholds require explanatory comments or JSDoc documentation.
+ *
+ * @param {string} content - File content to analyze
+ * @param {string} filePath - Path to the file being analyzed
+ * @returns {Array} Array of error objects for undocumented complex functions
+ */
 export function checkFunctionComments(content, filePath) {
   const lines = content.split('\n');
   const errors = [];
