@@ -1,6 +1,6 @@
 # Frontend Standards Checker
 
-Una herramienta escalable y modular para validar estándares de frontend en proyectos JavaScript/TypeScript.
+Una herramienta escalable y modular para validar estándares de frontend en proyectos JavaScript/TypeScript. **Migrada a TypeScript para máxima seguridad de tipos.**
 
 ## 🚀 Características
 
@@ -10,6 +10,7 @@ Una herramienta escalable y modular para validar estándares de frontend en proy
 - **CLI amigable**: Interfaz de línea de comandos con opciones detalladas
 - **Reportes detallados**: Genera reportes comprensivos en formato texto y JSON
 - **Soporte para monorepos**: Detecta y valida múltiples zonas automáticamente
+- **🆕 TypeScript nativo**: Tipos estrictos, autocompletado y mejor experiencia de desarrollo
 
 ## 📦 Instalación Rápida
 
