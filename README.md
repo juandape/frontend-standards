@@ -57,6 +57,20 @@ npm run lint:standards -- --zones src components
 yarn lint:standards:zones src components
 ```
 
+## 📚 Documentación Completa
+
+**Para configuración avanzada, ejemplos prácticos y troubleshooting:**
+
+👉 **[Ver Guía Completa de Configuración](./checkFrontendStandards.COMPLETE-GUIDE.md)**
+
+La guía completa incluye:
+
+- ✅ Instalación paso a paso (npm y yarn)
+- ⚙️ Ejemplos de configuración para React, Next.js, monorepos
+- 🔧 Configuración avanzada de reglas y zonas
+- 🐛 Troubleshooting y comandos de debug
+- 📋 Lista completa de validaciones disponibles
+
 # Validar zonas específicas
 
 ./bin/cli.js --zones apps/frontend packages/ui
