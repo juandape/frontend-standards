@@ -168,8 +168,9 @@ export function checkHardcodedData(content, filePath) {
     }
 
     // Check for hardcoded data but exclude CSS classes, Tailwind classes, and other valid cases
-    const hasHardcodedPattern =
-      /(['"]).*(\d{3,}|lorem|dummy|test|prueba|foo|bar|baz).*\1/.test(line);
+    const hasHardcodedPattern = /(['"]).*([0-9]{3,}|lorem|dummy|test|prueba|foo|bar|baz).*\1/.test(
+      line
+    );
     const isCSSClass = /className\s*=|class\s*=|style\s*=/.test(line);
 
     // Comprehensive Tailwind CSS pattern matching
@@ -214,7 +215,7 @@ export function checkHardcodedData(content, filePath) {
           content.indexOf(line) + 100
         )
       ) &&
-        /['"]\d{3}['"]/.test(line)) ||
+        /['"][\d]{3}['"]/.test(line)) ||
       // Configuration objects with numeric values that are library-specific
       /\b(timeout|port|delay|duration|interval|retry|maxRetries|limit|size|width|height|fontSize|lineHeight)\s*:\s*['"]?\d+['"]?/.test(
         line
@@ -312,6 +313,7 @@ export function checkFunctionComments(content, filePath) {
       // Look ahead to check if this function has complex logic
       let isComplex = false;
       let complexityScore = 0;
+      let functionBodyStart = i;
       let braceCount = 0;
       let inFunction = false;
       let linesInFunction = 0;
@@ -382,29 +384,31 @@ export function checkFunctionComments(content, filePath) {
       if (isComplex) {
         let hasComment = false;
 
-        // Look for comments above the function (within 5 lines)
-        for (let k = Math.max(0, i - 5); k < i; k++) {
+        // Look for JSDoc comments or regular comments above the function
+        for (let k = Math.max(0, i - 15); k < i; k++) {
           const commentLine = lines[k].trim();
           if (
-            commentLine.startsWith('//') ||
-            commentLine.startsWith('/*') ||
+            // JSDoc comments
             commentLine.includes('/**') ||
-            commentLine.startsWith('*')
+            commentLine.includes('*/') ||
+            (commentLine.startsWith('*') && commentLine.length > 5) ||
+            // Multi-line comments
+            commentLine.includes('/*') ||
+            // Detailed single-line comments (more than just a word or two)
+            (commentLine.startsWith('//') &&
+              commentLine.length > 15 &&
+              !/^\s*\/\/\s*(TODO|FIXME|NOTE|HACK)/.test(commentLine))
           ) {
-            // Ensure it's not just a simple comment, but something meaningful
-            if (commentLine.length > 15 || commentLine.includes('/**')) {
-              hasComment = true;
-              break;
-            }
+            hasComment = true;
+            break;
           }
         }
 
         if (!hasComment) {
           errors.push({
             rule: 'Missing comment in complex function',
-            message: `Complex function '${functionName}' should have comments explaining its behavior.`,
-            file: filePath,
-            line: i + 1,
+            message: `Complex function '${functionName}' (complexity: ${complexityScore.toFixed(1)}, lines: ${linesInFunction}) must have comments explaining its behavior.`,
+            file: `${filePath}:${i + 1}`,
           });
         }
       }
@@ -524,6 +528,12 @@ export function checkStyleConventions(content, filePath) {
   const lines = content.split('\n');
 
   lines.forEach((line, idx) => {
+    // Check if StyleSheet.create is used (for React Native)
+    if (/StyleSheet\.create\s*\(/.test(line)) {
+      // This is good, StyleSheet.create is being used
+      return;
+    }
+
     // Check for style object exports
     const exportMatch = line.match(
       /export\s+const\s+([a-zA-Z_$][a-zA-Z0-9_$]*)\s*=/
