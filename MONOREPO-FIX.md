@@ -3,6 +3,7 @@
 ## 🎯 Problema Común en Monorepos
 
 Si ves este error en un monorepo con Yarn workspaces:
+
 ```bash
 yarn lint:standards
 command not found: frontend-standards-checker
@@ -11,6 +12,7 @@ command not found: frontend-standards-checker
 ## ✅ Soluciones (en orden de efectividad)
 
 ### 1. **Usar yarn exec (Solución más rápida)**
+
 ```bash
 # En lugar de:
 yarn lint:standards
@@ -24,6 +26,7 @@ yarn exec frontend-standards-checker --verbose
 ```
 
 ### 2. **Actualizar scripts en package.json**
+
 ```json
 {
   "scripts": {
@@ -36,6 +39,7 @@ yarn exec frontend-standards-checker --verbose
 ```
 
 ### 3. **Verificar instalación**
+
 ```bash
 # Verificar que está instalado
 yarn list frontend-standards-checker
@@ -45,6 +49,7 @@ yarn add --dev frontend-standards-checker@https://github.com/juandape/frontend-s
 ```
 
 ### 4. **Limpiar e instalar de nuevo**
+
 ```bash
 # Limpiar cache
 yarn cache clean
@@ -55,6 +60,7 @@ yarn install
 ```
 
 ### 5. **Usar npx como alternativa**
+
 ```bash
 # Si yarn exec no funciona, prueba npx
 npx frontend-standards-checker
@@ -64,12 +70,14 @@ npx frontend-standards-checker --zones src
 ## 🏢 Para Monorepos Específicamente
 
 ### Opción A: Instalar en el workspace root
+
 ```bash
 # Desde la raíz del monorepo
 yarn add --dev frontend-standards-checker@https://github.com/juandape/frontend-standards.git
 ```
 
 ### Opción B: Instalar en workspace específico
+
 ```bash
 # Para un workspace específico
 yarn workspace my-app add --dev frontend-standards-checker@https://github.com/juandape/frontend-standards.git
@@ -79,6 +87,7 @@ yarn workspace my-app exec frontend-standards-checker
 ```
 
 ### Opción C: Script global en el monorepo
+
 ```json
 {
   "scripts": {
