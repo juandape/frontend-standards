@@ -13,8 +13,9 @@ El validador ha sido **completamente refactorizado** y ahora funciona perfectame
 
 ## 📦 Instalación Universal
 
+### Con Yarn (Recomendado)
 ```bash
-# Instalación desde GitHub (recomendado)
+# Instalación desde GitHub
 yarn add frontend-standards-checker@https://github.com/juandape/frontend-standards.git
 
 # Agregar scripts al package.json
@@ -30,27 +31,49 @@ yarn add frontend-standards-checker@https://github.com/juandape/frontend-standar
 yarn lint:standards .
 ```
 
+### Con NPM
+```bash
+# Instalación desde GitHub
+npm install frontend-standards-checker@https://github.com/juandape/frontend-standards.git
+
+# Agregar scripts al package.json
+{
+  "scripts": {
+    "lint:standards": "frontend-standards-checker",
+    "lint:standards:zones": "frontend-standards-checker --zones",
+    "lint:standards:verbose": "frontend-standards-checker --verbose"
+  }
+}
+
+# Uso básico
+npm run lint:standards .
+```
+
+### Ejecución Directa (sin scripts)
+```bash
+# Con yarn
+yarn frontend-standards-checker .
+
+# Con npm
+npx frontend-standards-checker .
+```
+
 ## 📋 Tabla de Contenidos
 
 - [Frontend Standards Checker - Guía Completa de Configuración](#frontend-standards-checker---guía-completa-de-configuración)
+  - [✅ Estado Actual - Validador Corregido](#-estado-actual---validador-corregido)
+  - [📦 Instalación Universal](#-instalación-universal)
+  - [⚙️ Configuración Rápida con Ejemplos](#️-configuración-rápida-con-ejemplos)
   - [📋 Tabla de Contenidos](#-tabla-de-contenidos)
-  - [� Instalación y Configuración](#-instalación-y-configuración)
-    - [🚀 Instalación Rápida](#-instalación-rápida)
-    - [⚙️ Configuración del Proyecto](#️-configuración-del-proyecto)
-    - [🔧 Uso en el Proyecto](#-uso-en-el-proyecto)
-    - [🏢 Configuración para Equipos](#-configuración-para-equipos)
-    - [🔗 Integración con CI/CD](#-integración-con-cicd)
-    - [🔄 Integración con Git Hooks](#-integración-con-git-hooks)
-    - [📋 Configuraciones Predefinidas por Tipo de Proyecto](#-configuraciones-predefinidas-por-tipo-de-proyecto)
-    - [🛠️ Configuración Avanzada para Monorepos](#️-configuración-avanzada-para-monorepos)
-    - [📚 Documentación para el Equipo](#-documentación-para-el-equipo)
-    - [⚡ Troubleshooting Común](#-troubleshooting-común)
-  - [�🚀 Instrucciones de Uso](#-instrucciones-de-uso)
-  - [🏗️ Arquitectura Modular v2.0](#️-arquitectura-modular-v20)
+  - [🚀 Instrucciones de Uso](#-instrucciones-de-uso)
+  - [🏗️ Arquitectura Refactorizada v2.3.0](#️-arquitectura-refactorizada-v230)
     - [Estructura del Proyecto](#estructura-del-proyecto)
     - [CLI y Comandos Disponibles](#cli-y-comandos-disponibles)
+    - [Mejoras en la Refactorización](#mejoras-en-la-refactorización)
+      - [✅ Problemas Corregidos:](#-problemas-corregidos)
+      - [🔧 Componentes Mejorados:](#-componentes-mejorados)
     - [Carga de Configuración](#carga-de-configuración)
-    - [Migración desde v1.0](#migración-desde-v10)
+    - [Instalación para Cualquier Usuario](#instalación-para-cualquier-usuario)
   - [📁 Configuración de Zonas](#-configuración-de-zonas)
     - [Incluir zonas packages/](#incluir-zonas-packages)
     - [Agregar zonas personalizadas](#agregar-zonas-personalizadas)
@@ -67,6 +90,8 @@ yarn lint:standards .
     - [Configuración Básica](#configuración-básica)
     - [Validar Zonas Específicas](#validar-zonas-específicas)
     - [Opciones Avanzadas del CLI](#opciones-avanzadas-del-cli)
+    - [🐛 Comandos de Debug y Troubleshooting](#-comandos-de-debug-y-troubleshooting)
+    - [🔍 Ejemplos de Uso del Debug](#-ejemplos-de-uso-del-debug)
   - [🎯 Ejemplo Activo para Probar](#-ejemplo-activo-para-probar)
     - [Formatos de Configuración Soportados](#formatos-de-configuración-soportados)
   - [💡 Consejos](#-consejos)
@@ -82,23 +107,33 @@ yarn lint:standards .
     - [🎨 Reglas de Estilos](#-reglas-de-estilos)
     - [📚 Reglas de Documentación](#-reglas-de-documentación)
     - [⚙️ Reglas de Configuración](#️-reglas-de-configuración)
-  - [Resumen de Estadísticas Actuales](#resumen-de-estadísticas-actuales)
+  - [Resumen de Estadísticas Actuales (v2.3.0)](#resumen-de-estadísticas-actuales-v230)
+    - [📊 Mejora Post-Refactorización:](#-mejora-post-refactorización)
+    - [🎯 Top 5 Problemas Reales:](#-top-5-problemas-reales)
   - [Estructura de Directorio Estándar](#estructura-de-directorio-estándar)
   - [🆘 Ayuda y Solución de Problemas](#-ayuda-y-solución-de-problemas)
     - [Problemas Comunes](#problemas-comunes)
     - [Obtener Ayuda](#obtener-ayuda)
     - [Depuración](#depuración)
-  - [📦 Instalación y Configuración](#-instalación-y-configuración)
-    - [🚀 Instalación Rápida](#-instalación-rápida)
-    - [⚙️ Configuración del Proyecto](#-configuración-del-proyecto)
-    - [🔧 Uso en el Proyecto](#-uso-en-el-proyecto)
-    - [🏢 Configuración para Equipos](#-configuración-para-equipos)
-    - [🔗 Integración con CI/CD](#-integración-con-cicd)
-    - [🔄 Integración con Git Hooks](#-integración-con-git-hooks)
-    - [📋 Configuraciones Predefinidas por Tipo de Proyecto](#-configuraciones-predefinidas-por-tipo-de-proyecto)
-    - [🛠️ Configuración Avanzada para Monorepos](#-configuración-avanzada-para-monorepos)
-    - [📚 Documentación para el Equipo](#-documentación-para-el-equipo)
-    - [⚡ Troubleshooting Común](#-troubleshooting-común)
+      - [🐛 Modo Debug Integrado](#-modo-debug-integrado)
+        - [Activar el Modo Debug](#activar-el-modo-debug)
+        - [Información que muestra el modo debug:](#información-que-muestra-el-modo-debug)
+        - [Ejemplo de salida del modo debug:](#ejemplo-de-salida-del-modo-debug)
+      - [🔍 Script de Debug Independiente](#-script-de-debug-independiente)
+        - [Ejemplo de salida del debug-scanner:](#ejemplo-de-salida-del-debug-scanner)
+      - [🚨 Diagnóstico de Problemas Comunes](#-diagnóstico-de-problemas-comunes)
+        - [Problema: "El validador está revisando archivos del .gitignore"](#problema-el-validador-está-revisando-archivos-del-gitignore)
+        - [Problema: "Reglas personalizadas no funcionan"](#problema-reglas-personalizadas-no-funcionan)
+        - [Problema: "Muchos falsos positivos"](#problema-muchos-falsos-positivos)
+        - [Problema: "No entiendo por qué falla en CI pero funciona local"](#problema-no-entiendo-por-qué-falla-en-ci-pero-funciona-local)
+      - [💡 Consejos de Debug Avanzados](#-consejos-de-debug-avanzados)
+  - [🎉 Estado Final de la Refactorización v2.3.0](#-estado-final-de-la-refactorización-v230)
+    - [✅ Refactorización Completada con Éxito](#-refactorización-completada-con-éxito)
+      - [🔧 Problemas Críticos Resueltos:](#-problemas-críticos-resueltos)
+      - [📊 Métricas de Mejora:](#-métricas-de-mejora)
+      - [🚀 Instalación Universal Funcionando:](#-instalación-universal-funcionando)
+      - [🎯 Validación Exitosa:](#-validación-exitosa)
+    - [🌟 El validador ahora es **más preciso y confiable** que el script original, sin falsos positivos y con instalación universal desde GitHub.](#-el-validador-ahora-es-más-preciso-y-confiable-que-el-script-original-sin-falsos-positivos-y-con-instalación-universal-desde-github)
 
 ## 🚀 Instrucciones de Uso
 
@@ -120,7 +155,7 @@ frontend-standards/
 ├── src/
 │   ├── core/
 │   │   ├── rule-engine.js             # Motor de reglas (SIN checkUnusedVariables)
-│   │   ├── additional-validators.js   # Validadores especializados  
+│   │   ├── additional-validators.js   # Validadores especializados
 │   │   ├── project-analyzer.js        # Analizador de proyecto
 │   │   └── logger.js                  # Sistema de logging
 │   ├── utils/
@@ -137,7 +172,7 @@ frontend-standards/
 yarn frontend-standards-checker .      # Validar proyecto completo
 yarn lint:standards .                  # Con script configurado
 
-# Opciones disponibles  
+# Opciones disponibles
 -V, --version                          # Mostrar versión (ahora dinámica)
 -z, --zones <zones...>                 # Zonas específicas (apps/web apps/auth)
 -c, --config <path>                    # Archivo de configuración personalizado
@@ -145,7 +180,7 @@ yarn lint:standards .                  # Con script configurado
 -v, --verbose                          # Información detallada
 --debug                                # Información de debug y archivos procesados
 --skip-structure                       # Omitir validación de estructura
---skip-naming                          # Omitir validación de nomenclatura  
+--skip-naming                          # Omitir validación de nomenclatura
 --skip-content                         # Omitir validación de contenido
 -h, --help                             # Mostrar ayuda
 ```
@@ -153,12 +188,14 @@ yarn lint:standards .                  # Con script configurado
 ### Mejoras en la Refactorización
 
 #### ✅ Problemas Corregidos:
+
 - **Bug crítico eliminado**: `checkUnusedVariables` removido del bucle principal
 - **Conteo preciso**: Sin duplicación de errores ni falsos positivos
 - **Versión dinámica**: Se lee automáticamente desde `package.json`
 - **Precisión máxima**: Todas las validaciones optimizadas
 
 #### 🔧 Componentes Mejorados:
+
 - **`rule-engine.js`**: Excluye correctamente validaciones problemáticas
 - **`additional-validators.js`**: Lógica igualada al script original
 - **`file-scanner.js`**: Mejor manejo de `.gitignore` y exclusiones
@@ -774,6 +811,88 @@ export default [
 ]
 ```
 
+## ⚙️ Configuración Rápida con Ejemplos
+
+### 1. Sin configuración (Usar reglas por defecto)
+```bash
+# Simplemente ejecutar sin archivo de configuración
+yarn lint:standards .
+```
+
+### 2. Configuración básica (checkFrontendStandards.config.js)
+
+```javascript
+// checkFrontendStandards.config.js - Configuración mínima
+export default {
+  zones: {
+    includePackages: false, // Excluir packages/ por defecto
+    customZones: ['shared', 'utils'], // Validar estas carpetas adicionales
+  },
+  rules: [
+    {
+      name: 'No console.log',
+      check: (content) => /console\.log/.test(content),
+      message: 'Remove console.log statements before production',
+    }
+  ],
+}
+```
+
+### 3. Configuración para proyectos grandes (monorepos)
+
+```javascript
+// checkFrontendStandards.config.js - Para monorepos
+export default {
+  zones: {
+    includePackages: true, // Incluir packages/ en la validación
+    customZones: ['apps', 'libs', 'tools', 'shared'], // Zonas típicas de monorepo
+  },
+  rules: [
+    {
+      name: 'No hardcoded APIs',
+      check: (content) => /https?:\/\/api\./.test(content),
+      message: 'Use environment variables for API URLs',
+    },
+    {
+      name: 'Require TypeScript',
+      check: (content, filePath) => filePath.endsWith('.js') && !filePath.includes('config'),
+      message: 'Use TypeScript (.ts) instead of JavaScript (.js)',
+    }
+  ],
+}
+```
+
+### 4. Configuración para React/Next.js
+
+```javascript
+// checkFrontendStandards.config.js - Para proyectos React
+export default {
+  zones: {
+    includePackages: false,
+    customZones: ['components', 'hooks', 'utils', 'pages', 'app'],
+  },
+  rules: [
+    {
+      name: 'React import first',
+      check: (content, filePath) => {
+        if (!filePath.includes('.jsx') && !filePath.includes('.tsx')) return false;
+        const imports = content.match(/^import.*$/gm);
+        return imports && imports[0] && !imports[0].includes('react');
+      },
+      message: 'React import should be first in React components',
+    },
+    {
+      name: 'Component naming',
+      check: (content, filePath) => {
+        if (!filePath.includes('/components/')) return false;
+        const filename = filePath.split('/').pop().replace(/\.(jsx|tsx)$/, '');
+        return filename[0] !== filename[0].toUpperCase();
+      },
+      message: 'Component files should start with uppercase letter',
+    }
+  ],
+}
+```
 ## 📋 Comandos Útiles
 
 ### Configuración Básica
@@ -795,7 +914,7 @@ yarn frontend-standards-checker --help
 ```bash
 # Validar zona específica
 yarn frontend-standards-checker . --zones apps/web
-yarn frontend-standards-checker . --zones apps/auth  
+yarn frontend-standards-checker . --zones apps/auth
 yarn frontend-standards-checker . --zones packages/ui
 
 # Validar múltiples zonas
@@ -937,16 +1056,16 @@ Esta sección contiene **todas las verificaciones que la herramienta realiza act
 
 ### 🔍 Reglas de Código Base
 
-| Regla                                   | Descripción                                                                                 | Estado                    |
-| --------------------------------------- | ------------------------------------------------------------------------------------------- | ------------------------- |
-| **No console.log**                      | No se permite el uso de `console.log` en código de producción                               | ✅ Activa                 |
-| **No var**                              | Evitar usar `var`, utilizar `let` o `const`                                                 | ✅ Activa                 |
-| **No anonymous functions in callbacks** | Preferir arrow functions o funciones nombradas en callbacks                                 | ✅ Activa                 |
+| Regla                                   | Descripción                                                                                 | Estado                             |
+| --------------------------------------- | ------------------------------------------------------------------------------------------- | ---------------------------------- |
+| **No console.log**                      | No se permite el uso de `console.log` en código de producción                               | ✅ Activa                          |
+| **No var**                              | Evitar usar `var`, utilizar `let` o `const`                                                 | ✅ Activa                          |
+| **No anonymous functions in callbacks** | Preferir arrow functions o funciones nombradas en callbacks                                 | ✅ Activa                          |
 | **~~No unused variables~~**             | ~~No debe haber variables declaradas pero no utilizadas~~                                   | ❌ **REMOVIDA** (falsos positivos) |
-| **No variable shadowing**               | No debe haber sombreado de variables (@typescript-eslint/no-shadow)                         | ✅ Activa                 |
-| **No unnecessary constructors**         | No debe haber constructores vacíos innecesarios (@typescript-eslint/no-useless-constructor) | ✅ Activa                 |
-| **No inline styles**                    | No usar estilos inline, utilizar archivos de estilo separados                               | ✅ Activa                 |
-| **No hardcoded data**                   | No tener datos hardcodeados (URLs, textos, configuraciones)                                 | ✅ Activa                 |
+| **No variable shadowing**               | No debe haber sombreado de variables (@typescript-eslint/no-shadow)                         | ✅ Activa                          |
+| **No unnecessary constructors**         | No debe haber constructores vacíos innecesarios (@typescript-eslint/no-useless-constructor) | ✅ Activa                          |
+| **No inline styles**                    | No usar estilos inline, utilizar archivos de estilo separados                               | ✅ Activa                          |
+| **No hardcoded data**                   | No tener datos hardcodeados (URLs, textos, configuraciones)                                 | ✅ Activa                          |
 
 ### 📁 Reglas de Estructura de Archivos
 
@@ -1025,13 +1144,15 @@ Basado en la última ejecución del validador refactorizado:
 - **Precisión**: 100% - Sin duplicados ni falsos positivos
 
 ### 📊 Mejora Post-Refactorización:
+
 - **Antes (v1.0)**: 232 errores (169 falsos positivos)
 - **Después (v2.3.0)**: 63 errores (100% reales)
 - **Mejora**: 73% reducción de ruido
 
 ### 🎯 Top 5 Problemas Reales:
+
 1. Component type naming: ~20 ocurrencias
-2. Naming conventions: ~15 ocurrencias  
+2. Naming conventions: ~15 ocurrencias
 3. Missing comment in complex function: ~10 ocurrencias
 4. Component structure: ~8 ocurrencias
 5. Should have TSDoc comments: ~5 ocurrencias
@@ -1311,7 +1432,7 @@ yarn frontend-standards-checker . --debug --verbose 2>&1 | tee complete-debug.lo
 # 2. Filtrar información específica
 yarn frontend-standards-checker . --debug 2>&1 | grep -E "(gitignore|Files found|Configuration)"
 
-# 3. Debug de zona específica  
+# 3. Debug de zona específica
 yarn frontend-standards-checker . --zones apps/web --debug
 
 # 4. Comparar antes y después de cambios
@@ -1335,11 +1456,13 @@ El **Frontend Standards Checker v2.3.0** representa una **refactorización compl
 #### 🔧 Problemas Críticos Resueltos:
 
 1. **✅ Bug de "No unused variables" eliminado**
-   - **Problema**: Generaba +100 falsos positivos 
+
+   - **Problema**: Generaba +100 falsos positivos
    - **Solución**: Removido `checkUnusedVariables` del bucle principal de `rule-engine.js`
    - **Resultado**: 0 falsos positivos
 
 2. **✅ Conteo preciso de errores**
+
    - **Problema**: Duplicación y conteos inflados (232 errores)
    - **Solución**: Refactorización completa de `additional-validators.js`
    - **Resultado**: Conteo exacto (63 errores reales)
@@ -1351,12 +1474,12 @@ El **Frontend Standards Checker v2.3.0** representa una **refactorización compl
 
 #### 📊 Métricas de Mejora:
 
-| Métrica | Antes (v1.0) | Después (v2.3.0) | Mejora |
-|---------|--------------|-------------------|---------|
-| **Errores Totales** | 232 | 63 | 73% ↓ |
-| **Falsos Positivos** | ~169 | 0 | 100% ↓ |
-| **Precisión** | ~27% | 100% | 270% ↑ |
-| **Errores "No unused variables"** | >100 | 0 | 100% ↓ |
+| Métrica                           | Antes (v1.0) | Después (v2.3.0) | Mejora |
+| --------------------------------- | ------------ | ---------------- | ------ |
+| **Errores Totales**               | 232          | 63               | 73% ↓  |
+| **Falsos Positivos**              | ~169         | 0                | 100% ↓ |
+| **Precisión**                     | ~27%         | 100%             | 270% ↑ |
+| **Errores "No unused variables"** | >100         | 0                | 100% ↓ |
 
 #### 🚀 Instalación Universal Funcionando:
 
@@ -1378,7 +1501,7 @@ yarn lint:standards .
 
 #### 🎯 Validación Exitosa:
 
-- ✅ **Instalación en proyecto real (BluAdmin)**: Funcional 
+- ✅ **Instalación en proyecto real (BluAdmin)**: Funcional
 - ✅ **Comando `yarn lint:standards`**: Operativo
 - ✅ **Conteo de errores**: Preciso (63 vs 232 anterior)
 - ✅ **Ausencia de falsos positivos**: Confirmada
