@@ -72,6 +72,7 @@ migrate.js
 install.sh
 quick-install.sh
 test-install.sh
+debug-scanner.js
 
 # Generated reports
 frontend-standards.log

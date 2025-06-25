@@ -1,7 +1,7 @@
 ================================================================================
 FRONTEND STANDARDS VALIDATION REPORT
 ================================================================================
-Generated: 2025-06-25T16:33:44.402Z
+Generated: 2025-06-25T16:45:12.843Z
 Project: frontend-standards
 Project Type: node-package
 Monorepo: No
@@ -56,7 +56,7 @@ DETAILED VIOLATIONS:
      Issue: No hardcoded data should be left in the code except in mocks.
      --------------------------------------------------
 
-  📄 /Users/juan.pena/Projects/frontend-standards/src/utils/file-scanner.js:140
+  📄 /Users/juan.pena/Projects/frontend-standards/src/utils/file-scanner.js:150
      Rule: Hardcoded data
      Issue: No hardcoded data should be left in the code except in mocks.
      --------------------------------------------------

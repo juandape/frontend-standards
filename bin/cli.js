@@ -18,6 +18,7 @@ program
   .option('-c, --config <path>', 'Path to custom configuration file')
   .option('-o, --output <path>', 'Path for output log file')
   .option('-v, --verbose', 'Show verbose output')
+  .option('--debug', 'Show debug information about file scanning')
   .option('--skip-structure', 'Skip directory structure validation')
   .option('--skip-naming', 'Skip naming convention validation')
   .option('--skip-content', 'Skip content validation')
@@ -31,6 +32,7 @@ program
         configPath: options.config,
         outputPath: options.output,
         verbose: options.verbose,
+        debug: options.debug,
         skipStructure: options.skipStructure,
         skipNaming: options.skipNaming,
         skipContent: options.skipContent,

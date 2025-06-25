@@ -113,6 +113,7 @@ npm run cli                 # Script alternativo
 -c, --config <file>        # Archivo de configuración personalizado
 -o, --output <file>        # Generar reporte en archivo JSON
 -v, --verbose              # Mostrar información detallada
+--debug                    # Modo debug: muestra archivos procesados y patrones de gitignore
 --skip-structure           # Omitir validación de estructura de directorios
 --skip-naming              # Omitir validación de convenciones de nomenclatura
 --skip-content             # Omitir validación de contenido de archivos
@@ -783,6 +784,51 @@ npm start -- --zones api utils --config custom.config.js --verbose
 ./bin/cli.js --zones api utils --config custom.config.js --output results.json
 ```
 
+### 🐛 Comandos de Debug y Troubleshooting
+
+```bash
+# Modo debug: Ver qué archivos se procesan y patrones de gitignore
+npm start -- --debug
+./bin/cli.js --debug
+
+# Debug + verbose para máxima información
+npm start -- --debug --verbose
+./bin/cli.js --debug --verbose
+
+# Debug de una zona específica
+npm start -- --zones src --debug
+./bin/cli.js --zones components --debug
+
+# Guardar información de debug en archivo
+npm start -- --debug > debug.log 2>&1
+./bin/cli.js --debug --verbose > full-debug.log 2>&1
+
+# Script de debug independiente para troubleshooting
+node debug-scanner.js
+
+# Verificar configuración cargada (debug muestra config completa)
+npm start -- --debug | grep "Configuration loaded"
+```
+
+### 🔍 Ejemplos de Uso del Debug
+
+```bash
+# Problema: "¿Por qué se valida este archivo?"
+npm start -- --debug | grep "Files found"
+
+# Problema: "¿Se está cargando mi .gitignore?"
+npm start -- --debug | grep -A 10 "gitignore patterns"
+
+# Problema: "¿Qué configuración se está usando?"
+npm start -- --debug | grep -A 20 "Configuration loaded"
+
+# Ver exactamente qué archivos están siendo ignorados
+node debug-scanner.js
+
+# Debug de zona específica con salida limpia
+npm start -- --zones src --debug --verbose | tee debug-src.log
+```
+
 ## 🎯 Ejemplo Activo para Probar
 
 ```javascript
@@ -1011,466 +1057,224 @@ npm start -- --output debug-report.json
 
 ### Depuración
 
-Para depurar reglas personalizadas:
+#### 🐛 Modo Debug Integrado
 
-```javascript
-export default [
-  {
-    name: 'Debug rule',
-    check: (content, filePath) => {
-      console.log('Checking file:', filePath);
-      console.log('Content preview:', content.slice(0, 100));
-      return false; // Cambiar lógica según necesites
-    },
-    message: 'Debug message',
-  },
+Frontend Standards Checker v2.0 incluye herramientas avanzadas de debugging para diagnosticar problemas con archivos ignorados, patrones de gitignore y reglas personalizadas.
+
+##### Activar el Modo Debug
+
+```bash
+# Ejecutar con información detallada de debugging
+npx check-frontend-standards --debug
+
+# O con el script npm
+npm start -- --debug
+
+# Combinado con otras opciones
+npx check-frontend-standards --debug --verbose
+```
+
+##### Información que muestra el modo debug:
+
+- **Patrones de .gitignore cargados**: Lista todos los patrones encontrados
+- **Archivos encontrados por zona**: Muestra exactamente qué archivos se van a validar
+- **Configuración completa**: Displays la configuración final con todas las reglas
+- **Estadísticas de exclusión**: Número total de archivos ignorados vs validados
+
+##### Ejemplo de salida del modo debug:
+
+```
+🔍 Frontend Standards Checker v1.0.0
+🐛 Looking for .gitignore at: /tu/proyecto/.gitignore
+🐛 Loaded 46 patterns from .gitignore
+🐛 Patterns: [
+  "node_modules/",
+  "*.log",
+  "dist/",
+  "build/",
+  ".env"
 ]
+🐛 Loading .gitignore patterns from: /tu/proyecto
+🐛 Found 46 gitignore patterns
+🐛 Total ignore patterns: 57
+📁 Debug: Files found in zone "root":
+  ✓ src/components/Button.tsx
+  ✓ src/utils/helpers.ts
+  ✓ src/index.ts
+📊 Total files to validate: 15
 ```
 
-## 📦 Instalación y Configuración
+#### 🔍 Script de Debug Independiente
 
-### 🚀 Instalación Rápida
-
-#### Opción 1: Instalar desde NPM (Recomendado)
+Para troubleshooting avanzado, usa el script `debug-scanner.js`:
 
 ```bash
-# Con npm
-npm install --save-dev frontend-standards-checker
-
-# Con yarn
-yarn add --dev frontend-standards-checker
+# Ejecutar el analizador de archivos debug
+node debug-scanner.js
 ```
 
-#### Opción 2: Instalar desde GitHub
+Este script te mostrará:
+
+- Si existe `.gitignore` en tu proyecto
+- Todos los patrones de exclusión cargados
+- Lista completa de archivos que serán validados
+- Consejos para resolver problemas comunes
+
+##### Ejemplo de salida del debug-scanner:
+
+```
+🔍 Frontend Standards Debug Tool
+================================
+
+📂 Project root: /tu/proyecto
+✅ .gitignore found
+📋 Loaded 35 ignore patterns from .gitignore
+
+🚫 Ignore patterns:
+  1. node_modules/
+  2. *.log
+  3. dist/
+  4. .env
+  [... lista completa]
+
+📁 Files that will be validated (12):
+  1. src/components/Button.tsx
+  2. src/utils/helpers.ts
+  [... lista completa]
+
+💡 Tips:
+  - If you see files that should be ignored, add them to your .gitignore
+  - Patterns like *.log, dist/, node_modules/ are automatically excluded
+```
+
+#### 🚨 Diagnóstico de Problemas Comunes
+
+##### Problema: "El validador está revisando archivos del .gitignore"
+
+**Solución paso a paso:**
+
+1. **Verificar que existe `.gitignore`**:
+
+   ```bash
+   ls -la | grep gitignore
+   ```
+
+2. **Usar el modo debug para verificar patrones**:
+
+   ```bash
+   npx check-frontend-standards --debug
+   ```
+
+3. **Verificar sintaxis del .gitignore**:
+
+   ```bash
+   # Asegúrate de que los patrones estén bien formateados
+   cat .gitignore
+   ```
+
+4. **Usar el debug-scanner para diagnosticar**:
+   ```bash
+   node debug-scanner.js
+   ```
+
+**Soluciones comunes:**
 
 ```bash
-# Con npm
-npm install --save-dev git+https://github.com/tu-usuario/frontend-standards.git
+# Si .gitignore no existe, crearlo
+touch .gitignore
 
-# Con yarn
-yarn add --dev git+https://github.com/tu-usuario/frontend-standards.git
+# Agregar patrones básicos
+echo "node_modules/" >> .gitignore
+echo "*.log" >> .gitignore
+echo "dist/" >> .gitignore
+echo ".env" >> .gitignore
+
+# Verificar sintaxis de patrones
+cat .gitignore
 ```
 
-#### Opción 3: Clonar e Instalar Localmente
+##### Problema: "Reglas personalizadas no funcionan"
 
-```bash
-# Clonar el repositorio
-git clone https://github.com/tu-usuario/frontend-standards.git
-
-# Navegar al directorio
-cd frontend-standards
-
-# Instalar dependencias
-npm install
-# o
-yarn install
-
-# Enlazar globalmente (opcional)
-npm link
-# o
-yarn link
-```
-
-### ⚙️ Configuración del Proyecto
-
-#### 1. Agregar Scripts a package.json
-
-```json
-{
-  "scripts": {
-    "lint:standards": "frontend-standards-checker",
-    "lint:standards:zones": "frontend-standards-checker --zones",
-    "lint:standards:verbose": "frontend-standards-checker --verbose",
-    "lint:standards:report": "frontend-standards-checker --output standards-report.json"
-  },
-  "devDependencies": {
-    "frontend-standards-checker": "^2.0.0"
-  }
-}
-```
-
-#### 2. Crear Archivo de Configuración
-
-Crea `checkFrontendStandards.config.js` en la raíz de tu proyecto:
+**Debugging de reglas:**
 
 ```javascript
-// checkFrontendStandards.config.js
-export default [
-  {
-    name: 'No console statements',
-    check: (content) => /console\.(log|warn|error|info|debug)/.test(content),
-    message: 'Remove console statements before committing to production.',
-  },
-  // Agregar más reglas según necesites
-]
-```
-
-#### 3. Configurar .gitignore (Opcional)
-
-```gitignore
-# Standards reports
-standards-report.json
-*-standards-report.json
-```
-
-### 🔧 Uso en el Proyecto
-
-#### Comandos Básicos
-
-```bash
-# Ejecutar validación completa
-npm run lint:standards
-
-# Validar zonas específicas
-npm run lint:standards -- --zones src components
-
-# Modo verbose
-npm run lint:standards:verbose
-
-# Generar reporte
-npm run lint:standards:report
-```
-
-#### Integración con Scripts Existentes
-
-```json
-{
-  "scripts": {
-    "lint": "eslint . && npm run lint:standards",
-    "test": "jest && npm run lint:standards",
-    "pre-commit": "npm run lint:standards",
-    "ci": "npm run lint && npm run test && npm run lint:standards"
-  }
-}
-```
-
-### 🏢 Configuración para Equipos
-
-#### 1. Configuración Compartida en el Repositorio
-
-```javascript
-// checkFrontendStandards.config.js - Configuración del equipo
+// En tu checkFrontendStandards.config.js
 export default {
-  zones: {
-    includePackages: false,
-    customZones: ['shared', 'utils'],
-  },
+  merge: true,
   rules: [
-    // Reglas específicas del proyecto/equipo
     {
-      name: 'Team coding standard',
-      check: (content) => {
-        // Lógica de validación del equipo
-        return false;
-      },
-      message: 'Follow team coding standards.',
-    },
-  ],
-}
-```
-
-#### 2. Configuración por Ambiente
-
-```javascript
-// checkFrontendStandards.config.js
-const isDevelopment = process.env.NODE_ENV === 'development';
-const isCI = process.env.CI === 'true';
-
-export default {
-  rules: [
-    // Reglas básicas para todos
-    {
-      name: 'No console.log',
-      check: (content) => /console\.log/.test(content),
-      message: 'Remove console.log statements.',
-    },
-
-    // Reglas más estrictas solo en CI
-    ...(isCI ? [
-      {
-        name: 'Strict documentation',
-        check: (content, filePath) => {
-          if (!filePath.endsWith('.tsx')) return false;
-          return !content.includes('/**');
-        },
-        message: 'Components must have JSDoc documentation in CI.',
-      },
-    ] : []),
-
-    // Reglas más relajadas en desarrollo
-    ...(isDevelopment ? [] : [
-      {
-        name: 'No TODO comments',
-        check: (content) => /TODO|FIXME|HACK/.test(content),
-        message: 'TODO comments not allowed in production.',
-      },
-    ]),
-  ],
-}
-```
-
-### 🔗 Integración con CI/CD
-
-#### GitHub Actions
-
-```yaml
-# .github/workflows/frontend-standards.yml
-name: Frontend Standards Check
-
-on:
-  pull_request:
-    branches: [ main, develop ]
-  push:
-    branches: [ main ]
-
-jobs:
-  standards-check:
-    runs-on: ubuntu-latest
-
-    steps:
-    - uses: actions/checkout@v3
-
-    - name: Setup Node.js
-      uses: actions/setup-node@v3
-      with:
-        node-version: '18'
-        cache: 'npm'
-
-    - name: Install dependencies
-      run: npm ci
-
-    - name: Run Frontend Standards Check
-      run: npm run lint:standards:report
-
-    - name: Upload Standards Report
-      uses: actions/upload-artifact@v3
-      if: always()
-      with:
-        name: standards-report
-        path: standards-report.json
-```
-
-#### GitLab CI
-
-```yaml
-# .gitlab-ci.yml
-frontend_standards:
-  stage: test
-  image: node:18
-  script:
-    - npm ci
-    - npm run lint:standards:report
-  artifacts:
-    reports:
-      junit: standards-report.json
-    when: always
-    expire_in: 1 week
-  only:
-    - merge_requests
-    - main
-```
-
-### 🔄 Integración con Git Hooks
-
-#### Usando husky + lint-staged
-
-```bash
-# Instalar husky y lint-staged
-npm install --save-dev husky lint-staged
-
-# Configurar husky
-npx husky install
-npx husky add .husky/pre-commit "npx lint-staged"
-```
-
-```json
-// package.json
-{
-  "lint-staged": {
-    "*.{js,jsx,ts,tsx}": [
-      "frontend-standards-checker --zones",
-      "eslint --fix",
-      "git add"
-    ]
-  }
-}
-```
-
-### 📋 Configuraciones Predefinidas por Tipo de Proyecto
-
-#### React + TypeScript
-
-```javascript
-// checkFrontendStandards.config.js
-export default [
-  {
-    name: 'React functional components only',
-    check: (content, filePath) => {
-      if (!filePath.endsWith('.tsx')) return false;
-      return /class\s+\w+\s+extends\s+(React\.)?Component/.test(content);
-    },
-    message: 'Use functional components instead of class components.',
-  },
-  {
-    name: 'TypeScript strict types',
-    check: (content) => /:\s*any\b/.test(content),
-    message: 'Avoid using "any" type. Use specific types instead.',
-  },
-  {
-    name: 'Component prop types',
-    check: (content, filePath) => {
-      if (!filePath.endsWith('.tsx')) return false;
-      if (!content.includes('export') || !content.includes('function')) return false;
-      return !content.includes('interface') && !content.includes('type');
-    },
-    message: 'React components must define prop types.',
-  },
-];
-```
-
-#### Vue.js + TypeScript
-
-```javascript
-export default [
-  {
-    name: 'Vue composition API',
-    check: (content, filePath) => {
-      if (!filePath.endsWith('.vue')) return false;
-      return content.includes('Vue.extend') || content.includes('options API');
-    },
-    message: 'Use Composition API instead of Options API.',
-  },
-  {
-    name: 'Script setup syntax',
-    check: (content, filePath) => {
-      if (!filePath.endsWith('.vue')) return false;
-      return content.includes('<script>') && !content.includes('<script setup>');
-    },
-    message: 'Use <script setup> syntax for better TypeScript support.',
-  },
-];
-```
-
-#### Node.js + Express
-
-```javascript
-export default [
-  {
-    name: 'Express error handling',
-    check: (content, filePath) => {
-      if (!filePath.includes('route') && !filePath.includes('controller')) return false;
-      return content.includes('app.') && !content.includes('try') && !content.includes('catch');
-    },
-    message: 'API routes must have proper error handling with try/catch.',
-  },
-  {
-    name: 'Environment variables',
-    check: (content) => /process\.env\./.test(content) && !/process\.env\.\w+\s*\|\|/.test(content),
-    message: 'Environment variables should have fallback values.',
-  },
-];
-```
-
-### 🛠️ Configuración Avanzada para Monorepos
-
-#### Configuración para Lerna/Nx
-
-```javascript
-// checkFrontendStandards.config.js (raíz del monorepo)
-export default function(defaultRules) {
-  const packagePath = process.cwd();
-  const isSharedPackage = packagePath.includes('/packages/shared');
-  const isAppPackage = packagePath.includes('/apps/');
-
-  const baseRules = [...defaultRules];
-
-  if (isSharedPackage) {
-    baseRules.push({
-      name: 'Shared package exports',
+      name: 'Debug test rule',
       check: (content, filePath) => {
-        if (!filePath.endsWith('index.ts')) return false;
-        return !content.includes('export');
+        // Agregar logging para debug
+        console.log('🐛 Processing file:', filePath);
+        console.log('🐛 Content length:', content.length);
+
+        const hasIssue = content.includes('console.log');
+        console.log('🐛 Found console.log:', hasIssue);
+
+        return hasIssue;
       },
-      message: 'Shared packages must export their public API through index.ts',
-    });
-  }
-
-  if (isAppPackage) {
-    baseRules.push({
-      name: 'App-specific imports',
-      check: (content) => /import.*from.*['"]@shared/.test(content),
-      message: 'Apps should import from shared packages, not directly from other apps.',
-    });
-  }
-
-  return baseRules;
+      message: 'Debug: Found console.log statement',
+    },
+  ],
 }
 ```
 
-### 📚 Documentación para el Equipo
-
-#### README.md del Proyecto
-
-```markdown
-## 🔍 Frontend Standards
-
-Este proyecto utiliza Frontend Standards Checker para mantener la calidad del código.
-
-### Ejecutar Validaciones
-
-\`\`\`bash
-# Validar todo el proyecto
-npm run lint:standards
-
-# Validar zonas específicas
-npm run lint:standards -- --zones src components
-
-# Ver detalles verbose
-npm run lint:standards:verbose
-\`\`\`
-
-### Reglas del Proyecto
-
-- No console.log en producción
-- Componentes React deben ser funcionales
-- TypeScript estricto (no any)
-- Documentación JSDoc requerida
-
-### Configuración Personalizada
-
-Ver \`checkFrontendStandards.config.js\` para reglas específicas del proyecto.
+```bash
+# Ejecutar con debug para ver el logging
+npm start -- --debug --verbose
 ```
 
-### ⚡ Troubleshooting Común
+##### Problema: "Muchos falsos positivos"
 
-#### Error: "Module not found"
+**Análisis con debug:**
 
 ```bash
-# Reinstalar dependencias
-rm -rf node_modules package-lock.json
-npm install
+# Ver todos los archivos que se están validando
+npm start -- --debug > debug-output.log
 
-# O con yarn
-rm -rf node_modules yarn.lock
-yarn install
+# Analizar qué archivos causan errores
+grep "violation" frontend-standards.log
+
+# Usar debug-scanner para verificar exclusiones
+node debug-scanner.js > scanner-output.log
 ```
 
-#### Error: "Configuration file not found"
+##### Problema: "No entiendo por qué falla en CI pero funciona local"
+
+**Debug remoto:**
 
 ```bash
-# Verificar que existe el archivo de configuración
-ls -la checkFrontendStandards.config.js
+# En CI, agregar estos comandos antes del validador
+echo "=== DEBUG INFO ==="
+pwd
+ls -la
+cat .gitignore
+node debug-scanner.js
+echo "=== END DEBUG ==="
 
-# Crear archivo básico si no existe
-echo 'export default [];' > checkFrontendStandards.config.js
+# Luego ejecutar el validador con debug
+npm start -- --debug --verbose
 ```
 
-#### Error en CI/CD
+#### 💡 Consejos de Debug Avanzados
 
 ```bash
-# Verificar versión de Node.js
-node --version
+# 1. Capturar toda la información de debug
+npm start -- --debug --verbose 2>&1 | tee complete-debug.log
 
-# Asegurar que las dependencias están instaladas
-npm ci  # En lugar de npm install en CI
+# 2. Filtrar información específica
+npm start -- --debug 2>&1 | grep -E "(gitignore|Files found|Configuration)"
+
+# 3. Debug de zona específica
+npm start -- --zones problematic-folder --debug
+
+# 4. Comparar antes y después de cambios
+npm start -- --debug > before.log
+# Hacer cambios en .gitignore o config
+npm start -- --debug > after.log
+diff before.log after.log
+
+# 5. Verificar patrones de exclusión en tiempo real
+node debug-scanner.js | grep -A 100 "Ignore patterns"
 ```

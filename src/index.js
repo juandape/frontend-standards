@@ -23,6 +23,7 @@ export class FrontendStandardsChecker {
       configPath: null,
       outputPath: null,
       verbose: false,
+      debug: false,
       skipStructure: false,
       skipNaming: false,
       skipContent: false,
@@ -30,7 +31,7 @@ export class FrontendStandardsChecker {
       ...options,
     };
 
-    this.logger = new Logger(this.options.verbose);
+    this.logger = new Logger(this.options.verbose || this.options.debug);
     this.configLoader = new ConfigLoader(this.options.rootDir, this.logger);
     this.projectAnalyzer = new ProjectAnalyzer(
       this.options.rootDir,
@@ -152,6 +153,15 @@ export class FrontendStandardsChecker {
   async validateContent(zone, config) {
     const errors = [];
     const files = await this.fileScanner.getFiles(zone.path);
+
+    if (this.options.debug) {
+      this.logger.info(`📁 Debug: Files found in zone "${zone.name}":`);
+      files.forEach((file) => {
+        const relativePath = path.relative(this.options.rootDir, file);
+        this.logger.info(`  ✓ ${relativePath}`);
+      });
+      this.logger.info(`📊 Total files to validate: ${files.length}\n`);
+    }
 
     for (const file of files) {
       const fileErrors = await this.ruleEngine.validateFile(file);

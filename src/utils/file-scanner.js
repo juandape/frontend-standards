@@ -31,13 +31,18 @@ export class FileScanner {
    * @returns {Promise<Array>} Array of file paths
    */
   async getFiles(dirPath = this.rootDir, customIgnorePatterns = []) {
-    const gitIgnorePatterns = this.loadGitIgnorePatterns(dirPath);
+    // Always load gitignore from the project root, not the scan directory
+    const gitIgnorePatterns = this.loadGitIgnorePatterns(this.rootDir);
     const ignorePatterns = [
       ...this.defaultIgnorePatterns,
       ...gitIgnorePatterns,
       ...customIgnorePatterns,
     ];
     const files = [];
+
+    this.logger.debug(`Loading .gitignore patterns from: ${this.rootDir}`);
+    this.logger.debug(`Found ${gitIgnorePatterns.length} gitignore patterns`);
+    this.logger.debug(`Total ignore patterns: ${ignorePatterns.length}`);
 
     await this.scanDirectory(dirPath, files, ignorePatterns);
 
@@ -52,7 +57,8 @@ export class FileScanner {
    * @returns {Promise<Array>} Array of directory paths
    */
   async getDirectories(dirPath = this.rootDir, customIgnorePatterns = []) {
-    const gitIgnorePatterns = this.loadGitIgnorePatterns(dirPath);
+    // Always load gitignore from the project root, not the scan directory
+    const gitIgnorePatterns = this.loadGitIgnorePatterns(this.rootDir);
     const ignorePatterns = [
       ...this.defaultIgnorePatterns,
       ...gitIgnorePatterns,
@@ -136,6 +142,10 @@ export class FileScanner {
     const base = path.basename(filePath);
     const relativePath = path.relative(this.rootDir, filePath);
 
+    // Normalize path separators for cross-platform compatibility
+    const normalizedRelativePath = relativePath.replace(/\\/g, '/');
+    const normalizedFilePath = filePath.replace(/\\/g, '/');
+
     // Check for test files
     if (base.includes('.test') || base.includes('.spec')) {
       return true;
@@ -156,32 +166,65 @@ export class FileScanner {
       return true;
     }
 
-    // Check against ignore patterns
+    // Check against ignore patterns with improved gitignore-style matching
     return ignorePatterns.some((pattern) => {
-      // Handle glob patterns
-      if (pattern.includes('*')) {
-        const regex = pattern.replace(/\*/g, '.*');
-        return (
-          new RegExp(regex).test(relativePath) || new RegExp(regex).test(base)
-        );
+      // Skip empty patterns
+      if (!pattern || pattern.trim() === '') {
+        return false;
       }
 
-      // Handle directory patterns (ending with /)
-      if (pattern.endsWith('/')) {
-        const dirPattern = pattern.replace(/\/$/, '');
-        return (
-          relativePath.includes(dirPattern + '/') ||
-          relativePath.startsWith(dirPattern + '/')
-        );
-      }
+      // Normalize the pattern
+      const normalizedPattern = pattern.trim().replace(/\\/g, '/');
 
-      // Handle exact file matches
-      if (base === pattern) {
+      // Handle exact filename matches
+      if (base === normalizedPattern) {
         return true;
       }
 
-      // Handle path contains pattern
-      return relativePath.includes(pattern) || filePath.includes(pattern);
+      // Handle directory patterns (ending with /)
+      if (normalizedPattern.endsWith('/')) {
+        const dirPattern = normalizedPattern.slice(0, -1);
+        return (
+          normalizedRelativePath.startsWith(dirPattern + '/') ||
+          normalizedRelativePath.includes('/' + dirPattern + '/') ||
+          normalizedRelativePath === dirPattern
+        );
+      }
+
+      // Handle wildcard patterns (*, *.extension, etc.)
+      if (normalizedPattern.includes('*')) {
+        try {
+          // Convert gitignore-style wildcards to regex
+          const regexPattern = normalizedPattern
+            .replace(/\./g, '\\.')
+            .replace(/\*\*/g, '.*') // ** matches any number of directories
+            .replace(/\*/g, '[^/]*') // * matches anything except path separator
+            .replace(/\?/g, '[^/]'); // ? matches single character except path separator
+
+          const regex = new RegExp('^' + regexPattern + '$');
+
+          // Test against both relative path and just the filename
+          return regex.test(normalizedRelativePath) || regex.test(base);
+        } catch (e) {
+          // Fallback to simple contains check if regex fails
+          return normalizedRelativePath.includes(
+            normalizedPattern.replace(/\*/g, '')
+          );
+        }
+      }
+
+      // Handle patterns starting with / (root-relative)
+      if (normalizedPattern.startsWith('/')) {
+        const rootPattern = normalizedPattern.slice(1);
+        return normalizedRelativePath.startsWith(rootPattern);
+      }
+
+      // Handle simple substring matches
+      return (
+        normalizedRelativePath.includes(normalizedPattern) ||
+        normalizedFilePath.includes(normalizedPattern) ||
+        base.includes(normalizedPattern)
+      );
     });
   }
 
@@ -204,6 +247,8 @@ export class FileScanner {
     const gitignorePath = path.join(dirPath, '.gitignore');
     const patterns = [];
 
+    this.logger.debug(`Looking for .gitignore at: ${gitignorePath}`);
+
     if (fs.existsSync(gitignorePath)) {
       try {
         const content = fs.readFileSync(gitignorePath, 'utf8');
@@ -214,9 +259,12 @@ export class FileScanner {
 
         patterns.push(...lines);
         this.logger.debug(`Loaded ${lines.length} patterns from .gitignore`);
+        this.logger.debug(`Patterns: ${JSON.stringify(lines, null, 2)}`);
       } catch (error) {
         this.logger.warn(`Failed to read .gitignore: ${error.message}`);
       }
+    } else {
+      this.logger.debug(`.gitignore not found at: ${gitignorePath}`);
     }
 
     return patterns;
