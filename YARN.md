@@ -240,6 +240,16 @@ yarn install --check-files
 # ❌ INCORRECTO: yarn add --dev git+https://...
 # ✅ CORRECTO:   yarn add --dev package-name@https://...
 yarn add --dev frontend-standards-checker@https://github.com/juandape/frontend-standards.git
+
+# Error "command not found" en monorepos
+# Solución 1: Usar yarn exec
+yarn exec frontend-standards-checker --help
+
+# Solución 2: Reinstalar dependencias
+yarn install
+
+# Solución 3: Verificar instalación
+yarn list frontend-standards-checker
 ```
 
 ### Performance

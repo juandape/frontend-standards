@@ -390,6 +390,19 @@ yarn add --dev frontend-standards-checker@https://github.com/juandape/frontend-s
 # NO usar: yarn add --dev git+https://...
 ```
 
+**Error: "command not found: frontend-standards-checker"**
+
+```bash
+# En monorepos, a veces necesitas reinstalar
+yarn install
+
+# O usar el comando completo
+yarn exec frontend-standards-checker --help
+
+# Verificar que el paquete esté instalado
+yarn list frontend-standards-checker
+```
+
 ### Obtener Ayuda
 
 #### Con NPM
