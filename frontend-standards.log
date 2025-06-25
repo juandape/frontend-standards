@@ -1,18 +1,18 @@
 ================================================================================
 FRONTEND STANDARDS VALIDATION REPORT
 ================================================================================
-Generated: 2025-06-25T14:57:19.940Z
+Generated: 2025-06-25T16:07:25.896Z
 Project: frontend-standards
 Project Type: node-package
 Monorepo: No
 
-SUMMARY: 8 violations found across 1 zones
+SUMMARY: 34 violations found across 1 zones
 
 RESULTS BY ZONE:
 ----------------------------------------
 
 📂 Zone: root
-   Errors: 8
+   Errors: 34
    Status: ❌ FAILED
 
 
@@ -21,7 +21,42 @@ DETAILED VIOLATIONS:
 
 📂 Zone: root
 
+  📄 /Users/juan.pena/Projects/frontend-standards/bin/cli.js:7
+     Rule: Missing comment in complex function
+     Issue: Complex function 'program' should have comments explaining its behavior.
+     --------------------------------------------------
+
+  📄 /Users/juan.pena/Projects/frontend-standards/bin/cli.js:29
+     Rule: Missing comment in complex function
+     Issue: Complex function 'checker' should have comments explaining its behavior.
+     --------------------------------------------------
+
+  📄 /Users/juan.pena/Projects/frontend-standards/bin/cli.js:39
+     Rule: Missing comment in complex function
+     Issue: Complex function 'results' should have comments explaining its behavior.
+     --------------------------------------------------
+
+  📄 /Users/juan.pena/Projects/frontend-standards/checkFrontendStandards.config.js:43
+     Rule: Commented code
+     Issue: Leaving commented code in the repository is not allowed.
+     --------------------------------------------------
+
+  📄 /Users/juan.pena/Projects/frontend-standards/checkFrontendStandards.config.js:55
+     Rule: Commented code
+     Issue: Leaving commented code in the repository is not allowed.
+     --------------------------------------------------
+
   📄 /Users/juan.pena/Projects/frontend-standards/checkFrontendStandards.config.js:56
+     Rule: Commented code
+     Issue: Leaving commented code in the repository is not allowed.
+     --------------------------------------------------
+
+  📄 /Users/juan.pena/Projects/frontend-standards/checkFrontendStandards.config.js:67
+     Rule: Commented code
+     Issue: Leaving commented code in the repository is not allowed.
+     --------------------------------------------------
+
+  📄 /Users/juan.pena/Projects/frontend-standards/checkFrontendStandards.config.js:76
      Rule: Commented code
      Issue: Leaving commented code in the repository is not allowed.
      --------------------------------------------------
@@ -29,6 +64,76 @@ DETAILED VIOLATIONS:
   📄 /Users/juan.pena/Projects/frontend-standards/migrate.js:85
      Rule: Hardcoded data
      Issue: No hardcoded data should be left in the code except in mocks.
+     --------------------------------------------------
+
+  📄 /Users/juan.pena/Projects/frontend-standards/migrate.js:33
+     Rule: Missing comment in complex function
+     Issue: Complex function 'pkg' should have comments explaining its behavior.
+     --------------------------------------------------
+
+  📄 /Users/juan.pena/Projects/frontend-standards/migrate.js:60
+     Rule: Missing comment in complex function
+     Issue: Complex function 'allChecked' should have comments explaining its behavior.
+     --------------------------------------------------
+
+  📄 /Users/juan.pena/Projects/frontend-standards/src/core/additional-validators.js:174
+     Rule: Missing comment in complex function
+     Issue: Complex function 'isSimpleFunction' should have comments explaining its behavior.
+     --------------------------------------------------
+
+  📄 /Users/juan.pena/Projects/frontend-standards/src/core/additional-validators.js:178
+     Rule: Missing comment in complex function
+     Issue: Complex function 'isFunctionComplex' should have comments explaining its behavior.
+     --------------------------------------------------
+
+  📄 /Users/juan.pena/Projects/frontend-standards/src/core/additional-validators.js:179
+     Rule: Missing comment in complex function
+     Issue: Complex function 'endIndex' should have comments explaining its behavior.
+     --------------------------------------------------
+
+  📄 /Users/juan.pena/Projects/frontend-standards/src/core/additional-validators.js:180
+     Rule: Missing comment in complex function
+     Issue: Complex function 'j' should have comments explaining its behavior.
+     --------------------------------------------------
+
+  📄 /Users/juan.pena/Projects/frontend-standards/src/core/additional-validators.js:188
+     Rule: Missing comment in complex function
+     Issue: Complex function 'hasPrecedingComment' should have comments explaining its behavior.
+     --------------------------------------------------
+
+  📄 /Users/juan.pena/Projects/frontend-standards/src/core/additional-validators.js:189
+     Rule: Missing comment in complex function
+     Issue: Complex function 'startIndex' should have comments explaining its behavior.
+     --------------------------------------------------
+
+  📄 /Users/juan.pena/Projects/frontend-standards/src/core/additional-validators.js:190
+     Rule: Missing comment in complex function
+     Issue: Complex function 'k' should have comments explaining its behavior.
+     --------------------------------------------------
+
+  📄 /Users/juan.pena/Projects/frontend-standards/src/core/additional-validators.js:191
+     Rule: Missing comment in complex function
+     Issue: Complex function 'commentLine' should have comments explaining its behavior.
+     --------------------------------------------------
+
+  📄 /Users/juan.pena/Projects/frontend-standards/src/core/additional-validators.js:199
+     Rule: Missing comment in complex function
+     Issue: Complex function 'isValidComment' should have comments explaining its behavior.
+     --------------------------------------------------
+
+  📄 /Users/juan.pena/Projects/frontend-standards/src/core/additional-validators.js:222
+     Rule: Missing comment in complex function
+     Issue: Complex function 'functionData' should have comments explaining its behavior.
+     --------------------------------------------------
+
+  📄 /Users/juan.pena/Projects/frontend-standards/src/core/additional-validators.js:270
+     Rule: Missing comment in complex function
+     Issue: Complex function 'functionName' should have comments explaining its behavior.
+     --------------------------------------------------
+
+  📄 /Users/juan.pena/Projects/frontend-standards/src/core/additional-validators.js:308
+     Rule: Missing comment in complex function
+     Issue: Complex function 'interfaceName' should have comments explaining its behavior.
      --------------------------------------------------
 
   📄 /Users/juan.pena/Projects/frontend-standards/src/core/config-loader.js:105
@@ -41,9 +146,24 @@ DETAILED VIOLATIONS:
      Issue: No hardcoded data should be left in the code except in mocks.
      --------------------------------------------------
 
-  📄 /Users/juan.pena/Projects/frontend-standards/src/core/rule-engine.js:414
-     Rule: Hardcoded data
-     Issue: No hardcoded data should be left in the code except in mocks.
+  📄 /Users/juan.pena/Projects/frontend-standards/src/core/project-analyzer.js:174
+     Rule: Missing comment in complex function
+     Issue: Complex function 'subDirs' should have comments explaining its behavior.
+     --------------------------------------------------
+
+  📄 /Users/juan.pena/Projects/frontend-standards/src/core/project-analyzer.js:203
+     Rule: Missing comment in complex function
+     Issue: Complex function 'customZonePath' should have comments explaining its behavior.
+     --------------------------------------------------
+
+  📄 /Users/juan.pena/Projects/frontend-standards/src/index.js:12
+     Rule: Function naming
+     Issue: Functions must follow camelCase convention (e.g., getProvinces)
+     --------------------------------------------------
+
+  📄 /Users/juan.pena/Projects/frontend-standards/src/index.js:13
+     Rule: Function naming
+     Issue: Functions must follow camelCase convention (e.g., getProvinces)
      --------------------------------------------------
 
   📄 /Users/juan.pena/Projects/frontend-standards/src/utils/file-scanner.js:16
@@ -61,13 +181,25 @@ DETAILED VIOLATIONS:
      Issue: No hardcoded data should be left in the code except in mocks.
      --------------------------------------------------
 
+  📄 /Users/juan.pena/Projects/frontend-standards/src/utils/file-scanner.js:82
+     Rule: Missing comment in complex function
+     Issue: Complex function 'stats' should have comments explaining its behavior.
+     --------------------------------------------------
+
+  📄 /Users/juan.pena/Projects/frontend-standards/src/utils/file-scanner.js:112
+     Rule: Missing comment in complex function
+     Issue: Complex function 'stats' should have comments explaining its behavior.
+     --------------------------------------------------
+
 
 ERROR STATISTICS:
 ----------------------------------------
-• Hardcoded data: 7 occurrences (87.5%)
-• Commented code: 1 occurrences (12.5%)
+• Missing comment in complex function: 21 occurrences (61.8%)
+• Hardcoded data: 6 occurrences (17.6%)
+• Commented code: 5 occurrences (14.7%)
+• Function naming: 2 occurrences (5.9%)
 
-Total violations: 8
+Total violations: 34
 
 
 RECOMMENDATIONS:

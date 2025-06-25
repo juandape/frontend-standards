@@ -135,6 +135,7 @@ export class ConfigLoader {
           /\(([^)]*)\)\s*=>/.test(content) && /function\s*\(/.test(content),
         message: 'Prefer arrow functions or named functions in callbacks.',
       },
+      // Advanced rules inspired by BluAdmin
       {
         name: 'No unused variables',
         check: (content) =>
@@ -146,10 +147,207 @@ export class ConfigLoader {
           'There should be no declared and unused variables (@typescript-eslint/no-unused-vars rule).',
       },
       {
+        name: 'No variable shadowing',
+        check: (content, filePath) => {
+          // More sophisticated check for actual variable shadowing patterns
+          // Look for common shadowing patterns, but exclude CSS classes and comments
+
+          // Skip if it's just CSS classes or other non-code contexts
+          if (
+            /className="[^"]*shadow[^"]*"/.test(content) ||
+            /class="[^"]*shadow[^"]*"/.test(content) ||
+            /\/\/.*shadow/i.test(content) ||
+            /\/\*.*shadow.*\*\//i.test(content)
+          ) {
+            return false;
+          }
+
+          // Look for actual variable shadowing patterns
+          const lines = content.split('\n');
+          const scopeStack = [];
+          let currentScope = new Set();
+
+          for (let i = 0; i < lines.length; i++) {
+            const line = lines[i].trim();
+            const lineNumber = i + 1;
+
+            // Skip comments and imports
+            if (
+              line.startsWith('//') ||
+              line.startsWith('/*') ||
+              line.startsWith('import') ||
+              line.startsWith('*') ||
+              line.startsWith('export type') ||
+              line.startsWith('export interface')
+            ) {
+              continue;
+            }
+
+            // Handle scope changes
+            if (line.includes('{')) {
+              scopeStack.push(new Set(currentScope));
+            }
+            if (line.includes('}')) {
+              if (scopeStack.length > 0) {
+                currentScope = scopeStack.pop();
+              }
+            }
+
+            // Look for variable declarations
+            const varMatches = line.match(
+              /(?:const|let|var)\s+([a-zA-Z_$][a-zA-Z0-9_$]*)/g
+            );
+            if (varMatches) {
+              for (const match of varMatches) {
+                const varName = match
+                  .replace(/(?:const|let|var)\s+/, '')
+                  .split(/[^a-zA-Z_$0-9]/)[0];
+                if (varName && currentScope.has(varName)) {
+                  // Store the shadowing information for detailed reporting
+                  this.shadowingDetails = {
+                    line: lineNumber,
+                    variable: varName,
+                    file: filePath,
+                  };
+                  return true;
+                }
+                if (varName) {
+                  currentScope.add(varName);
+                }
+              }
+            }
+
+            // Look for function parameters and arrow functions that might shadow
+            const funcParamMatches =
+              line.match(/(?:function\s+\w+|=>|\w+\s*=>)\s*\(([^)]*)\)/) ||
+              line.match(/\(([^)]*)\)\s*=>/) ||
+              line.match(/([a-zA-Z_$][a-zA-Z0-9_$]*)\s*=>/);
+
+            if (funcParamMatches) {
+              let params = [];
+              if (funcParamMatches[1]) {
+                // Handle regular function parameters
+                params = funcParamMatches[1]
+                  .split(',')
+                  .map((p) => p.trim().split(/[\s:]/)[0])
+                  .filter((p) => p && /^[a-zA-Z_$]/.test(p));
+              }
+
+              for (const param of params) {
+                if (param && currentScope.has(param)) {
+                  this.shadowingDetails = {
+                    line: lineNumber,
+                    variable: param,
+                    file: filePath,
+                  };
+                  return true;
+                }
+              }
+            }
+
+            // Check for map/forEach/filter callbacks that might shadow
+            const callbackMatches = line.match(
+              /\.(?:map|forEach|filter|reduce|find|some|every)\s*\(\s*(?:\(([^)]*)\)|([a-zA-Z_$][a-zA-Z0-9_$]*))/
+            );
+            if (callbackMatches) {
+              const param = callbackMatches[1]
+                ? callbackMatches[1].split(',')[0].trim().split(/[\s:]/)[0]
+                : callbackMatches[2];
+              if (param && currentScope.has(param)) {
+                this.shadowingDetails = {
+                  line: lineNumber,
+                  variable: param,
+                  file: filePath,
+                };
+                return true;
+              }
+            }
+          }
+
+          return false;
+        },
+        message:
+          'There should be no variable shadowing (@typescript-eslint/no-shadow rule).',
+      },
+      {
+        name: 'No unnecessary constructors',
+        check: (content) => /constructor\s*\(\s*\)\s*{\s*}/.test(content),
+        message:
+          'There should be no unnecessary empty constructors (@typescript-eslint/no-useless-constructor rule).',
+      },
+      {
+        name: 'Should have TSDoc comments',
+        check: (content, filePath) => {
+          // Skip configuration files, test files, and simple export files
+          if (
+            /\/(config|constants|types|styles|enums)\//.test(filePath) ||
+            /\.(config|constant|type|style|enum)\.ts$/.test(filePath) ||
+            /\.test\.|\.spec\./.test(filePath) ||
+            filePath.includes('index.ts') ||
+            filePath.includes('index.tsx')
+          ) {
+            return false;
+          }
+
+          // Check if file has exports without JSDoc
+          const lines = content.split('\n');
+          let hasExportsWithoutTSDoc = false;
+          let inTSDoc = false;
+
+          for (let i = 0; i < lines.length; i++) {
+            const line = lines[i].trim();
+
+            // Track TSDoc state
+            if (/^\s*\/\*\*/.test(line)) {
+              inTSDoc = true;
+              continue;
+            }
+            if (inTSDoc && /\*\//.test(line)) {
+              inTSDoc = false;
+              continue;
+            }
+
+            // Check for complex exports that should have TSDoc
+            if (
+              /^export\s+(function|class|const|let|var)\s+[a-zA-Z]/.test(line)
+            ) {
+              // Look back for TSDoc in the previous few lines
+              let hasTSDocAbove = false;
+              for (let j = Math.max(0, i - 5); j < i; j++) {
+                if (/\/\*\*/.test(lines[j]) || /^\s*\*\s+/.test(lines[j])) {
+                  hasTSDocAbove = true;
+                  break;
+                }
+              }
+
+              // Check if this is a complex export (function or class)
+              if (/^export\s+(function|class)/.test(line) && !hasTSDocAbove) {
+                hasExportsWithoutTSDoc = true;
+              }
+
+              // For const/let/var exports, check if they're functions
+              if (
+                /^export\s+(const|let|var)\s+[a-zA-Z][a-zA-Z0-9]*\s*=\s*(async\s+)?\(/.test(
+                  line
+                ) &&
+                !hasTSDocAbove
+              ) {
+                hasExportsWithoutTSDoc = true;
+              }
+            }
+          }
+
+          return hasExportsWithoutTSDoc;
+        },
+        message:
+          'Exported functions and classes should have TSDoc comments explaining their purpose and parameters.',
+      },
+      {
         name: 'Interface naming convention',
         check: (content) => {
+          // Check for exported interfaces that don't follow IComponentName pattern
           const interfaceMatches = content.match(
-            /export\s+interface\s+([A-Za-z_]\w*)/g
+            /export\s+interface\s+([A-Za-z_][A-Za-z0-9_]*)/g
           );
           if (interfaceMatches) {
             return interfaceMatches.some((match) => {

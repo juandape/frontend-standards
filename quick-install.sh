@@ -20,36 +20,36 @@ if [ -f "yarn.lock" ] && command -v yarn &> /dev/null; then
     echo "🧶 Instalando con Yarn..."
     yarn add --dev frontend-standards-checker@https://github.com/juandape/frontend-standards.git
     echo "✅ Instalado con Yarn"
-    
+
     # Agregar scripts si no existen
     if ! grep -q '"lint:standards"' package.json; then
         echo "⚙️  Agrega estos scripts a tu package.json:"
-        echo '  "lint:standards": "frontend-standards-checker",'
-        echo '  "lint:standards:zones": "frontend-standards-checker --zones",'
-        echo '  "lint:standards:verbose": "frontend-standards-checker --verbose",'
-        echo '  "lint:standards:report": "frontend-standards-checker --output standards-report.json"'
+        echo '  "lint:standards": "check-frontend-standards",'
+        echo '  "lint:standards:zones": "check-frontend-standards --zones",'
+        echo '  "lint:standards:verbose": "check-frontend-standards --verbose",'
+        echo '  "lint:standards:report": "check-frontend-standards --output standards-report.json"'
     fi
-    
+
     echo ""
     echo "🎉 ¡Listo! Usa: yarn lint:standards"
-    
+
 elif command -v npm &> /dev/null; then
     echo "📦 Instalando con NPM..."
     npm install --save-dev git+https://github.com/juandape/frontend-standards.git
     echo "✅ Instalado con NPM"
-    
+
     # Agregar scripts si no existen
     if ! grep -q '"lint:standards"' package.json; then
         echo "⚙️  Agrega estos scripts a tu package.json:"
-        echo '  "lint:standards": "frontend-standards-checker",'
-        echo '  "lint:standards:zones": "frontend-standards-checker --zones",'
-        echo '  "lint:standards:verbose": "frontend-standards-checker --verbose",'
-        echo '  "lint:standards:report": "frontend-standards-checker --output standards-report.json"'
+        echo '  "lint:standards": "check-frontend-standards",'
+        echo '  "lint:standards:zones": "check-frontend-standards --zones",'
+        echo '  "lint:standards:verbose": "check-frontend-standards --verbose",'
+        echo '  "lint:standards:report": "check-frontend-standards --output standards-report.json"'
     fi
-    
+
     echo ""
     echo "🎉 ¡Listo! Usa: npm run lint:standards"
-    
+
 else
     echo "❌ Error: No se encontró npm ni yarn instalado."
     exit 1
