@@ -64,52 +64,72 @@ export class ProjectAnalyzer implements IProjectAnalyzer {
     const hasPackageJson = fs.existsSync(packageJsonPath);
 
     if (hasPackageJson) {
-      try {
-        const packageJsonContent = fs.readFileSync(packageJsonPath, 'utf8');
-        const packageJson: PackageJsonContent = JSON.parse(packageJsonContent);
-
-        // Check for Next.js app
-        if (
-          packageJson.dependencies?.next ||
-          packageJson.devDependencies?.next
-        ) {
-          return 'next';
-        }
-
-        // Check for React app
-        if (
-          packageJson.dependencies?.react ||
-          packageJson.devDependencies?.react
-        ) {
-          return 'react';
-        }
-
-        // Check for Angular
-        if (
-          packageJson.dependencies?.['@angular/core'] ||
-          packageJson.devDependencies?.['@angular/core']
-        ) {
-          return 'angular';
-        }
-
-        // Check for Vue
-        if (packageJson.dependencies?.vue || packageJson.devDependencies?.vue) {
-          return 'vue';
-        }
-
-        // Check for Node.js package
-        if (packageJson.main || packageJson.exports) {
-          return 'node';
-        }
-      } catch (error) {
-        this.logger.warn(
-          'Failed to parse package.json:',
-          (error as Error).message
-        );
-      }
+      const projectType =
+        this.detectProjectTypeFromPackageJson(packageJsonPath);
+      if (projectType) return projectType;
     }
 
-    // Fallback heuristics
+    return this.detectProjectTypeFromHeuristics(projectPath, hasPackageJson);
+  }
+
+  /**
+   * Detect project type from package.json dependencies
+   */
+  private detectProjectTypeFromPackageJson(
+    packageJsonPath: string
+  ): ProjectInfo['projectType'] | null {
+    try {
+      const packageJsonContent = fs.readFileSync(packageJsonPath, 'utf8');
+      const packageJson: PackageJsonContent = JSON.parse(packageJsonContent);
+
+      // Check for Next.js app
+      if (packageJson.dependencies?.next || packageJson.devDependencies?.next) {
+        return 'next';
+      }
+
+      // Check for React app
+      if (
+        packageJson.dependencies?.react ||
+        packageJson.devDependencies?.react
+      ) {
+        return 'react';
+      }
+
+      // Check for Angular
+      if (
+        packageJson.dependencies?.['@angular/core'] ||
+        packageJson.devDependencies?.['@angular/core']
+      ) {
+        return 'angular';
+      }
+
+      // Check for Vue
+      if (packageJson.dependencies?.vue || packageJson.devDependencies?.vue) {
+        return 'vue';
+      }
+
+      // Check for Node.js package
+      if (packageJson.main || packageJson.exports) {
+        return 'node';
+      }
+
+      return null;
+    } catch (error) {
+      this.logger.warn(
+        'Failed to parse package.json:',
+        (error as Error).message
+      );
+      return null;
+    }
+  }
+
+  /**
+   * Detect project type using heuristics
+   */
+  private detectProjectTypeFromHeuristics(
+    projectPath: string,
+    hasPackageJson: boolean
+  ): ProjectInfo['projectType'] {
     const hasSrc = fs.existsSync(path.join(projectPath, 'src'));
     const hasPages = fs.existsSync(path.join(projectPath, 'pages'));
     const hasApp = fs.existsSync(path.join(projectPath, 'app'));
@@ -285,11 +305,15 @@ export class ProjectAnalyzer implements IProjectAnalyzer {
     const errors: ValidationError[] = [];
 
     try {
-      // Import validation functions - we'll handle this as any for now until we migrate additional-validators
-      // @ts-ignore - TODO: Migrate additional-validators.js to TypeScript
-      const additionalValidators = (await import(
-        './additional-validators.js'
-      )) as any;
+      // Import validation functions - temporary import until additional-validators migration
+      const additionalValidators = await this.loadAdditionalValidators();
+      if (!additionalValidators) {
+        this.logger.warn(
+          'Additional validators not available, skipping extended validation'
+        );
+        return errors;
+      }
+
       const {
         checkNamingConventions,
         checkDirectoryNaming,
@@ -327,6 +351,23 @@ export class ProjectAnalyzer implements IProjectAnalyzer {
     }
 
     return errors;
+  }
+
+  /**
+   * Safely load additional validators
+   */
+  private async loadAdditionalValidators(): Promise<any> {
+    try {
+      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+      // @ts-ignore - Temporary workaround for JS module import
+      return await import('./additional-validators.js');
+    } catch (error) {
+      this.logger.debug(
+        'Additional validators not found:',
+        (error as Error).message
+      );
+      return null;
+    }
   }
 
   /**

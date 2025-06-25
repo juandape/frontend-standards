@@ -89,64 +89,21 @@ export class RuleEngine implements IRuleEngine {
 
       // Run specialized validators for non-index files
       if (!isIndexFile) {
-        try {
-          // Import additional validators - handle as any until we migrate them
-          // @ts-ignore - TODO: Migrate additional-validators.js to TypeScript
-          const additionalValidators = (await import(
-            './additional-validators.js'
-          )) as any;
-
-          const {
-            checkInlineStyles,
-            checkCommentedCode,
-            checkHardcodedData,
-            checkFunctionComments,
-            checkFunctionNaming,
-            checkInterfaceNaming,
-            checkStyleConventions,
-          } = additionalValidators;
-
-          errors.push(...(checkInlineStyles(content, filePath) || []));
-          errors.push(...(checkCommentedCode(content, filePath) || []));
-          errors.push(...(checkHardcodedData(content, filePath) || []));
-          errors.push(...(checkFunctionComments(content, filePath) || []));
-          errors.push(...(checkFunctionNaming(content, filePath) || []));
-          errors.push(...(checkInterfaceNaming(content, filePath) || []));
-          errors.push(...(checkStyleConventions(content, filePath) || []));
-        } catch (error) {
-          this.logger.warn(
-            'Failed to load additional validators:',
-            (error as Error).message
+        const additionalValidators = await this.loadAdditionalValidators();
+        if (additionalValidators) {
+          this.runContentValidators(
+            additionalValidators,
+            content,
+            filePath,
+            errors
           );
         }
       }
 
       // These validations always apply regardless of file type
-      try {
-        // @ts-ignore - TODO: Migrate additional-validators.js to TypeScript
-        const additionalValidators = (await import(
-          './additional-validators.js'
-        )) as any;
-
-        const {
-          checkEnumsOutsideTypes,
-          checkHookFileExtension,
-          checkAssetNaming,
-        } = additionalValidators;
-
-        const enumError = checkEnumsOutsideTypes(filePath);
-        if (enumError) errors.push(enumError);
-
-        const hookExtError = checkHookFileExtension(filePath);
-        if (hookExtError) errors.push(hookExtError);
-
-        const assetError = checkAssetNaming(filePath);
-        if (assetError) errors.push(assetError);
-      } catch (error) {
-        this.logger.warn(
-          'Failed to load additional validators for file-level checks:',
-          (error as Error).message
-        );
+      const additionalValidators = await this.loadAdditionalValidators();
+      if (additionalValidators) {
+        this.runFileValidators(additionalValidators, filePath, errors);
       }
     } catch (error) {
       this.logger.error(
@@ -176,5 +133,88 @@ export class RuleEngine implements IRuleEngine {
     // For now, we use validateFile method which reads the file content
     // In future, we could refactor to use the provided content directly
     return this.validateFile(filePath);
+  }
+
+  /**
+   * Safely load additional validators
+   */
+  private async loadAdditionalValidators(): Promise<any> {
+    try {
+      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+      // @ts-ignore - Temporary workaround for JS module import
+      return await import('./additional-validators.js');
+    } catch (error) {
+      this.logger.debug(
+        'Additional validators not found:',
+        (error as Error).message
+      );
+      return null;
+    }
+  }
+
+  /**
+   * Run content validators for non-index files
+   */
+  private runContentValidators(
+    additionalValidators: any,
+    content: string,
+    filePath: string,
+    errors: ValidationError[]
+  ): void {
+    try {
+      const {
+        checkInlineStyles,
+        checkCommentedCode,
+        checkHardcodedData,
+        checkFunctionComments,
+        checkFunctionNaming,
+        checkInterfaceNaming,
+        checkStyleConventions,
+      } = additionalValidators;
+
+      errors.push(...(checkInlineStyles(content, filePath) ?? []));
+      errors.push(...(checkCommentedCode(content, filePath) ?? []));
+      errors.push(...(checkHardcodedData(content, filePath) ?? []));
+      errors.push(...(checkFunctionComments(content, filePath) ?? []));
+      errors.push(...(checkFunctionNaming(content, filePath) ?? []));
+      errors.push(...(checkInterfaceNaming(content, filePath) ?? []));
+      errors.push(...(checkStyleConventions(content, filePath) ?? []));
+    } catch (error) {
+      this.logger.warn(
+        'Failed to run content validators:',
+        (error as Error).message
+      );
+    }
+  }
+
+  /**
+   * Run file validators that apply to all files
+   */
+  private runFileValidators(
+    additionalValidators: any,
+    filePath: string,
+    errors: ValidationError[]
+  ): void {
+    try {
+      const {
+        checkEnumsOutsideTypes,
+        checkHookFileExtension,
+        checkAssetNaming,
+      } = additionalValidators;
+
+      const enumError = checkEnumsOutsideTypes(filePath);
+      if (enumError) errors.push(enumError);
+
+      const hookExtError = checkHookFileExtension(filePath);
+      if (hookExtError) errors.push(hookExtError);
+
+      const assetError = checkAssetNaming(filePath);
+      if (assetError) errors.push(assetError);
+    } catch (error) {
+      this.logger.warn(
+        'Failed to run file validators:',
+        (error as Error).message
+      );
+    }
   }
 }
