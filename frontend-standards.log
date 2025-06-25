@@ -1,62 +1,247 @@
 ================================================================================
 FRONTEND STANDARDS VALIDATION REPORT
 ================================================================================
-Generated: 2025-06-25T16:45:12.843Z
+Generated: 2025-06-25T21:07:02.732Z
 Project: frontend-standards
-Project Type: node-package
+Project Type: node
 Monorepo: No
 
-SUMMARY: 8 violations found across 1 zones
+SUMMARY: 45 violations found across 1 zones
 
 RESULTS BY ZONE:
 ----------------------------------------
 
-📂 Zone: root
-   Errors: 8
+📂 Zone: src
+   Errors: 45
    Status: ❌ FAILED
 
 
 DETAILED VIOLATIONS:
 ----------------------------------------
 
-📂 Zone: root
+📂 Zone: src
 
-  📄 /Users/juan.pena/Projects/frontend-standards/checkFrontendStandards.config.js:56
-     Rule: Commented code
-     Issue: Leaving commented code in the repository is not allowed.
-     --------------------------------------------------
-
-  📄 /Users/juan.pena/Projects/frontend-standards/src/core/additional-validators.js:20
+  📄 undefined:22
      Rule: Inline styles
      Issue: Inline styles are not allowed. Use .style.ts files
      --------------------------------------------------
 
-  📄 /Users/juan.pena/Projects/frontend-standards/src/core/config-loader.js:105
+  📄 undefined:445
      Rule: Hardcoded data
      Issue: No hardcoded data should be left in the code except in mocks.
      --------------------------------------------------
 
-  📄 /Users/juan.pena/Projects/frontend-standards/src/core/config-loader.js:106
+  📄 undefined:849
      Rule: Hardcoded data
      Issue: No hardcoded data should be left in the code except in mocks.
      --------------------------------------------------
 
-  📄 /Users/juan.pena/Projects/frontend-standards/src/core/config-loader.js:119
+  📄 undefined:850
      Rule: Hardcoded data
      Issue: No hardcoded data should be left in the code except in mocks.
      --------------------------------------------------
 
-  📄 /Users/juan.pena/Projects/frontend-standards/src/utils/file-scanner.js:16
+  📄 undefined:1003
      Rule: Hardcoded data
      Issue: No hardcoded data should be left in the code except in mocks.
      --------------------------------------------------
 
-  📄 /Users/juan.pena/Projects/frontend-standards/src/utils/file-scanner.js:17
+  📄 undefined:1030
      Rule: Hardcoded data
      Issue: No hardcoded data should be left in the code except in mocks.
      --------------------------------------------------
 
-  📄 /Users/juan.pena/Projects/frontend-standards/src/utils/file-scanner.js:150
+  📄 undefined:105
+     Rule: Hardcoded data
+     Issue: No hardcoded data should be left in the code except in mocks.
+     --------------------------------------------------
+
+  📄 undefined:106
+     Rule: Hardcoded data
+     Issue: No hardcoded data should be left in the code except in mocks.
+     --------------------------------------------------
+
+  📄 undefined:119
+     Rule: Hardcoded data
+     Issue: No hardcoded data should be left in the code except in mocks.
+     --------------------------------------------------
+
+  📄 undefined:6
+     Rule: Interface naming
+     Issue: Exported interfaces must start with "I" and follow PascalCase (e.g., IButtonProps)
+     --------------------------------------------------
+
+  📄 undefined:14
+     Rule: Interface naming
+     Issue: Exported interfaces must start with "I" and follow PascalCase (e.g., IButtonProps)
+     --------------------------------------------------
+
+  📄 undefined:20
+     Rule: Interface naming
+     Issue: Exported interfaces must start with "I" and follow PascalCase (e.g., IButtonProps)
+     --------------------------------------------------
+
+  📄 undefined:39
+     Rule: Interface naming
+     Issue: Exported interfaces must start with "I" and follow PascalCase (e.g., IButtonProps)
+     --------------------------------------------------
+
+  📄 undefined:49
+     Rule: Interface naming
+     Issue: Exported interfaces must start with "I" and follow PascalCase (e.g., IButtonProps)
+     --------------------------------------------------
+
+  📄 undefined:57
+     Rule: Interface naming
+     Issue: Exported interfaces must start with "I" and follow PascalCase (e.g., IButtonProps)
+     --------------------------------------------------
+
+  📄 undefined:70
+     Rule: Interface naming
+     Issue: Exported interfaces must start with "I" and follow PascalCase (e.g., IButtonProps)
+     --------------------------------------------------
+
+  📄 undefined:78
+     Rule: Interface naming
+     Issue: Exported interfaces must start with "I" and follow PascalCase (e.g., IButtonProps)
+     --------------------------------------------------
+
+  📄 undefined:86
+     Rule: Interface naming
+     Issue: Exported interfaces must start with "I" and follow PascalCase (e.g., IButtonProps)
+     --------------------------------------------------
+
+  📄 undefined:92
+     Rule: Interface naming
+     Issue: Exported interfaces must start with "I" and follow PascalCase (e.g., IButtonProps)
+     --------------------------------------------------
+
+  📄 undefined:98
+     Rule: Interface naming
+     Issue: Exported interfaces must start with "I" and follow PascalCase (e.g., IButtonProps)
+     --------------------------------------------------
+
+  📄 undefined:111
+     Rule: Interface naming
+     Issue: Exported interfaces must start with "I" and follow PascalCase (e.g., IButtonProps)
+     --------------------------------------------------
+
+  📄 undefined:119
+     Rule: Interface naming
+     Issue: Exported interfaces must start with "I" and follow PascalCase (e.g., IButtonProps)
+     --------------------------------------------------
+
+  📄 undefined:143
+     Rule: Interface naming
+     Issue: Exported interfaces must start with "I" and follow PascalCase (e.g., IButtonProps)
+     --------------------------------------------------
+
+  📄 undefined:152
+     Rule: Interface naming
+     Issue: Exported interfaces must start with "I" and follow PascalCase (e.g., IButtonProps)
+     --------------------------------------------------
+
+  📄 undefined:161
+     Rule: Interface naming
+     Issue: Exported interfaces must start with "I" and follow PascalCase (e.g., IButtonProps)
+     --------------------------------------------------
+
+  📄 undefined:179
+     Rule: Interface naming
+     Issue: Exported interfaces must start with "I" and follow PascalCase (e.g., IButtonProps)
+     --------------------------------------------------
+
+  📄 undefined:186
+     Rule: Interface naming
+     Issue: Exported interfaces must start with "I" and follow PascalCase (e.g., IButtonProps)
+     --------------------------------------------------
+
+  📄 undefined:192
+     Rule: Interface naming
+     Issue: Exported interfaces must start with "I" and follow PascalCase (e.g., IButtonProps)
+     --------------------------------------------------
+
+  📄 undefined:197
+     Rule: Interface naming
+     Issue: Exported interfaces must start with "I" and follow PascalCase (e.g., IButtonProps)
+     --------------------------------------------------
+
+  📄 undefined:206
+     Rule: Interface naming
+     Issue: Exported interfaces must start with "I" and follow PascalCase (e.g., IButtonProps)
+     --------------------------------------------------
+
+  📄 undefined:212
+     Rule: Interface naming
+     Issue: Exported interfaces must start with "I" and follow PascalCase (e.g., IButtonProps)
+     --------------------------------------------------
+
+  📄 undefined:219
+     Rule: Interface naming
+     Issue: Exported interfaces must start with "I" and follow PascalCase (e.g., IButtonProps)
+     --------------------------------------------------
+
+  📄 undefined:227
+     Rule: Interface naming
+     Issue: Exported interfaces must start with "I" and follow PascalCase (e.g., IButtonProps)
+     --------------------------------------------------
+
+  📄 undefined:240
+     Rule: Interface naming
+     Issue: Exported interfaces must start with "I" and follow PascalCase (e.g., IButtonProps)
+     --------------------------------------------------
+
+  📄 undefined:269
+     Rule: Interface naming
+     Issue: Exported interfaces must start with "I" and follow PascalCase (e.g., IButtonProps)
+     --------------------------------------------------
+
+  📄 undefined:275
+     Rule: Interface naming
+     Issue: Exported interfaces must start with "I" and follow PascalCase (e.g., IButtonProps)
+     --------------------------------------------------
+
+  📄 undefined:284
+     Rule: Interface naming
+     Issue: Exported interfaces must start with "I" and follow PascalCase (e.g., IButtonProps)
+     --------------------------------------------------
+
+  📄 undefined:327
+     Rule: Interface naming
+     Issue: Exported interfaces must start with "I" and follow PascalCase (e.g., IButtonProps)
+     --------------------------------------------------
+
+  📄 undefined:336
+     Rule: Interface naming
+     Issue: Exported interfaces must start with "I" and follow PascalCase (e.g., IButtonProps)
+     --------------------------------------------------
+
+  📄 undefined:342
+     Rule: Interface naming
+     Issue: Exported interfaces must start with "I" and follow PascalCase (e.g., IButtonProps)
+     --------------------------------------------------
+
+  📄 undefined:16
+     Rule: Hardcoded data
+     Issue: No hardcoded data should be left in the code except in mocks.
+     --------------------------------------------------
+
+  📄 undefined:17
+     Rule: Hardcoded data
+     Issue: No hardcoded data should be left in the code except in mocks.
+     --------------------------------------------------
+
+  📄 undefined:178
+     Rule: Hardcoded data
+     Issue: No hardcoded data should be left in the code except in mocks.
+     --------------------------------------------------
+
+  📄 undefined:28
+     Rule: Hardcoded data
+     Issue: No hardcoded data should be left in the code except in mocks.
+     --------------------------------------------------
+
+  📄 undefined:29
      Rule: Hardcoded data
      Issue: No hardcoded data should be left in the code except in mocks.
      --------------------------------------------------
@@ -64,11 +249,11 @@ DETAILED VIOLATIONS:
 
 ERROR STATISTICS:
 ----------------------------------------
-• Hardcoded data: 6 occurrences (75.0%)
-• Commented code: 1 occurrences (12.5%)
-• Inline styles: 1 occurrences (12.5%)
+• Interface naming: 31 occurrences (68.9%)
+• Hardcoded data: 13 occurrences (28.9%)
+• Inline styles: 1 occurrences (2.2%)
 
-Total violations: 8
+Total violations: 45
 
 
 RECOMMENDATIONS:
