@@ -14,6 +14,7 @@ El validador ha sido **completamente refactorizado** y ahora funciona perfectame
 ## 📦 Instalación Universal
 
 ### Con Yarn (Recomendado)
+
 ```bash
 # Instalación desde GitHub
 yarn add frontend-standards-checker@https://github.com/juandape/frontend-standards.git
@@ -32,6 +33,7 @@ yarn lint:standards .
 ```
 
 ### Con NPM
+
 ```bash
 # Instalación desde GitHub
 npm install frontend-standards-checker@https://github.com/juandape/frontend-standards.git
@@ -50,6 +52,7 @@ npm run lint:standards .
 ```
 
 ### Ejecución Directa (sin scripts)
+
 ```bash
 # Con yarn
 yarn frontend-standards-checker .
@@ -63,7 +66,9 @@ npx frontend-standards-checker .
 - [Frontend Standards Checker - Guía Completa de Configuración](#frontend-standards-checker---guía-completa-de-configuración)
   - [✅ Estado Actual - Validador Corregido](#-estado-actual---validador-corregido)
   - [📦 Instalación Universal](#-instalación-universal)
-  - [⚙️ Configuración Rápida con Ejemplos](#️-configuración-rápida-con-ejemplos)
+    - [Con Yarn (Recomendado)](#con-yarn-recomendado)
+    - [Con NPM](#con-npm)
+    - [Ejecución Directa (sin scripts)](#ejecución-directa-sin-scripts)
   - [📋 Tabla de Contenidos](#-tabla-de-contenidos)
   - [🚀 Instrucciones de Uso](#-instrucciones-de-uso)
   - [🏗️ Arquitectura Refactorizada v2.3.0](#️-arquitectura-refactorizada-v230)
@@ -86,6 +91,11 @@ npx frontend-standards-checker .
     - [📋 Zonas Personalizadas Disponibles](#-zonas-personalizadas-disponibles)
   - [Sección 6: Reglas por Tipo de Archivo](#sección-6-reglas-por-tipo-de-archivo)
   - [Sección 7: Arquitectura y Mejores Prácticas](#sección-7-arquitectura-y-mejores-prácticas)
+  - [⚙️ Configuración Rápida con Ejemplos](#️-configuración-rápida-con-ejemplos)
+    - [1. Sin configuración (Usar reglas por defecto)](#1-sin-configuración-usar-reglas-por-defecto)
+    - [2. Configuración básica (checkFrontendStandards.config.js)](#2-configuración-básica-checkfrontendstandardsconfigjs)
+    - [3. Configuración para proyectos grandes (monorepos)](#3-configuración-para-proyectos-grandes-monorepos)
+    - [4. Configuración para React/Next.js](#4-configuración-para-reactnextjs)
   - [📋 Comandos Útiles](#-comandos-útiles)
     - [Configuración Básica](#configuración-básica)
     - [Validar Zonas Específicas](#validar-zonas-específicas)
@@ -814,6 +824,7 @@ export default [
 ## ⚙️ Configuración Rápida con Ejemplos
 
 ### 1. Sin configuración (Usar reglas por defecto)
+
 ```bash
 # Simplemente ejecutar sin archivo de configuración
 yarn lint:standards .
@@ -893,6 +904,7 @@ export default {
   ],
 }
 ```
+
 ## 📋 Comandos Útiles
 
 ### Configuración Básica
