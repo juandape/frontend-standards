@@ -257,4 +257,48 @@ export class ProjectAnalyzer {
       ],
     };
   }
+
+  /**
+   * Validate zone structure and naming conventions
+   * @param {Array} files - Array of file paths in the zone
+   * @param {Array} directories - Array of directory paths in the zone
+   * @param {string} zoneName - Name of the zone being validated
+   * @returns {Array} Array of validation errors
+   */
+  async validateZoneStructure(files, directories, zoneName) {
+    const errors = [];
+
+    // Import validation functions
+    const {
+      checkNamingConventions,
+      checkDirectoryNaming,
+      checkComponentStructure,
+    } = await import('./additional-validators.js');
+
+    // Validate file naming conventions
+    for (const filePath of files) {
+      const namingError = checkNamingConventions(filePath);
+      if (namingError) {
+        errors.push(namingError);
+      }
+    }
+
+    // Validate directory naming and component structure
+    for (const dirPath of directories) {
+      // Directory naming validation
+      const dirErrors = checkDirectoryNaming(dirPath);
+      errors.push(...dirErrors);
+
+      // Component structure validation
+      if (
+        dirPath.includes('/components/') ||
+        dirPath.includes('\\components\\')
+      ) {
+        const componentErrors = checkComponentStructure(dirPath);
+        errors.push(...componentErrors);
+      }
+    }
+
+    return errors;
+  }
 }

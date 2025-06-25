@@ -175,8 +175,33 @@ export class FrontendStandardsChecker {
    * Validate naming conventions
    */
   async validateNaming(zone, config) {
-    // Implementation will be moved to naming validator
-    return [];
+    const errors = [];
+
+    try {
+      // Get all files and directories in the zone
+      const files = await this.fileScanner.getFiles(zone.path);
+      const directories = await this.fileScanner.getDirectories(zone.path);
+
+      // Use project analyzer to validate zone structure and naming
+      const structureErrors = await this.projectAnalyzer.validateZoneStructure(
+        files,
+        directories,
+        zone.name
+      );
+      errors.push(...structureErrors);
+    } catch (error) {
+      this.logger.error(
+        `Error validating naming for zone ${zone.name}:`,
+        error
+      );
+      errors.push({
+        rule: 'Naming validation error',
+        message: `Failed to validate naming: ${error.message}`,
+        file: zone.path,
+      });
+    }
+
+    return errors;
   }
 
   /**

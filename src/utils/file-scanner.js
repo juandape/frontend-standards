@@ -51,7 +51,7 @@ export class FileScanner {
   }
 
   /**
-   * Get all directories in a path
+   * Get all directories in a directory that match the criteria
    * @param {string} dirPath Directory to scan
    * @param {Array} customIgnorePatterns Additional patterns to ignore
    * @returns {Promise<Array>} Array of directory paths
@@ -66,7 +66,7 @@ export class FileScanner {
     ];
     const directories = [];
 
-    await this.scanDirectories(dirPath, directories, ignorePatterns);
+    await this.scanDirectoriesOnly(dirPath, directories, ignorePatterns);
 
     this.logger.debug(`Found ${directories.length} directories in ${dirPath}`);
     return directories;
@@ -128,6 +128,34 @@ export class FileScanner {
       }
     } catch (error) {
       this.logger.warn(`Failed to scan directories in ${dir}:`, error.message);
+    }
+  }
+
+  /**
+   * Recursively scan for directories (only)
+   * @param {string} dir Directory to scan
+   * @param {Array} directories Array to accumulate directories
+   * @param {Array} ignorePatterns Patterns to ignore
+   */
+  async scanDirectoriesOnly(dir, directories, ignorePatterns) {
+    try {
+      const entries = fs.readdirSync(dir, { withFileTypes: true });
+
+      for (const entry of entries) {
+        const fullPath = path.join(dir, entry.name);
+
+        if (this.shouldIgnore(fullPath, ignorePatterns)) {
+          continue;
+        }
+
+        if (entry.isDirectory()) {
+          directories.push(fullPath);
+          // Recursively scan subdirectories
+          await this.scanDirectoriesOnly(fullPath, directories, ignorePatterns);
+        }
+      }
+    } catch (error) {
+      this.logger.warn(`Cannot read directory ${dir}: ${error.message}`);
     }
   }
 

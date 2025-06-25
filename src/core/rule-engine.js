@@ -50,6 +50,11 @@ export class RuleEngine {
 
       // Run basic rules
       for (const rule of this.rules) {
+        // Skip "No unused variables" as it's handled separately
+        if (rule.name === 'No unused variables') {
+          continue;
+        }
+
         try {
           if (rule.check(content, filePath)) {
             const errorInfo = {

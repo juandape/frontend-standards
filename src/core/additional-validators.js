@@ -5,6 +5,8 @@
 
 import fs from 'fs';
 import path from 'path';
+import * as acorn from 'acorn';
+import * as acornWalk from 'acorn-walk';
 
 /**
  * Check for inline styles
@@ -168,9 +170,8 @@ export function checkHardcodedData(content, filePath) {
     }
 
     // Check for hardcoded data but exclude CSS classes, Tailwind classes, and other valid cases
-    const hasHardcodedPattern = /(['"]).*([0-9]{3,}|lorem|dummy|test|prueba|foo|bar|baz).*\1/.test(
-      line
-    );
+    const hasHardcodedPattern =
+      /(['"]).*([0-9]{3,}|lorem|dummy|test|prueba|foo|bar|baz).*\1/.test(line);
     const isCSSClass = /className\s*=|class\s*=|style\s*=/.test(line);
 
     // Comprehensive Tailwind CSS pattern matching
@@ -324,7 +325,6 @@ export function checkFunctionComments(content, filePath) {
       // Look ahead to check if this function has complex logic
       let isComplex = false;
       let complexityScore = 0;
-      let functionBodyStart = i;
       let braceCount = 0;
       let inFunction = false;
       let linesInFunction = 0;
@@ -418,7 +418,9 @@ export function checkFunctionComments(content, filePath) {
         if (!hasComment) {
           errors.push({
             rule: 'Missing comment in complex function',
-            message: `Complex function '${functionName}' (complexity: ${complexityScore.toFixed(1)}, lines: ${linesInFunction}) must have comments explaining its behavior.`,
+            message: `Complex function '${functionName}' (complexity: ${complexityScore.toFixed(
+              1
+            )}, lines: ${linesInFunction}) must have comments explaining its behavior.`,
             file: `${filePath}:${i + 1}`,
           });
         }
@@ -436,8 +438,105 @@ export function checkFunctionComments(content, filePath) {
  * @returns {Array} Array of error objects
  */
 export function checkUnusedVariables(content, filePath) {
-  // Simplified implementation to avoid false positives
-  return [];
+  const errors = [];
+  try {
+    // Enable location tracking to get line numbers
+    const ast = acorn.parse(content, {
+      ecmaVersion: 'latest',
+      sourceType: 'module',
+      locations: true, // Important for line numbers
+      plugins: { jsx: true }, // Enable JSX parsing
+      allowImportExportEverywhere: true,
+    });
+
+    const declared = new Map(); // name -> { node, exported: false }
+    const used = new Set();
+    const exportedViaSpecifier = new Set();
+
+    // Find `export { foo }` and `export default foo`
+    acornWalk.simple(ast, {
+      ExportNamedDeclaration(node) {
+        if (node.specifiers) {
+          for (const specifier of node.specifiers) {
+            exportedViaSpecifier.add(specifier.local.name);
+          }
+        }
+      },
+      ExportDefaultDeclaration(node) {
+        if (node.declaration && node.declaration.name) {
+          exportedViaSpecifier.add(node.declaration.name);
+        } else if (node.declaration && node.declaration.type === 'Identifier') {
+          exportedViaSpecifier.add(node.declaration.name);
+        }
+      },
+    });
+
+    // Pass 1: Find all declarations and mark if they are exported.
+    acornWalk.ancestor(ast, {
+      VariableDeclarator(node, ancestors) {
+        if (node.id.type === 'Identifier') {
+          const name = node.id.name;
+          const parent = ancestors[ancestors.length - 2];
+          const grandParent =
+            ancestors.length > 2 ? ancestors[ancestors.length - 3] : null;
+          const isInlineExport =
+            parent.type === 'VariableDeclaration' &&
+            grandParent &&
+            grandParent.type === 'ExportNamedDeclaration';
+          const isSpecifierExport = exportedViaSpecifier.has(name);
+
+          if (!declared.has(name)) {
+            declared.set(name, {
+              node: node.id,
+              exported: isInlineExport || isSpecifierExport,
+            });
+          }
+        }
+      },
+    });
+
+    // Pass 2: Find all usages.
+    acornWalk.ancestor(ast, {
+      Identifier(node, ancestors) {
+        const parent = ancestors[ancestors.length - 2];
+
+        const isDeclaration =
+          (parent.type === 'VariableDeclarator' && parent.id === node) ||
+          (parent.type === 'FunctionDeclaration' && parent.id === node) ||
+          (parent.type === 'ClassDeclaration' && parent.id === node) ||
+          (parent.type === 'ImportSpecifier' && parent.local === node) ||
+          (parent.type === 'ImportDefaultSpecifier' && parent.local === node) ||
+          (parent.type === 'ImportNamespaceSpecifier' &&
+            parent.local === node) ||
+          ((parent.type === 'FunctionDeclaration' ||
+            parent.type === 'FunctionExpression' ||
+            parent.type === 'ArrowFunctionExpression') &&
+            parent.params.includes(node));
+
+        const isPropertyKey =
+          parent.type === 'Property' && parent.key === node && !parent.computed;
+
+        if (!isDeclaration && !isPropertyKey) {
+          used.add(node.name);
+        }
+      },
+    });
+
+    for (const [name, decl] of declared.entries()) {
+      if (!used.has(name) && !decl.exported && !/^_/.test(name)) {
+        errors.push({
+          rule: 'No unused variables',
+          message: `Variable '${name}' is declared but never used. (@typescript-eslint/no-unused-vars rule)`,
+          file: filePath,
+          line: decl.node.loc.start.line,
+        });
+      }
+    }
+  } catch (e) {
+    // If acorn fails to parse (e.g., complex TS syntax), we can add a log, but for now, we just skip.
+    // console.error(`Could not parse ${filePath}: ${e.message}`);
+  }
+  return errors;
 }
 
 /**
@@ -644,4 +743,307 @@ export function checkAssetNaming(filePath) {
   }
 
   return null;
+}
+
+// Keep track of flagged directories to avoid duplicate reports
+const flaggedDirectories = new Set();
+
+// Expected structure by zone type
+const DEFAULT_STRUCTURE = {
+  app: ['pages', 'components', 'public'],
+  package: ['src', 'package.json'],
+};
+
+// Naming conventions by file type
+const NAMING_RULES = [
+  {
+    dir: 'components',
+    regex: /^[A-Z][A-ZaZ0-9]+\.tsx$/,
+    desc: 'Components must be in PascalCase and end with .tsx',
+  },
+  {
+    dir: 'hooks',
+    regex: /^use[A-Z][a-zA-Z0-9]*\.hook\.(ts|tsx)$/,
+    desc: 'Hooks must start with use followed by PascalCase and end with .hook.ts or .hook.tsx',
+  },
+  {
+    dir: 'constants',
+    regex: /^[a-z][a-zA-Z0-9]*\.constant\.ts$/,
+    desc: 'Constants must be camelCase and end with .constant.ts',
+  },
+  {
+    dir: 'helper',
+    regex: /^[a-z][a-zA-Z0-9]*\.helper\.ts$/,
+    desc: 'Helpers must be camelCase and end with .helper.ts',
+  },
+  {
+    dir: 'helpers',
+    regex: /^[a-z][a-zA-Z0-9]*\.helper\.ts$/,
+    desc: 'Helpers must be camelCase and end with .helper.ts',
+  },
+  {
+    dir: 'types',
+    regex: /^[a-z][a-zA-Z0-9]*(\.[a-z][a-zA-Z0-9]*)*\.type\.ts$/,
+    desc: 'Types must be camelCase and end with .type.ts (may include additional extensions like .provider.type.ts)',
+  },
+  {
+    dir: 'styles',
+    regex: /^[a-z][a-zA-Z0-9]*\.style\.ts$/,
+    desc: 'Styles must be camelCase and end with .style.ts',
+  },
+  {
+    dir: 'enums',
+    regex: /^[a-z][a-zA-Z0-9]*\.enum\.ts$/,
+    desc: 'Enums must be camelCase and end with .enum.ts',
+  },
+  {
+    dir: 'assets',
+    regex: /^[a-z0-9]+(-[a-z0-9]+)*\.(svg|png|jpg|jpeg|gif|webp|ico)$/,
+    desc: 'Assets must be in kebab-case (e.g., service-error.svg)',
+  },
+];
+
+/**
+ * Check naming conventions for files
+ * @param {string} filePath - File path
+ * @returns {Object|null} Error object or null
+ */
+export function checkNamingConventions(filePath) {
+  const rel = filePath.split(path.sep);
+  const fname = rel[rel.length - 1];
+  const parentDir = rel[rel.length - 2]; // Get immediate parent directory
+
+  // Omit index.tsx and index.ts from naming convention checks
+  if (fname === 'index.tsx' || fname === 'index.ts') {
+    return null;
+  }
+
+  for (const rule of NAMING_RULES) {
+    // Check if the immediate parent directory matches the rule directory
+    if (parentDir === rule.dir) {
+      if (!rule.regex.test(fname)) {
+        return {
+          rule: 'Naming',
+          message: rule.desc,
+          file: filePath,
+        };
+      }
+    }
+  }
+  return null;
+}
+
+/**
+ * Check directory naming conventions
+ * @param {string} dirPath - Directory path
+ * @returns {Array} Array of error objects
+ */
+export function checkDirectoryNaming(dirPath) {
+  const errors = [];
+  const currentDirName = path.basename(dirPath);
+
+  // Skip excluded directories and files
+  if (
+    currentDirName.startsWith('.') ||
+    currentDirName === 'node_modules' ||
+    currentDirName === '__tests__' ||
+    currentDirName === '__test__' ||
+    currentDirName.includes('(') ||
+    currentDirName.includes(')') ||
+    currentDirName.includes('[') ||
+    currentDirName.includes(']') ||
+    currentDirName === 'coverage' ||
+    currentDirName === 'dist' ||
+    currentDirName === 'build' ||
+    currentDirName === 'public' ||
+    currentDirName === 'static' ||
+    currentDirName === 'temp' ||
+    currentDirName === 'tmp' ||
+    currentDirName.startsWith('__') ||
+    // Skip framework-specific directories that are allowed to have different naming
+    currentDirName === 'api' ||
+    currentDirName === 'lib' ||
+    currentDirName === 'utils' ||
+    currentDirName === 'pages' ||
+    currentDirName === 'components' ||
+    currentDirName === 'styles' ||
+    currentDirName === 'types' ||
+    currentDirName === 'hooks' ||
+    currentDirName === 'constants' ||
+    currentDirName === 'helpers' ||
+    currentDirName === 'assets' ||
+    currentDirName === 'enums'
+  ) {
+    return errors;
+  }
+
+  // Skip if it's the root directory or first level directories in monorepo (apps, packages, etc)
+  if (['apps', 'packages', 'config', 'k8s', 'src'].includes(currentDirName)) {
+    return errors;
+  }
+
+  // Only check directories that are actually inside meaningful project structure
+  const ROOT_DIR = process.cwd();
+  const relativePath = path.relative(ROOT_DIR, dirPath);
+
+  if (
+    relativePath.includes('/src/') &&
+    !relativePath.includes('/node_modules/')
+  ) {
+    // Check if current directory follows camelCase convention
+    // Allow PascalCase for component directories and camelCase for others
+    const isCamelCase = /^[a-z][a-zA-Z0-9]*$/.test(currentDirName);
+    const isPascalCase = /^[A-Z][a-zA-Z0-9]*$/.test(currentDirName);
+
+    // Special case: Allow kebab-case for route directories (Next.js routing)
+    const isValidRouteDir =
+      /^[a-z0-9]+(-[a-z0-9]+)*$/.test(currentDirName) &&
+      (relativePath.includes('/app/') || relativePath.includes('/pages/'));
+
+    if (!isCamelCase && !isPascalCase && !isValidRouteDir) {
+      // Check if we've already flagged this directory name in any path
+      const alreadyFlagged = Array.from(flaggedDirectories).some(
+        (flaggedPath) => path.basename(flaggedPath) === currentDirName
+      );
+
+      if (!alreadyFlagged) {
+        // Generate a proper camelCase suggestion based on the actual directory name
+        const camelCaseSuggestion = currentDirName
+          .toLowerCase()
+          .replace(/-([a-z])/g, (match, letter) => letter.toUpperCase())
+          .replace(/_([a-z])/g, (match, letter) => letter.toUpperCase());
+
+        errors.push({
+          rule: 'Directory naming',
+          message: `Directory '${currentDirName}' should follow camelCase convention (e.g., '${camelCaseSuggestion}')`,
+          file: dirPath,
+        });
+
+        // Mark this directory name as flagged
+        flaggedDirectories.add(dirPath);
+      }
+    }
+  }
+
+  return errors;
+}
+
+/**
+ * Check component structure
+ * @param {string} componentDir - Component directory path
+ * @returns {Array} Array of error objects
+ */
+export function checkComponentStructure(componentDir) {
+  const errors = [];
+  const componentName = path.basename(componentDir);
+
+  // Skip validation for generic 'components' directories that are just containers
+  if (componentName === 'components') {
+    return errors;
+  }
+
+  // Different expectations based on directory type
+  const isUtilityDir = [
+    'hooks',
+    'types',
+    'constants',
+    'helpers',
+    'utils',
+  ].includes(componentName);
+  const indexTsxFile = path.join(componentDir, 'index.tsx');
+  const indexTsFile = path.join(componentDir, 'index.ts');
+
+  if (isUtilityDir) {
+    // Utility directories should have index.ts
+    if (!fs.existsSync(indexTsFile)) {
+      errors.push({
+        rule: 'Component structure',
+        message: `Utility directory '${componentName}' should have an index.ts file for exports`,
+        file: indexTsFile,
+      });
+    }
+  } else if (!fs.existsSync(indexTsxFile) && !fs.existsSync(indexTsFile)) {
+    // Component directories should have index.tsx or index.ts
+    errors.push({
+      rule: 'Component structure',
+      message:
+        'Component must have an index.tsx file (for components) or index.ts file (for exports)',
+      file: indexTsxFile,
+    });
+  }
+
+  // Check for hooks directory and hook file naming
+  const hooksDir = path.join(componentDir, 'hooks');
+  if (fs.existsSync(hooksDir)) {
+    const hookFiles = fs
+      .readdirSync(hooksDir)
+      .filter(
+        (file) => file.endsWith('.hook.ts') || file.endsWith('.hook.tsx')
+      );
+
+    // If hooks directory exists, should have hooks
+    if (hookFiles.length === 0) {
+      errors.push({
+        rule: 'Component structure',
+        message:
+          'Hooks directory should contain hook files with .hook.ts or .hook.tsx extension',
+        file: hooksDir,
+      });
+    }
+  }
+
+  // Check component type naming (types directory)
+  const typesDir = path.join(componentDir, 'types');
+  if (fs.existsSync(typesDir)) {
+    const typeFiles = fs
+      .readdirSync(typesDir)
+      .filter(
+        (file) =>
+          file.endsWith('.ts') &&
+          !file.includes('.test.') &&
+          !file.includes('.spec.') &&
+          file !== 'index.ts'
+      );
+
+    if (typeFiles.length > 0) {
+      for (const typeFile of typeFiles) {
+        if (!typeFile.endsWith('.type.ts')) {
+          const typeFilePath = path.join(typesDir, typeFile);
+          errors.push({
+            rule: 'Component type naming',
+            message: 'Type file should end with .type.ts',
+            file: typeFilePath,
+          });
+        }
+      }
+    }
+  }
+
+  // Check component style naming (styles directory)
+  const stylesDir = path.join(componentDir, 'styles');
+  if (fs.existsSync(stylesDir)) {
+    const styleFiles = fs
+      .readdirSync(stylesDir)
+      .filter(
+        (file) =>
+          file.endsWith('.ts') &&
+          !file.includes('.test.') &&
+          !file.includes('.spec.')
+      );
+
+    if (styleFiles.length > 0) {
+      for (const styleFile of styleFiles) {
+        if (!styleFile.endsWith('.style.ts')) {
+          const styleFilePath = path.join(stylesDir, styleFile);
+          errors.push({
+            rule: 'Component style naming',
+            message: 'Style file should end with .style.ts',
+            file: styleFilePath,
+          });
+        }
+      }
+    }
+  }
+
+  return errors;
 }
