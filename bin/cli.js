@@ -9,7 +9,9 @@ import { FrontendStandardsChecker } from '../src/index.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
-const packageJson = JSON.parse(readFileSync(join(__dirname, '../package.json'), 'utf8'));
+const packageJson = JSON.parse(
+  readFileSync(join(__dirname, '../package.json'), 'utf8')
+);
 
 const program = new Command();
 
@@ -31,7 +33,9 @@ program
   .option('--skip-content', 'Skip content validation')
   .action(async (options) => {
     try {
-      console.log(chalk.blue(`🔍 Frontend Standards Checker v${packageJson.version}`));
+      console.log(
+        chalk.blue(`🔍 Frontend Standards Checker v${packageJson.version}`)
+      );
       console.log(chalk.gray('Analyzing your frontend project...\n'));
 
       const checker = new FrontendStandardsChecker({
