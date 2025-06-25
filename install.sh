@@ -8,44 +8,44 @@ set -e
 echo "🚀 Frontend Standards Checker - Instalación Automática"
 echo "=================================================="
 
-# Verificar si npm o yarn están disponibles y cual se usa en el proyecto
+# Verificar si npm, bun están disponibles y cual se usa en el proyecto
 PACKAGE_MANAGER=""
 INSTALL_CMD=""
 RUN_CMD=""
 
-# Verificar si existe yarn.lock (prioritario)
-if [ -f "yarn.lock" ] && command -v yarn &> /dev/null; then
-    PACKAGE_MANAGER="yarn"
-    INSTALL_CMD="yarn add --dev"
-    RUN_CMD="yarn"
+# Verificar si existe bun.lockb (prioritario)
+if [ -f "bun.lockb" ] && command -v bun &> /dev/null; then
+    PACKAGE_MANAGER="bun"
+    INSTALL_CMD="bun add --dev"
+    RUN_CMD="bun run"
 # Verificar si existe package-lock.json
 elif [ -f "package-lock.json" ] && command -v npm &> /dev/null; then
     PACKAGE_MANAGER="npm"
     INSTALL_CMD="npm install --save-dev"
     RUN_CMD="npm run"
-# Verificar si yarn está disponible (sin lock files)
-elif command -v yarn &> /dev/null; then
-    PACKAGE_MANAGER="yarn"
-    INSTALL_CMD="yarn add --dev"
-    RUN_CMD="yarn"
+# Verificar si bun está disponible (sin lock files)
+elif command -v bun &> /dev/null; then
+    PACKAGE_MANAGER="bun"
+    INSTALL_CMD="bun add --dev"
+    RUN_CMD="bun run"
 # Fallback a npm
 elif command -v npm &> /dev/null; then
     PACKAGE_MANAGER="npm"
     INSTALL_CMD="npm install --save-dev"
     RUN_CMD="npm run"
 else
-    echo "❌ Error: No se encontró npm ni yarn instalado."
+    echo "❌ Error: No se encontró npm ni bun instalado."
     exit 1
 fi
 
 echo "📦 Usando $PACKAGE_MANAGER como gestor de paquetes"
 
 # Mostrar información específica según el package manager detectado
-if [ "$PACKAGE_MANAGER" = "yarn" ]; then
-    if [ -f "yarn.lock" ]; then
-        echo "✅ Detectado proyecto con Yarn (yarn.lock encontrado)"
+if [ "$PACKAGE_MANAGER" = "bun" ]; then
+    if [ -f "bun.lockb" ]; then
+        echo "✅ Detectado proyecto con Bun (bun.lockb encontrado)"
     else
-        echo "ℹ️  Usando Yarn (no se encontró yarn.lock, se creará uno nuevo)"
+        echo "ℹ️  Usando Bun (no se encontró bun.lockb, se creará uno nuevo)"
     fi
 else
     if [ -f "package-lock.json" ]; then
@@ -66,9 +66,9 @@ echo "✅ Encontrado package.json"
 
 # Instalar el paquete
 echo "📥 Instalando frontend-standards-checker..."
-if [ "$PACKAGE_MANAGER" = "yarn" ]; then
-    # Yarn requiere un formato específico para repos de Git
-    yarn add --dev frontend-standards-checker@https://github.com/juandape/frontend-standards.git
+if [ "$PACKAGE_MANAGER" = "bun" ]; then
+    # Bun requiere un formato específico para repos de Git
+    bun add --dev frontend-standards-checker@https://github.com/juandape/frontend-standards.git
 else
     npm install --save-dev git+https://github.com/juandape/frontend-standards.git
 fi
@@ -112,7 +112,7 @@ if grep -q '"lint:standards"' package.json; then
     echo "ℹ️  Scripts ya configurados en package.json"
 else
     # Crear archivo temporal con los nuevos scripts
-    if [ "$PACKAGE_MANAGER" = "yarn" ]; then
+    if [ "$PACKAGE_MANAGER" = "bun" ]; then
         SCRIPTS='"lint:standards": "frontend-standards-checker",
     "lint:standards:zones": "frontend-standards-checker --zones",
     "lint:standards:verbose": "frontend-standards-checker --verbose",
@@ -163,15 +163,15 @@ echo ""
 echo "🎉 ¡Instalación completada exitosamente!"
 echo ""
 echo "🔍 Comandos disponibles:"
-if [ "$PACKAGE_MANAGER" = "yarn" ]; then
-    echo "   yarn lint:standards                    # Ejecutar validación completa"
-    echo "   yarn lint:standards:zones src components # Validar zonas específicas"
-    echo "   yarn lint:standards:verbose             # Modo detallado"
-    echo "   yarn lint:standards:report              # Generar reporte JSON"
+if [ "$PACKAGE_MANAGER" = "bun" ]; then
+    echo "   bun run lint:standards                    # Ejecutar validación completa"
+    echo "   bun run lint:standards:zones src components # Validar zonas específicas"
+    echo "   bun run lint:standards:verbose             # Modo detallado"
+    echo "   bun run lint:standards:report              # Generar reporte JSON"
     echo ""
-    echo "🧶 Comandos adicionales de Yarn:"
-    echo "   yarn frontend-standards-checker         # Ejecutar directamente"
-    echo "   yarn frontend-standards-checker --help  # Ver todas las opciones"
+    echo "🍞 Comandos adicionales de Bun:"
+    echo "   bun frontend-standards-checker         # Ejecutar directamente"
+    echo "   bun frontend-standards-checker --help  # Ver todas las opciones"
 else
     echo "   $RUN_CMD lint:standards                # Ejecutar validación completa"
     echo "   $RUN_CMD lint:standards:zones          # Validar zonas específicas"

@@ -33,18 +33,18 @@ cat > package.json << 'EOF'
 EOF
 
 # Detectar package manager disponible
-if command -v yarn &> /dev/null; then
-    echo "🧶 Probando instalación con Yarn..."
-    yarn init -y > /dev/null 2>&1 || true
+if command -v bun &> /dev/null; then
+    echo "🍞 Probando instalación con Bun..."
+    bun init -y > /dev/null 2>&1 || true
 
     echo "📥 Instalando paquete..."
-    yarn add --dev frontend-standards-checker@https://github.com/juandape/frontend-standards.git
+    bun add --dev frontend-standards-checker@https://github.com/juandape/frontend-standards.git
 
-    echo "✅ Instalación con Yarn completada"
+    echo "✅ Instalación con Bun completada"
 
     # Probar comandos
     echo "🔍 Probando comandos..."
-    yarn frontend-standards-checker --help > /dev/null && echo "✅ Comando directo funciona"
+    bun frontend-standards-checker --help > /dev/null && echo "✅ Comando directo funciona"
 
 elif command -v npm &> /dev/null; then
     echo "📦 Probando instalación con NPM..."
@@ -59,7 +59,7 @@ elif command -v npm &> /dev/null; then
     npx frontend-standards-checker --help > /dev/null && echo "✅ Comando directo funciona"
 
 else
-    echo "❌ Error: No se encontró npm ni yarn"
+    echo "❌ Error: No se encontró npm ni bun"
     exit 1
 fi
 

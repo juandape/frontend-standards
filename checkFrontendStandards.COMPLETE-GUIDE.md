@@ -1037,8 +1037,8 @@ export default [
 # Con npm
 npm install --save-dev frontend-standards-checker
 
-# Con yarn
-yarn add --dev frontend-standards-checker
+# Con bun
+bun add --dev frontend-standards-checker
 ```
 
 #### Opción 2: Instalar desde GitHub
@@ -1047,8 +1047,8 @@ yarn add --dev frontend-standards-checker
 # Con npm
 npm install --save-dev git+https://github.com/tu-usuario/frontend-standards.git
 
-# Con yarn
-yarn add --dev git+https://github.com/tu-usuario/frontend-standards.git
+# Con bun
+bun add --dev git+https://github.com/tu-usuario/frontend-standards.git
 ```
 
 #### Opción 3: Clonar e Instalar Localmente
@@ -1450,9 +1450,9 @@ Ver \`checkFrontendStandards.config.js\` para reglas específicas del proyecto.
 rm -rf node_modules package-lock.json
 npm install
 
-# O con yarn
-rm -rf node_modules yarn.lock
-yarn install
+# O con bun
+rm -rf node_modules bun.lockb
+bun install
 ```
 
 #### Error: "Configuration file not found"

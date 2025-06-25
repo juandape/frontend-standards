@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Comando de instalación rápida para Yarn
+# Comando de instalación rápida para Bun
 # Uso directo sin script
 
 echo "🚀 Instalación Rápida - Frontend Standards Checker"
@@ -15,11 +15,11 @@ fi
 
 echo "✅ Encontrado package.json"
 
-# Verificar si tenemos yarn.lock o usar npm
-if [ -f "yarn.lock" ] && command -v yarn &> /dev/null; then
-    echo "🧶 Instalando con Yarn..."
-    yarn add --dev frontend-standards-checker@https://github.com/juandape/frontend-standards.git
-    echo "✅ Instalado con Yarn"
+# Verificar si tenemos bun.lockb o usar npm
+if [ -f "bun.lockb" ] && command -v bun &> /dev/null; then
+    echo "🍞 Instalando con Bun..."
+    bun add --dev frontend-standards-checker@https://github.com/juandape/frontend-standards.git
+    echo "✅ Instalado con Bun"
     
     # Agregar scripts si no existen
     if ! grep -q '"lint:standards"' package.json; then
@@ -31,7 +31,7 @@ if [ -f "yarn.lock" ] && command -v yarn &> /dev/null; then
     fi
     
     echo ""
-    echo "🎉 ¡Listo! Usa: yarn lint:standards"
+    echo "🎉 ¡Listo! Usa: bun run lint:standards"
     
 elif command -v npm &> /dev/null; then
     echo "📦 Instalando con NPM..."
@@ -51,7 +51,7 @@ elif command -v npm &> /dev/null; then
     echo "🎉 ¡Listo! Usa: npm run lint:standards"
     
 else
-    echo "❌ Error: No se encontró npm ni yarn instalado."
+    echo "❌ Error: No se encontró npm ni bun instalado."
     exit 1
 fi
 

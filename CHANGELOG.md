@@ -4,22 +4,22 @@
 
 ### 🔧 Fixes
 
-- **Yarn Installation**: Corregido formato de instalación para Yarn
-  - Cambiado de `git+https://` a `package-name@https://` para compatibilidad con Yarn
+- **Bun Installation**: Corregido formato de instalación para Bun
+- Cambiado de `git+https://` a `package-name@https://` para compatibilidad con Bun
   - Actualizado script de instalación automática
   - Agregadas instrucciones específicas para troubleshooting
 
 ### 📚 Documentation
 
-- **Nueva guía para Yarn**: Archivo `YARN.md` con instrucciones específicas
+- **Nueva guía para Bun**: Archivo `BUN.md` con instrucciones específicas
 - **Troubleshooting mejorado**: Agregadas soluciones para errores comunes
 - **Ejemplos actualizados**: Comandos correctos para ambos package managers
 
 ### 🛠️ Improvements
 
-- **Script de instalación inteligente**: Detecta automáticamente Yarn vs NPM
+- **Script de instalación inteligente**: Detecta automáticamente Bun vs NPM
 - **Mejor detección de package manager**: Prioriza basado en lockfiles existentes
-- **Comandos específicos**: Ejemplos diferenciados para NPM y Yarn
+- **Comandos específicos**: Ejemplos diferenciados para NPM y Bun
 
 ## [v2.0.0] - 2025-06-24
 
@@ -57,7 +57,7 @@
 
 - [Guía de Instalación](./INSTALLATION.md)
 - [Guía Completa](./checkFrontendStandards.COMPLETE-GUIDE.md)
-- [Guía Yarn](./YARN.md)
+- [Guía Bun](./BUN.md)
 - [Ejemplos](./examples/)
 
 ### 🆘 Soporte

@@ -13,7 +13,7 @@ curl -fsSL https://raw.githubusercontent.com/juandape/frontend-standards/main/in
 
 Este script automáticamente:
 
-- ✅ Detecta si usas npm o yarn
+- ✅ Detecta si usas npm o bun
 - ✅ Instala el paquete como dependencia de desarrollo
 - ✅ Crea un archivo de configuración básico
 - ✅ Agrega scripts útiles a tu package.json
@@ -27,13 +27,13 @@ Este script automáticamente:
 npm install --save-dev git+https://github.com/juandape/frontend-standards.git
 ```
 
-#### Con Yarn
+#### Con Bun
 
 ```bash
-yarn add --dev frontend-standards-checker@https://github.com/juandape/frontend-standards.git
+bun add --dev frontend-standards-checker@https://github.com/juandape/frontend-standards.git
 ```
 
-> **Nota**: Yarn y NPM usan formatos diferentes para instalar desde repositorios Git. El script automático maneja esto automáticamente.
+> **Nota**: Bun y NPM usan formatos diferentes para instalar desde repositorios Git. El script automático maneja esto automáticamente.
 
 ## ⚙️ Configuración Manual
 
@@ -83,20 +83,20 @@ npm run lint:standards:verbose
 npm run lint:standards:report
 ```
 
-### Con Yarn
+### Con Bun
 
 ```bash
 # Validar todo el proyecto
-yarn lint:standards
+bun run lint:standards
 
 # Validar zonas específicas
-yarn lint:standards:zones src components
+bun run lint:standards:zones src components
 
 # Modo verbose para ver detalles
-yarn lint:standards:verbose
+bun run lint:standards:verbose
 
 # Generar reporte JSON
-yarn lint:standards:report
+bun run lint:standards:report
 ```
 
 ## 🏢 Para Equipos de Trabajo
@@ -114,15 +114,15 @@ npx husky install
 npx husky add .husky/pre-commit "npm run lint:standards"
 ```
 
-#### Con Yarn + Husky
+#### Con Bun + Husky
 
 ```bash
 # Instalar husky para git hooks
-yarn add --dev husky
+bun add --dev husky
 
 # Configurar pre-commit hook
-yarn husky install
-yarn husky add .husky/pre-commit "yarn lint:standards"
+bun husky install
+bun husky add .husky/pre-commit "bun run lint:standards"
 ```
 
 #### Configuración de package.json para ambos
@@ -165,7 +165,7 @@ jobs:
     - run: npm run lint:standards:report
 ```
 
-#### GitHub Actions (Yarn)
+#### GitHub Actions (Bun)
 
 ```yaml
 # .github/workflows/standards.yml
@@ -178,12 +178,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v3
-    - uses: actions/setup-node@v3
+    - uses: oven-sh/setup-bun@v1
       with:
-        node-version: '18'
-        cache: 'yarn'
-    - run: yarn install --frozen-lockfile
-    - run: yarn lint:standards:report
+        bun-version: latest
+    - run: bun install
+    - run: bun run lint:standards:report
 ```
 
 #### GitLab CI (NPM)
@@ -201,16 +200,16 @@ standards_check:
       junit: standards-report.json
 ```
 
-#### GitLab CI (Yarn)
+#### GitLab CI (Bun)
 
 ```yaml
 # .gitlab-ci.yml
 standards_check:
   stage: test
-  image: node:18
+  image: oven/bun:latest
   script:
-    - yarn install --frozen-lockfile
-    - yarn lint:standards:report
+    - bun install
+    - bun run lint:standards:report
   artifacts:
     reports:
       junit: standards-report.json
@@ -331,7 +330,7 @@ export default [
 Para ejemplos avanzados, configuraciones personalizadas y guía completa, consulta:
 
 - [Guía Completa de Configuración](./checkFrontendStandards.COMPLETE-GUIDE.md)
-- [Guía Específica para Yarn](./YARN.md) 🧶
+- [Guía Específica para Bun](./BUN.md) 🍞
 - [Documentación Técnica](./TECHNICAL.md)
 - [Ejemplos de Configuración](./examples/)
 
@@ -355,39 +354,39 @@ npm install
 echo 'export default [];' > checkFrontendStandards.config.js
 ```
 
-#### Con Yarn
+#### Con Bun
 
 **Error: "Module not found"**
 
 ```bash
-rm -rf node_modules yarn.lock
-yarn install
+rm -rf node_modules bun.lockb
+bun install
 ```
 
 **Error: "Package not found in registry"**
 
 ```bash
-# Limpiar cache de yarn
-yarn cache clean
+# Limpiar cache de bun
+bun pm cache rm
 # Reinstalar
-yarn install
+bun install
 ```
 
 **Error: "Command not found"**
 
 ```bash
 # Verificar que el script existe en package.json
-yarn run --help
+bun run --help
 # Ejecutar directamente si el script no está configurado
-yarn frontend-standards-checker
+bun frontend-standards-checker
 ```
 
 **Error: "git+https://... didn't match the required format"**
 
 ```bash
-# Usar el formato correcto para Yarn
-yarn add --dev frontend-standards-checker@https://github.com/juandape/frontend-standards.git
-# NO usar: yarn add --dev git+https://...
+# Usar el formato correcto para Bun
+bun add --dev frontend-standards-checker@https://github.com/juandape/frontend-standards.git
+# NO usar: bun add --dev git+https://...
 ```
 
 ### Obtener Ayuda
@@ -402,14 +401,14 @@ npx frontend-standards-checker --help
 npm run lint:standards:verbose
 ```
 
-#### Con Yarn
+#### Con Bun
 
 ```bash
 # Ver todas las opciones
-yarn frontend-standards-checker --help
+bun frontend-standards-checker --help
 
 # Modo verbose para depuración
-yarn lint:standards:verbose
+bun run lint:standards:verbose
 ```
 
 ## 🤝 Contribuir

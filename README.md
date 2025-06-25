@@ -27,10 +27,10 @@ curl -fsSL https://raw.githubusercontent.com/juandape/frontend-standards/main/in
 npm install --save-dev git+https://github.com/juandape/frontend-standards.git
 ```
 
-#### Manual con Yarn
+#### Manual con Bun
 
 ```bash
-yarn add --dev frontend-standards-checker@https://github.com/juandape/frontend-standards.git
+bun add --dev frontend-standards-checker@https://github.com/juandape/frontend-standards.git
 ```
 
 ### Para desarrollo de la herramienta
@@ -49,12 +49,12 @@ Una vez instalado en tu proyecto:
 # Con NPM
 npm run lint:standards
 
-# Con Yarn
-yarn lint:standards
+# Con Bun
+bun run lint:standards
 
 # Validar zonas específicas
 npm run lint:standards -- --zones src components
-yarn lint:standards:zones src components
+bun run lint:standards:zones src components
 ```
 
 # Validar zonas específicas
