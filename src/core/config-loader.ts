@@ -401,6 +401,11 @@ export class ConfigLoader implements IConfigLoader {
         check: (_content: string, filePath: string): boolean => {
           const fileName = path.basename(filePath);
 
+          // Allow index.ts/index.tsx files in types directories (used for exporting types)
+          if (fileName === 'index.ts' || fileName === 'index.tsx') {
+            return false;
+          }
+
           // Type files should be camelCase and end with .type.ts
           if (filePath.includes('/types/') || fileName.endsWith('.type.ts')) {
             const typePattern =
@@ -412,7 +417,7 @@ export class ConfigLoader implements IConfigLoader {
 
           return false;
         },
-        message: 'Type files should be camelCase and end with .type.ts',
+        message: 'Type files should be camelCase and end with .type.ts (index.ts files are allowed for exports)',
       },
       {
         name: 'Constants naming',
