@@ -119,7 +119,16 @@ export class FrontendStandardsChecker {
 
         const zoneErrors: ValidationError[] = [];
 
-        for (const file of files) {
+        // Filter out configuration files before processing
+        const validFiles = files.filter((file) => {
+          const isConfigFile = this.ruleEngine.isConfigurationFile(file.path);
+          if (isConfigFile && this.options.verbose) {
+            this.logger.debug(`Skipping configuration file: ${file.path}`);
+          }
+          return !isConfigFile;
+        });
+
+        for (const file of validFiles) {
           if (this.options.verbose) {
             this.logger.info(`  🔍 Validating: ${file.path}`);
           }
@@ -147,14 +156,14 @@ export class FrontendStandardsChecker {
 
         const zoneResult: ZoneResult = {
           zone,
-          filesProcessed: files.length,
+          filesProcessed: validFiles.length,
           errors: zoneErrors,
           errorsCount: zoneErrorsCount,
           warningsCount: zoneWarningsCount,
         };
 
         zoneResults.push(zoneResult);
-        totalFiles += files.length;
+        totalFiles += validFiles.length;
         totalErrors += zoneErrorsCount;
         totalWarnings += zoneWarningsCount;
 
@@ -194,7 +203,19 @@ export class FrontendStandardsChecker {
       const zoneErrors: Record<string, ValidationError[]> = {};
       zoneResults.forEach((zone) => {
         zoneErrors[zone.zone] = zone.errors;
+        // Debug: log errors count per zone before passing to reporter
+        this.logger.debug(
+          `🐛 Zone ${zone.zone}: ${zone.errors.length} errors before reporter`
+        );
       });
+
+      const totalErrorsToReporter = Object.values(zoneErrors).reduce(
+        (sum, errors) => sum + errors.length,
+        0
+      );
+      this.logger.debug(
+        `🐛 Total errors being passed to reporter: ${totalErrorsToReporter}`
+      );
 
       await this.reporter.generate(zoneErrors, projectInfo, config);
 
