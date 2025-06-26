@@ -117,6 +117,35 @@ export class ConfigLoader implements IConfigLoader {
   }
 
   /**
+   * Check if a file is a configuration file that should be excluded from validation
+   * @param filePath The file path to check
+   * @returns True if the file is a configuration file
+   */
+  private isConfigFile(filePath: string): boolean {
+    const fileName = path.basename(filePath);
+    
+    // Common configuration file patterns
+    const configPatterns = [
+      /\.config\.(js|ts|mjs|cjs|json)$/,
+      /^(jest|vite|webpack|tailwind|next|eslint|prettier|babel|rollup|tsconfig)\.config\./,
+      /^(vitest|nuxt|quasar)\.config\./,
+      /^tsconfig.*\.json$/,
+      /^\.eslintrc/,
+      /^\.prettierrc/,
+      /^babel\.config/,
+      /^postcss\.config/,
+      /^stylelint\.config/,
+      /^cypress\.config/,
+      /^playwright\.config/,
+      /^storybook\.config/,
+      /^metro\.config/,
+      /^expo\.config/,
+    ];
+
+    return configPatterns.some(pattern => pattern.test(fileName));
+  }
+
+  /**
    * Get default configuration
    * @returns Default configuration
    */
@@ -228,6 +257,22 @@ export class ConfigLoader implements IConfigLoader {
         category: 'structure',
         severity: 'warning',
         check: (content: string, filePath: string): boolean => {
+          const fileName = path.basename(filePath);
+          
+          // Skip configuration files
+          if (fileName.includes('.config.') || 
+              fileName.startsWith('jest.config.') ||
+              fileName.startsWith('vite.config.') ||
+              fileName.startsWith('webpack.config.') ||
+              fileName.startsWith('tailwind.config.') ||
+              fileName.startsWith('next.config.') ||
+              fileName.startsWith('tsconfig.') ||
+              fileName.startsWith('eslint.config.') ||
+              fileName.includes('test.config.') ||
+              fileName.includes('spec.config.')) {
+            return false;
+          }
+
           // Detect potential circular dependencies
           const imports =
             content.match(/import.*from\s+['"]([^'"]+)['"]/g) || [];
@@ -349,6 +394,11 @@ export class ConfigLoader implements IConfigLoader {
         category: 'naming',
         severity: 'error',
         check: (_content: string, filePath: string): boolean => {
+          // Skip configuration files
+          if (this.isConfigFile(filePath)) {
+            return false;
+          }
+
           const fileName = path.basename(filePath);
           const dirName = path.basename(path.dirname(filePath));
 
@@ -374,6 +424,11 @@ export class ConfigLoader implements IConfigLoader {
         category: 'naming',
         severity: 'error',
         check: (_content: string, filePath: string): boolean => {
+          // Skip configuration files
+          if (this.isConfigFile(filePath)) {
+            return false;
+          }
+
           const fileName = path.basename(filePath);
 
           // Allow index.ts/index.tsx files in hooks directories (used for exporting hooks)
@@ -399,6 +454,11 @@ export class ConfigLoader implements IConfigLoader {
         category: 'naming',
         severity: 'error',
         check: (_content: string, filePath: string): boolean => {
+          // Skip configuration files
+          if (this.isConfigFile(filePath)) {
+            return false;
+          }
+
           const fileName = path.basename(filePath);
 
           // Allow index.ts/index.tsx files in types directories (used for exporting types)
@@ -523,6 +583,11 @@ export class ConfigLoader implements IConfigLoader {
         category: 'naming',
         severity: 'info',
         check: (_content: string, filePath: string): boolean => {
+          // Skip configuration files
+          if (this.isConfigFile(filePath)) {
+            return false;
+          }
+
           const pathParts = filePath.split('/');
 
           // Check each directory part for proper naming
@@ -654,7 +719,12 @@ export class ConfigLoader implements IConfigLoader {
         name: 'No any type',
         category: 'typescript',
         severity: 'error',
-        check: (content: string): boolean => {
+        check: (content: string, filePath: string): boolean => {
+          // Skip configuration files
+          if (this.isConfigFile(filePath)) {
+            return false;
+          }
+
           // Skip type declaration files
           if (content.includes('declare')) return false;
 
@@ -725,12 +795,17 @@ export class ConfigLoader implements IConfigLoader {
         category: 'content',
         severity: 'error',
         check: (content: string, filePath: string): boolean => {
-          // Skip configuration and setup files
-          const isConfigFile =
-            /(config|setup|mock|__tests__|\.test\.|\.spec\.|instrumentation|sentry|jest\.setup|jest\.config)/.test(
+          // Skip configuration files
+          if (this.isConfigFile(filePath)) {
+            return false;
+          }
+
+          // Skip setup and test files
+          const isSetupFile =
+            /(setup|mock|__tests__|\.test\.|\.spec\.|instrumentation|sentry)/.test(
               filePath
             );
-          if (isConfigFile) {
+          if (isSetupFile) {
             return false;
           }
 
@@ -802,17 +877,33 @@ export class ConfigLoader implements IConfigLoader {
         category: 'content',
         severity: 'error',
         check: (content: string, filePath: string): boolean => {
+          const fileName = path.basename(filePath);
+          
+          // Skip configuration files
+          if (fileName.includes('.config.') || 
+              fileName.startsWith('jest.config.') ||
+              fileName.startsWith('vite.config.') ||
+              fileName.startsWith('webpack.config.') ||
+              fileName.startsWith('tailwind.config.') ||
+              fileName.startsWith('next.config.') ||
+              fileName.startsWith('tsconfig.') ||
+              fileName.startsWith('eslint.config.') ||
+              fileName.includes('test.config.') ||
+              fileName.includes('spec.config.')) {
+            return false;
+          }
+
           // Simple check for potential circular dependencies
           // This is a basic implementation - for full circular dependency detection,
           // a more sophisticated analysis would be needed
           const imports =
             content.match(/import.*from\s+['"`]([^'"`]+)['"`]/g) || [];
-          const fileName = filePath
+          const fileNameWithoutExt = filePath
             .split('/')
             .pop()
             ?.replace(/\.(ts|tsx|js|jsx)$/, '');
 
-          if (!fileName) return false;
+          if (!fileNameWithoutExt) return false;
 
           // Check if any import path suggests it might import the current file
           return imports.some((importStatement) => {
@@ -821,9 +912,9 @@ export class ConfigLoader implements IConfigLoader {
             const importPath = match?.[1];
             return (
               importPath &&
-              (importPath.includes(`./${fileName}`) ||
-                importPath.includes(`../${fileName}`) ||
-                importPath.endsWith(`/${fileName}`))
+              (importPath.includes(`./${fileNameWithoutExt}`) ||
+                importPath.includes(`../${fileNameWithoutExt}`) ||
+                importPath.endsWith(`/${fileNameWithoutExt}`))
             );
           });
         },
@@ -865,8 +956,13 @@ export class ConfigLoader implements IConfigLoader {
         category: 'content',
         severity: 'error',
         check: (content: string, filePath: string): boolean => {
-          // Skip configuration files that might legitimately contain environment variables
-          if (/(config|env|\.env)/.test(filePath)) {
+          // Skip configuration files
+          if (this.isConfigFile(filePath)) {
+            return false;
+          }
+
+          // Skip environment files that might legitimately contain environment variables
+          if (/(env|\.env)/.test(filePath)) {
             return false;
           }
 
