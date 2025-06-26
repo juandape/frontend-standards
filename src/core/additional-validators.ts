@@ -220,6 +220,12 @@ export function checkHardcodedData(
   const lines = content.split('\n');
   const errors: ValidationError[] = [];
 
+  // Skip configuration and setup files entirely
+  const isConfigFile = /(config|setup|mock|__tests__|\.test\.|\.spec\.|instrumentation|sentry|jest\.setup|jest\.config)/.test(filePath);
+  if (isConfigFile) {
+    return errors;
+  }
+
   // Track JSDoc comment blocks
   let inJSDocComment = false;
 
