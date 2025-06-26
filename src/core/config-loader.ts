@@ -253,7 +253,7 @@ export class ConfigLoader implements IConfigLoader {
       {
         name: 'Missing test files',
         category: 'structure',
-        severity: 'warning',
+        severity: 'info', // Cambiado de 'warning' a 'info'
         check: (_content: string, filePath: string): boolean => {
           // Skip if this is already a test file
           if (
@@ -264,14 +264,35 @@ export class ConfigLoader implements IConfigLoader {
             return false;
           }
 
-          // Skip non-component/hook files that don't need tests
+          // Solo aplicar a componentes principales (no a todos los archivos)
+          // Solo para archivos que terminen en Component.tsx o sean hooks principales
           if (
-            !filePath.includes('/components/') &&
-            !filePath.includes('/hooks/') &&
-            !filePath.includes('/helpers/') &&
-            !filePath.includes('/modules/') &&
-            !filePath.endsWith('.tsx') &&
-            !filePath.endsWith('.hook.ts')
+            !filePath.endsWith('Component.tsx') &&
+            !filePath.endsWith('.hook.ts') &&
+            !filePath.endsWith('.helper.ts') &&
+            !(
+              filePath.includes('/components/') &&
+              filePath.endsWith('index.tsx')
+            )
+          ) {
+            return false;
+          }
+
+          // Skip archivos de configuración, types, constants, etc.
+          if (
+            filePath.includes('/types/') ||
+            filePath.includes('/constants/') ||
+            filePath.includes('/enums/') ||
+            filePath.includes('/config/') ||
+            filePath.includes('/styles/') ||
+            filePath.includes('layout.tsx') ||
+            filePath.includes('page.tsx') ||
+            filePath.includes('not-found.tsx') ||
+            filePath.includes('global-error.tsx') ||
+            filePath.includes('instrumentation.ts') ||
+            filePath.includes('next.config.') ||
+            filePath.includes('tailwind.config.') ||
+            filePath.includes('jest.config.')
           ) {
             return false;
           }
@@ -290,7 +311,7 @@ export class ConfigLoader implements IConfigLoader {
           }
         },
         message:
-          'Components, hooks, and modules should have corresponding test files in __tests__/ directory',
+          'Important components and hooks should have corresponding test files',
       },
       {
         name: 'Test file naming convention',
@@ -390,9 +411,14 @@ export class ConfigLoader implements IConfigLoader {
       {
         name: 'Constants naming',
         category: 'naming',
-        severity: 'error',
+        severity: 'info',
         check: (_content: string, filePath: string): boolean => {
           const fileName = path.basename(filePath);
+
+          // Skip index files
+          if (fileName === 'index.ts') {
+            return false;
+          }
 
           // Constants files should be camelCase and end with .constant.ts
           if (
@@ -413,9 +439,14 @@ export class ConfigLoader implements IConfigLoader {
       {
         name: 'Helper naming',
         category: 'naming',
-        severity: 'error',
+        severity: 'info',
         check: (_content: string, filePath: string): boolean => {
           const fileName = path.basename(filePath);
+
+          // Skip index files
+          if (fileName === 'index.ts') {
+            return false;
+          }
 
           // Helper files should be camelCase and end with .helper.ts
           if (
@@ -479,7 +510,7 @@ export class ConfigLoader implements IConfigLoader {
       {
         name: 'Directory naming convention',
         category: 'naming',
-        severity: 'error',
+        severity: 'info',
         check: (_content: string, filePath: string): boolean => {
           const pathParts = filePath.split('/');
 
@@ -505,6 +536,9 @@ export class ConfigLoader implements IConfigLoader {
                 'helpers',
                 'assets',
                 'enums',
+                'config',
+                'context',
+                'i18n',
               ].includes(dirName)
             ) {
               continue;
@@ -514,6 +548,15 @@ export class ConfigLoader implements IConfigLoader {
             if (
               pathParts.includes('app') &&
               /^[a-z0-9]+(-[a-z0-9]+)*$/.test(dirName)
+            ) {
+              continue;
+            }
+
+            // Skip common framework patterns
+            if (
+              (dirName.startsWith('(') && dirName.endsWith(')')) || // Next.js route groups
+              (dirName.startsWith('[') && dirName.endsWith(']')) || // Next.js dynamic routes
+              (dirName.includes('-') && pathParts.includes('app')) // kebab-case in app router
             ) {
               continue;
             }
@@ -1001,12 +1044,21 @@ export class ConfigLoader implements IConfigLoader {
       {
         name: 'JSDoc for complex functions',
         category: 'documentation',
-        severity: 'warning',
-        check: (content: string): boolean => {
-          // Look for complex functions that should have JSDoc
+        severity: 'info',
+        check: (content: string, filePath: string): boolean => {
+          // Skip config files, test files, and setup files
+          if (
+            /(config|setup|mock|__tests__|\.test\.|\.spec\.|jest\.|tailwind\.|sentry)/.test(
+              filePath
+            )
+          ) {
+            return false;
+          }
+
+          // Only check for VERY complex functions (500+ characters instead of 150-200)
           const complexFunctionPatterns = [
-            /function\s+[a-zA-Z_$][a-zA-Z0-9_$]*\s*\([^)]*\)\s*\{[\s\S]{200,}?\}/g, // Functions with substantial body
-            /(export\s+)?(const|function)\s+[a-zA-Z_$][a-zA-Z0-9_$]*.*=.*\{[\s\S]{150,}?\}/g, // Arrow functions with substantial body
+            /function\s+[a-zA-Z_$][a-zA-Z0-9_$]*\s*\([^)]*\)\s*\{[\s\S]{500,}?\}/g, // Very substantial functions only
+            /(export\s+)?(const|function)\s+[a-zA-Z_$][a-zA-Z0-9_$]*.*=.*\{[\s\S]{400,}?\}/g, // Very substantial arrow functions
           ];
 
           for (const pattern of complexFunctionPatterns) {
@@ -1028,7 +1080,7 @@ export class ConfigLoader implements IConfigLoader {
           return false;
         },
         message:
-          'Complex functions should have JSDoc comments explaining their behavior in English',
+          'Very complex functions (500+ chars) should have JSDoc comments explaining their behavior',
       },
     ];
   }
@@ -1051,43 +1103,55 @@ export class ConfigLoader implements IConfigLoader {
       {
         name: 'Explicit return types for functions',
         category: 'typescript',
-        severity: 'warning',
+        severity: 'info',
         check: (content: string, filePath: string): boolean => {
           if (!filePath.endsWith('.ts') && !filePath.endsWith('.tsx'))
             return false;
 
+          // Skip config files, test files, and simple files
+          if (
+            /(config|setup|mock|__tests__|\.test\.|\.spec\.|jest\.|tailwind\.|sentry)/.test(
+              filePath
+            )
+          ) {
+            return false;
+          }
+
+          // Only check public API functions (exported functions), not internal ones
           const exportedFunctions = content.match(
             /export\s+(async\s+)?function\s+\w+\s*\([^)]*\)\s*(?!:)/g
           );
-          const arrowFunctions = content.match(
-            /export\s+const\s+\w+\s*=\s*(async\s*)?\([^)]*\)\s*=>\s*(?!\{)/g
-          );
 
-          return Boolean(exportedFunctions?.length ?? arrowFunctions?.length);
+          return Boolean(exportedFunctions?.length);
         },
         message:
-          'Exported functions should have explicit return type annotations',
+          'Public API functions should have explicit return type annotations for better documentation',
       },
       {
         name: 'Proper generic naming',
         category: 'typescript',
-        severity: 'warning',
+        severity: 'info', // Cambiado de 'warning' a 'info'
         check: (content: string): boolean => {
           const genericMatches = content.match(/<([^>]+)>/g);
           if (!genericMatches) return false;
 
+          // Solo verificar generics muy obvios como <a>, <b>, <x>
           const invalidGenerics = genericMatches.some((match) => {
             const generics = match
               .slice(1, -1)
               .split(',')
               .map((g) => g.trim());
-            return generics.some((g) => this.isInvalidGeneric(g));
+            return generics.some((g) => {
+              // Solo marcar como inválido si es una sola letra minúscula sin contexto
+              return (
+                /^[a-z]$/.test(g) && !['T', 'K', 'V', 'P', 'R'].includes(g)
+              );
+            });
           });
 
           return invalidGenerics;
         },
-        message:
-          'Generic type parameters should be single uppercase letters or PascalCase names',
+        message: 'Consider using more descriptive generic type parameter names',
       },
       {
         name: 'Interface naming convention',
@@ -1576,17 +1640,5 @@ export class ConfigLoader implements IConfigLoader {
           'Consider color contrast ratios for accessibility (WCAG AA: 4.5:1, AAA: 7:1)',
       },
     ];
-  }
-
-  /**
-   * Helper method to check if a generic type parameter is invalid
-   */
-  private isInvalidGeneric(generic: string): boolean {
-    const reservedKeywords = ['extends', 'keyof'];
-    return (
-      generic.length > 1 &&
-      !/^[A-Z][A-Za-z]*$/.test(generic) &&
-      !reservedKeywords.some((keyword) => generic.includes(keyword))
-    );
   }
 }
