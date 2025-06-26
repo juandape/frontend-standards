@@ -776,6 +776,149 @@ export class ConfigLoader implements IConfigLoader {
         message:
           'Potential circular dependency detected. Refactor to avoid circular imports.',
       },
+      {
+        name: 'GitFlow branch naming convention',
+        category: 'structure',
+        severity: 'info',
+        check: (_content: string, _filePath: string): boolean => {
+          // This rule provides guidance for GitFlow compliance
+          // Cannot be automatically validated from file content alone
+          return false; // Always passes, serves as documentation
+        },
+        message:
+          'Ensure branch follows GitFlow convention: type/Squad-HU (e.g., feature/Dash-EFI-101, fix/Team-BUG-123)',
+      },
+      {
+        name: 'No merge conflicts markers',
+        category: 'content',
+        severity: 'error',
+        check: (content: string): boolean => {
+          // Check for Git merge conflict markers
+          const conflictMarkers = [
+            '<<<<<<< HEAD',
+            '=======',
+            '>>>>>>> ',
+            '<<<<<<< ',
+          ];
+
+          return conflictMarkers.some((marker) => content.includes(marker));
+        },
+        message:
+          'Git merge conflict markers found. Resolve all conflicts before committing.',
+      },
+      {
+        name: 'No committed credentials',
+        category: 'content',
+        severity: 'error',
+        check: (content: string, filePath: string): boolean => {
+          // Skip configuration files that might legitimately contain environment variables
+          if (/(config|env|\.env)/.test(filePath)) {
+            return false;
+          }
+
+          // Check for potential credentials or sensitive data
+          const credentialPatterns = [
+            /password\s*[:=]\s*['"][^'"]{6,}['"]/i,
+            /secret\s*[:=]\s*['"][^'"]{10,}['"]/i,
+            /token\s*[:=]\s*['"][^'"]{20,}['"]/i,
+            /api[_-]?key\s*[:=]\s*['"][^'"]{15,}['"]/i,
+            /private[_-]?key\s*[:=]\s*['"][^'"]{50,}['"]/i,
+          ];
+
+          return credentialPatterns.some((pattern) => pattern.test(content));
+        },
+        message:
+          'Potential credentials or sensitive data detected. Use environment variables instead.',
+      },
+      {
+        name: 'Environment-specific configuration',
+        category: 'structure',
+        severity: 'warning',
+        check: (content: string, filePath: string): boolean => {
+          // Check if environment-specific logic is properly handled
+          if (filePath.includes('config') || filePath.includes('env')) {
+            // Should use proper environment variable checks
+            const hasEnvironmentLogic =
+              /process\.env|NODE_ENV|NEXT_PUBLIC_/.test(content);
+            const hasHardcodedEnvironment =
+              /['"]production['"]|['"]development['"]|['"]staging['"]/.test(
+                content
+              );
+
+            // Warn if hardcoded environment values are found without proper env checks
+            return hasHardcodedEnvironment && !hasEnvironmentLogic;
+          }
+
+          return false;
+        },
+        message:
+          'Use environment variables instead of hardcoded environment strings for better deployment flexibility.',
+      },
+      {
+        name: 'Proper release versioning',
+        category: 'structure',
+        severity: 'info',
+        check: (content: string, filePath: string): boolean => {
+          // Check package.json for proper versioning
+          if (filePath.endsWith('package.json')) {
+            try {
+              const packageData = JSON.parse(content);
+              const version = packageData.version;
+
+              // Version should follow semantic versioning
+              if (version && !/^\d+\.\d+\.\d+(-[a-zA-Z0-9]+)?$/.test(version)) {
+                return true;
+              }
+            } catch {
+              return false;
+            }
+          }
+
+          return false;
+        },
+        message:
+          'Package version should follow semantic versioning (e.g., 1.5.11, 2.0.0-beta)',
+      },
+      {
+        name: 'Platform-specific code organization',
+        category: 'structure',
+        severity: 'warning',
+        check: (content: string, filePath: string): boolean => {
+          // Check for platform-specific imports that should be organized properly
+          const hasWebSpecific = /react-dom|next\/|dom\//.test(content);
+          const hasNativeSpecific =
+            /react-native|@react-native|\.native\./.test(content);
+
+          // If both web and native imports are in the same file, suggest separation
+          if (hasWebSpecific && hasNativeSpecific) {
+            return true;
+          }
+
+          // Check for platform files (.web.tsx, .native.tsx)
+          if (
+            (filePath.includes('.web.') || filePath.includes('.native.')) &&
+            hasWebSpecific &&
+            hasNativeSpecific
+          ) {
+            return true;
+          }
+
+          return false;
+        },
+        message:
+          'Platform-specific code should be separated. Use .web.tsx and .native.tsx extensions for platform-specific implementations.',
+      },
+      {
+        name: 'Sync branch validation',
+        category: 'structure',
+        severity: 'info',
+        check: (_content: string, _filePath: string): boolean => {
+          // This rule provides guidance based on GitFlow diagrams
+          return false; // Always passes, serves as documentation
+        },
+        message:
+          'After production deployment, ensure sync branches are created to update other environments as shown in GitFlow.',
+      },
     ];
   }
 
