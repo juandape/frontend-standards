@@ -43,7 +43,7 @@ export class ProjectAnalyzer implements IProjectAnalyzer {
     } else {
       projectInfo.zones = [
         {
-          name: 'root',
+          name: '.',
           path: this.rootDir,
           type: projectInfo.type,
         },

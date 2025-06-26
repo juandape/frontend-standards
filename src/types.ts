@@ -7,7 +7,17 @@ export interface ValidationRule {
   name: string;
   check: (content: string, filePath: string) => boolean | Promise<boolean>;
   message: string;
-  category?: 'structure' | 'naming' | 'content' | 'style' | 'documentation';
+  category?:
+    | 'structure'
+    | 'naming'
+    | 'content'
+    | 'style'
+    | 'documentation'
+    | 'performance'
+    | 'accessibility'
+    | 'typescript'
+    | 'react'
+    | 'imports';
   severity?: 'error' | 'warning' | 'info';
 }
 
@@ -200,6 +210,11 @@ export interface DefaultRulesStructure {
   content: ValidationRule[];
   style: ValidationRule[];
   documentation: ValidationRule[];
+  typescript: ValidationRule[];
+  react: ValidationRule[];
+  imports: ValidationRule[];
+  performance: ValidationRule[];
+  accessibility: ValidationRule[];
 }
 
 // Rule Engine specific types
