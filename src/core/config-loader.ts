@@ -376,6 +376,11 @@ export class ConfigLoader implements IConfigLoader {
         check: (_content: string, filePath: string): boolean => {
           const fileName = path.basename(filePath);
 
+          // Allow index.ts/index.tsx files in hooks directories (used for exporting hooks)
+          if (fileName === 'index.ts' || fileName === 'index.tsx') {
+            return false;
+          }
+
           // Hook files should follow useHookName.hook.ts pattern
           if (filePath.includes('/hooks/') || fileName.includes('.hook.')) {
             const hookPattern = /^use[A-Z][a-zA-Z0-9]*\.hook\.(ts|tsx)$/;
@@ -386,7 +391,8 @@ export class ConfigLoader implements IConfigLoader {
 
           return false;
         },
-        message: 'Hook files should follow "useHookName.hook.ts" pattern',
+        message:
+          'Hook files should follow "useHookName.hook.ts" pattern (index.ts files are allowed for exports)',
       },
       {
         name: 'Type naming',
@@ -1058,7 +1064,7 @@ export class ConfigLoader implements IConfigLoader {
           // Only check for VERY complex functions (500+ characters instead of 150-200)
           const complexFunctionPatterns = [
             /function\s+[a-zA-Z_$][a-zA-Z0-9_$]*\s*\([^)]*\)\s*\{[\s\S]{500,}?\}/g, // Very substantial functions only
-            /(export\s+)?(const|function)\s+[a-zA-Z_$][a-zA-Z0-9_$]*.*=.*\{[\s\S]{400,}?\}/g, // Very substantial arrow functions
+            /(export\s+)?(const|function)\s+[a-zA-Z_$][a-zA-Z0-9_$]*.*=.*\([^)]*\)\s*=>\s*\{[\s\S]{400,}?\}/g, // Very substantial arrow functions
           ];
 
           for (const pattern of complexFunctionPatterns) {
@@ -1067,11 +1073,11 @@ export class ConfigLoader implements IConfigLoader {
               const beforeFunction = content.substring(0, match.index || 0);
               const lastLines = beforeFunction
                 .split('\n')
-                .slice(-10)
+                .slice(-15) // Buscar más líneas hacia atrás
                 .join('\n');
 
-              // Check if there's a JSDoc comment before this function
-              if (!/\/\*\*[\s\S]*?\*\/\s*$/.test(lastLines)) {
+              // Mejorar la detección de JSDoc: buscar /** seguido de */ y luego espacios/newlines
+              if (!/\/\*\*[\s\S]*?\*\/\s*(\n\s*)*$/.test(lastLines)) {
                 return true;
               }
             }
