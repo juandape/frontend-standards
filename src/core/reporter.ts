@@ -76,7 +76,7 @@ export class Reporter implements IReporter {
           oksByZone[zone].push(error.message.replace('✅ ', ''));
         } else if (error.message.startsWith('Present:')) {
           oksByZone[zone].push(error.message.replace('Present:', '').trim());
-        } else {
+        } else if (error.severity === 'error') {
           errorsByZone[zone]++;
           totalErrors++;
           errorsByRule[error.rule] = (errorsByRule[error.rule] ?? 0) + 1;
@@ -207,7 +207,7 @@ export class Reporter implements IReporter {
     const zoneErrors = this.getOriginalZoneErrors();
     for (const [zone, errors] of Object.entries(zoneErrors)) {
       const actualErrors = errors.filter(
-        (e) => !e.message.startsWith('✅') && !e.message.startsWith('Present:')
+        (e) => !e.message.startsWith('✅') && e.severity === 'error' && !e.message.startsWith('Present:')
       );
 
       if (actualErrors.length > 0) {

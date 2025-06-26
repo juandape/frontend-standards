@@ -1,4 +1,5 @@
 import fs from 'fs';
+import path from 'path';
 import type {
   IRuleEngine,
   ILogger,
@@ -23,6 +24,35 @@ export class RuleEngine implements IRuleEngine {
   }
 
   /**
+   * Check if a file is a configuration file that should be excluded from validation
+   * @param filePath The file path to check
+   * @returns True if the file is a configuration file
+   */
+  private isConfigFile(filePath: string): boolean {
+    const fileName = path.basename(filePath);
+
+    // Common configuration file patterns
+    const configPatterns = [
+      /\.config\.(js|ts|mjs|cjs|json)$/,
+      /^(jest|vite|webpack|tailwind|next|eslint|prettier|babel|rollup|tsconfig)\.config\./,
+      /^(vitest|nuxt|quasar)\.config\./,
+      /^tsconfig.*\.json$/,
+      /^\.eslintrc/,
+      /^\.prettierrc/,
+      /^babel\.config/,
+      /^postcss\.config/,
+      /^stylelint\.config/,
+      /^cypress\.config/,
+      /^playwright\.config/,
+      /^storybook\.config/,
+      /^metro\.config/,
+      /^expo\.config/,
+    ];
+
+    return configPatterns.some(pattern => pattern.test(fileName));
+  }
+
+  /**
    * Initialize the rule engine with configuration
    */
   initialize(
@@ -41,6 +71,12 @@ export class RuleEngine implements IRuleEngine {
    */
   async validateFile(filePath: string): Promise<ValidationError[]> {
     const errors: ValidationError[] = [];
+
+    // Skip configuration files completely
+    if (this.isConfigFile(filePath)) {
+      this.logger.debug(`Skipping configuration file: ${filePath}`);
+      return errors;
+    }
 
     try {
       const content = fs.readFileSync(filePath, 'utf8');
@@ -133,6 +169,13 @@ export class RuleEngine implements IRuleEngine {
     // For now, we use validateFile method which reads the file content
     // In future, we could refactor to use the provided content directly
     return this.validateFile(filePath);
+  }
+
+  /**
+   * Check if a file is a configuration file (public method)
+   */
+  isConfigurationFile(filePath: string): boolean {
+    return this.isConfigFile(filePath);
   }
 
   /**
