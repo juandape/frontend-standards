@@ -199,11 +199,13 @@ export class ConfigLoader implements IConfigLoader {
         check: (_content: string, filePath: string): boolean => {
           const requiredFolders = ['components', 'utils', 'types'];
           const isRootFile =
-            !filePath.includes('/') || filePath.split('/').length <= 2;
+            !filePath.includes('/') ||
+            filePath.split('/').length === 2;
 
           return (
             isRootFile &&
-            requiredFolders.some((folder) => filePath.includes(folder))
+            !filePath.includes('config') &&
+            !requiredFolders.some((folder) => filePath.includes(folder))
           );
         },
         message: 'Files should be organized in proper src/ structure',
@@ -249,11 +251,63 @@ export class ConfigLoader implements IConfigLoader {
         message:
           'Potential circular dependency detected. Review import structure.',
       },
+      {
+        name: 'Missing test files',
+        category: 'structure',
+        severity: 'warning',
+        check: (_content: string, filePath: string): boolean => {
+          // Skip if this is already a test file
+          if (filePath.includes('__test__') || filePath.includes('.test.') || filePath.includes('.spec.')) {
+            return false;
+          }
+
+          // Skip non-component/hook files that don't need tests
+          if (!filePath.includes('/components/') && 
+              !filePath.includes('/hooks/') && 
+              !filePath.includes('/helpers/') && 
+              !filePath.includes('/modules/') &&
+              !filePath.endsWith('.tsx') && 
+              !filePath.endsWith('.hook.ts')) {
+            return false;
+          }
+
+          const fileName = path.basename(filePath);
+          const dirPath = path.dirname(filePath);
+          const testDir = path.join(dirPath, '__tests__');
+          const testFileName = fileName.replace(/\.(tsx?|jsx?)$/, '.test.$1');
+          const testFilePath = path.join(testDir, testFileName);
+
+          // Check if corresponding test file exists
+          try {
+            return !require('fs').existsSync(testFilePath);
+          } catch {
+            return true;
+          }
+        },
+        message: 'Components, hooks, and modules should have corresponding test files in __tests__/ directory',
+      },
+      {
+        name: 'Test file naming convention',
+        category: 'naming',
+        severity: 'error',
+        check: (_content: string, filePath: string): boolean => {
+          // Only check test files
+          if (!filePath.includes('__test__') && !filePath.includes('.test.') && !filePath.includes('.spec.')) {
+            return false;
+          }
+
+          const fileName = path.basename(filePath);
+          
+          // Test files should follow *.test.tsx or *.spec.tsx pattern
+          return !/\.(test|spec)\.(tsx?|jsx?)$/.test(fileName);
+        },
+        message: 'Test files should follow *.test.tsx or *.spec.tsx naming convention',
+      },
     ];
   }
 
   /**
-   * Get naming convention rules
+   * Get naming validation rules
    * @returns Naming rules
    */
   private getNamingRules(): ValidationRule[] {
@@ -263,52 +317,41 @@ export class ConfigLoader implements IConfigLoader {
         category: 'naming',
         severity: 'error',
         check: (_content: string, filePath: string): boolean => {
-          const componentRegex = /\.(tsx|jsx)$/;
-          if (
-            !filePath.includes('/components/') ||
-            !componentRegex.exec(filePath)
-          ) {
-            return false;
+          const fileName = path.basename(filePath);
+          const dirName = path.basename(path.dirname(filePath));
+          
+          // Component files should be PascalCase
+          if (filePath.endsWith('.tsx') && filePath.includes('/components/')) {
+            if (fileName === 'index.tsx') {
+              // For index.tsx files, the parent directory should be PascalCase
+              return !/^[A-Z][a-zA-Z0-9]*$/.test(dirName);
+            } else {
+              // Direct component files should be PascalCase
+              const componentName = fileName.replace('.tsx', '');
+              return !/^[A-Z][a-zA-Z0-9]*$/.test(componentName);
+            }
           }
-
-          const fileName = path.basename(filePath, path.extname(filePath));
-          if (!fileName || fileName.length === 0) return false;
-
-          // For index files, check the parent directory name
-          if (fileName === 'index') {
-            const parentDir = path.basename(path.dirname(filePath));
-            if (!parentDir || parentDir.length === 0) return false;
-            // Check if parent directory starts with uppercase letter (PascalCase)
-            const firstChar = parentDir.charAt(0);
-            return firstChar !== firstChar.toUpperCase();
-          }
-
-          // For non-index files, check if filename starts with uppercase letter
-          const firstChar = fileName.charAt(0);
-          return firstChar !== firstChar.toUpperCase();
+          
+          return false;
         },
-        message:
-          'Component files should start with uppercase letter (PascalCase). For index.tsx files, the parent directory should be PascalCase.',
+        message: 'Component files should start with uppercase letter (PascalCase). For index.tsx files, the parent directory should be PascalCase.',
       },
       {
         name: 'Hook naming',
         category: 'naming',
         severity: 'error',
         check: (_content: string, filePath: string): boolean => {
-          if (!filePath.includes('.hook.')) {
-            return false;
+          const fileName = path.basename(filePath);
+          
+          // Hook files should follow useHookName.hook.ts pattern
+          if (filePath.includes('/hooks/') || fileName.includes('.hook.')) {
+            const hookPattern = /^use[A-Z][a-zA-Z0-9]*\.hook\.(ts|tsx)$/;
+            if (!hookPattern.test(fileName)) {
+              return true;
+            }
           }
-
-          const fileName = path.basename(filePath, path.extname(filePath));
-          const baseName = fileName.split('.')[0];
-          if (!baseName) return false;
-
-          return (
-            !baseName.startsWith('use') ||
-            !baseName.startsWith(
-              baseName.slice(0, 3) + (baseName[3]?.toUpperCase() ?? '')
-            )
-          );
+          
+          return false;
         },
         message: 'Hook files should follow "useHookName.hook.ts" pattern',
       },
@@ -317,16 +360,152 @@ export class ConfigLoader implements IConfigLoader {
         category: 'naming',
         severity: 'error',
         check: (_content: string, filePath: string): boolean => {
-          if (!filePath.includes('/types/') || !filePath.endsWith('.type.ts')) {
-            return false;
+          const fileName = path.basename(filePath);
+          
+          // Type files should be camelCase and end with .type.ts
+          if (filePath.includes('/types/') || fileName.endsWith('.type.ts')) {
+            const typePattern = /^[a-z][a-zA-Z0-9]*(\.[a-z][a-zA-Z0-9]*)*\.type\.ts$/;
+            if (!typePattern.test(fileName)) {
+              return true;
+            }
           }
-
-          const fileName = path.basename(filePath, '.type.ts');
-          if (!fileName || fileName.length === 0) return false;
-
-          return fileName.startsWith(fileName[0]?.toUpperCase() ?? '');
+          
+          return false;
         },
         message: 'Type files should be camelCase and end with .type.ts',
+      },
+      {
+        name: 'Constants naming',
+        category: 'naming', 
+        severity: 'error',
+        check: (_content: string, filePath: string): boolean => {
+          const fileName = path.basename(filePath);
+          
+          // Constants files should be camelCase and end with .constant.ts
+          if (filePath.includes('/constants/') || fileName.endsWith('.constant.ts')) {
+            const constantPattern = /^[a-z][a-zA-Z0-9]*\.constant\.ts$/;
+            if (!constantPattern.test(fileName)) {
+              return true;
+            }
+          }
+          
+          return false;
+        },
+        message: 'Constants files should be camelCase and end with .constant.ts',
+      },
+      {
+        name: 'Helper naming',
+        category: 'naming',
+        severity: 'error',
+        check: (_content: string, filePath: string): boolean => {
+          const fileName = path.basename(filePath);
+          
+          // Helper files should be camelCase and end with .helper.ts
+          if (filePath.includes('/helpers/') || filePath.includes('/helper/') || fileName.endsWith('.helper.ts')) {
+            const helperPattern = /^[a-z][a-zA-Z0-9]*\.helper\.ts$/;
+            if (!helperPattern.test(fileName)) {
+              return true;
+            }
+          }
+          
+          return false;
+        },
+        message: 'Helper files should be camelCase and end with .helper.ts',
+      },
+      {
+        name: 'Style naming',
+        category: 'naming',
+        severity: 'error', 
+        check: (_content: string, filePath: string): boolean => {
+          const fileName = path.basename(filePath);
+          
+          // Style files should be camelCase and end with .style.ts
+          if (filePath.includes('/styles/') || fileName.endsWith('.style.ts')) {
+            const stylePattern = /^[a-z][a-zA-Z0-9]*\.style\.ts$/;
+            if (!stylePattern.test(fileName)) {
+              return true;
+            }
+          }
+          
+          return false;
+        },
+        message: 'Style files should be camelCase and end with .style.ts',
+      },
+      {
+        name: 'Assets naming',
+        category: 'naming',
+        severity: 'error',
+        check: (_content: string, filePath: string): boolean => {
+          const fileName = path.basename(filePath);
+          const fileExt = path.extname(fileName);
+          const baseName = fileName.replace(fileExt, '');
+          
+          // Assets should follow kebab-case (service-error.svg)
+          if (filePath.includes('/assets/') && /\.(svg|png|jpg|jpeg|gif|webp|ico)$/.test(fileName)) {
+            if (!/^[a-z0-9]+(-[a-z0-9]+)*$/.test(baseName)) {
+              return true;
+            }
+          }
+          
+          return false;
+        },
+        message: 'Assets should follow kebab-case naming (e.g., service-error.svg)',
+      },
+      {
+        name: 'Directory naming convention',
+        category: 'naming',
+        severity: 'error',
+        check: (_content: string, filePath: string): boolean => {
+          const pathParts = filePath.split('/');
+          
+          // Check each directory part for proper naming
+          for (let i = 0; i < pathParts.length - 1; i++) {
+            const dirName = pathParts[i];
+            
+            // Skip empty parts and common framework directories
+            if (!dirName || ['src', 'app', 'pages', 'public', 'components', 'hooks', 'utils', 'lib', 'styles', 'types', 'constants', 'helpers', 'assets', 'enums'].includes(dirName)) {
+              continue;
+            }
+            
+            // Skip route directories (Next.js app router) - these can be kebab-case
+            if (pathParts.includes('app') && /^[a-z0-9]+(-[a-z0-9]+)*$/.test(dirName)) {
+              continue;
+            }
+            
+            // General directories should be camelCase or PascalCase
+            if (!/^[a-z][a-zA-Z0-9]*$/.test(dirName) && !/^[A-Z][a-zA-Z0-9]*$/.test(dirName)) {
+              return true;
+            }
+          }
+          
+          return false;
+        },
+        message: 'Directories should follow camelCase or PascalCase convention (kebab-case allowed for Next.js routes)',
+      },
+      {
+        name: 'Interface naming with I prefix',
+        category: 'naming',
+        severity: 'warning',
+        check: (content: string): boolean => {
+          // Check for interface declarations that don't start with I
+          const interfaceRegex = /interface\s+([A-Z][a-zA-Z0-9]*)/g;
+          let match;
+          
+          while ((match = interfaceRegex.exec(content)) !== null) {
+            const interfaceName = match[1];
+            // Interface should start with I or end with Props/Type/Config
+            if (interfaceName && 
+                !interfaceName.startsWith('I') && 
+                !interfaceName.endsWith('Props') && 
+                !interfaceName.endsWith('Type') && 
+                !interfaceName.endsWith('Config')) {
+              return true;
+            }
+          }
+          
+          return false;
+        },
+        message: 'Interfaces should be prefixed with "I" or suffixed with "Props", "Type", or "Config"',
       },
     ];
   }
@@ -590,25 +769,57 @@ export class ConfigLoader implements IConfigLoader {
             return lines > 10 && !hasComment;
           });
         },
-        message:
-          'Complex functions should have comments explaining their purpose',
+        message: 'Complex functions should have comments explaining their purpose',
       },
       {
         name: 'Should have TSDoc comments',
         category: 'documentation',
         severity: 'info',
-        check: (content: string): boolean => {
-          const exportedFunctions =
-            /export\s+(function|const\s+\w+\s*=\s*(async\s+)?function)/.test(
-              content
-            );
-          const hasTSDoc =
-            /\/\*\*[\s\S]*?@(param|returns|example)[\s\S]*?\*\//.test(content);
+        check: (content: string, filePath: string): boolean => {
+          // Skip test files
+          if (filePath.includes('__test__') || filePath.includes('.test.') || filePath.includes('.spec.')) {
+            return false;
+          }
 
-          return exportedFunctions && !hasTSDoc;
+          // Check for exported functions without TSDoc comments
+          const exportedFunctionRegex = /export\s+(function|const)\s+([a-zA-Z_$][a-zA-Z0-9_$]*)/g;
+          const tsdocRegex = /\/\*\*[\s\S]*?\*\//g;
+          
+          const exportedFunctions = Array.from(content.matchAll(exportedFunctionRegex));
+          const tsdocComments = Array.from(content.matchAll(tsdocRegex));
+          
+          // If there are exported functions but no TSDoc comments, flag it
+          return exportedFunctions.length > 0 && tsdocComments.length === 0;
         },
-        message:
-          'Exported functions should have TSDoc comments with @param and @returns',
+        message: 'Exported functions should have TSDoc comments with @param and @returns',
+      },
+      {
+        name: 'JSDoc for complex functions',
+        category: 'documentation',
+        severity: 'warning',
+        check: (content: string): boolean => {
+          // Look for complex functions that should have JSDoc
+          const complexFunctionPatterns = [
+            /function\s+[a-zA-Z_$][a-zA-Z0-9_$]*\s*\([^)]*\)\s*\{[\s\S]{200,}?\}/g, // Functions with substantial body
+            /(export\s+)?(const|function)\s+[a-zA-Z_$][a-zA-Z0-9_$]*.*=.*\{[\s\S]{150,}?\}/g, // Arrow functions with substantial body
+          ];
+
+          for (const pattern of complexFunctionPatterns) {
+            const matches = Array.from(content.matchAll(pattern));
+            for (const match of matches) {
+              const beforeFunction = content.substring(0, match.index || 0);
+              const lastLines = beforeFunction.split('\n').slice(-10).join('\n');
+              
+              // Check if there's a JSDoc comment before this function
+              if (!/\/\*\*[\s\S]*?\*\/\s*$/.test(lastLines)) {
+                return true;
+              }
+            }
+          }
+
+          return false;
+        },
+        message: 'Complex functions should have JSDoc comments explaining their behavior in English',
       },
     ];
   }
@@ -792,18 +1003,14 @@ export class ConfigLoader implements IConfigLoader {
         category: 'react',
         severity: 'warning',
         check: (content: string, filePath: string): boolean => {
-          if (
-            !filePath.endsWith('.style.ts') &&
-            !filePath.endsWith('.style.tsx')
-          ) {
+          if (!filePath.endsWith('.style.ts') && !filePath.endsWith('.style.tsx')) {
             return false;
           }
 
           // Check for styled components
-          const styledComponentRegex =
-            /const\s+([a-zA-Z_$][a-zA-Z0-9_$]*)\s*=\s*styled\./g;
+          const styledComponentRegex = /const\s+([a-zA-Z_$][a-zA-Z0-9_$]*)\s*=\s*styled\./g;
           let match;
-
+          
           while ((match = styledComponentRegex.exec(content)) !== null) {
             const componentName = match[1];
             // Styled components should start with uppercase (PascalCase)
@@ -811,43 +1018,61 @@ export class ConfigLoader implements IConfigLoader {
               return true;
             }
           }
-
+          
           return false;
         },
-        message:
-          'Styled components should use PascalCase naming (e.g., StyledButton, Container)',
+        message: 'Styled components should use PascalCase naming (e.g., StyledButton, Container)',
       },
       {
-        name: 'Hook dependency completeness',
-        category: 'react',
-        severity: 'warning',
-        check: (content: string): boolean => {
-          // Enhanced check for missing dependencies in hooks
-          const hookPatterns = [
-            /useEffect\s*\(\s*[^,]+,\s*\[([^\]]*)\]/g,
-            /useCallback\s*\(\s*[^,]+,\s*\[([^\]]*)\]/g,
-            /useMemo\s*\(\s*[^,]+,\s*\[([^\]]*)\]/g,
-          ];
+        name: 'Tailwind CSS preference',
+        category: 'style',
+        severity: 'info',
+        check: (content: string, filePath: string): boolean => {
+          // Only check Next.js projects (presence of app/ or pages/ directory)
+          if (!filePath.includes('/app/') && !filePath.includes('/pages/')) {
+            return false;
+          }
 
-          for (const pattern of hookPatterns) {
-            let match;
-            while ((match = pattern.exec(content)) !== null) {
-              const dependencyArray = match[1];
-              // If dependency array is empty but function body likely uses external variables
-              if (
-                dependencyArray &&
-                dependencyArray.trim() === '' &&
-                match[0].length > 50
-              ) {
-                return true;
+          // Check for styled-components usage without Tailwind
+          const hasStyledComponents = /styled\./g.test(content);
+          const hasTailwindClasses = /className=["'][^"']*\b(bg-|text-|p-|m-|w-|h-|flex|grid)/g.test(content);
+
+          // If using styled-components but no Tailwind, suggest Tailwind first
+          return hasStyledComponents && !hasTailwindClasses;
+        },
+        message: 'Consider using Tailwind CSS as primary styling approach before styled-components',
+      },
+      {
+        name: 'Next.js app router naming',
+        category: 'naming',
+        severity: 'error',
+        check: (_content: string, filePath: string): boolean => {
+          // Check Next.js app router directory naming
+          if (filePath.includes('/app/') && !filePath.includes('/api/')) {
+            const pathParts = filePath.split('/');
+            const appIndex = pathParts.indexOf('app');
+            
+            if (appIndex >= 0 && appIndex < pathParts.length - 1) {
+              // Check route segments (directories between app/ and file)
+              for (let i = appIndex + 1; i < pathParts.length - 1; i++) {
+                const segment = pathParts[i];
+                
+                // Skip empty segments and special Next.js directories  
+                if (!segment || segment.startsWith('(') || segment.startsWith('[') || segment.startsWith('_') || segment === 'api') {
+                  continue;
+                }
+                
+                // Route segments should be kebab-case
+                if (!/^[a-z0-9]+(-[a-z0-9]+)*$/.test(segment)) {
+                  return true;
+                }
               }
             }
           }
-
+          
           return false;
         },
-        message:
-          'Hook dependency array may be missing dependencies. Ensure all used variables are included.',
+        message: 'Next.js app router directories should use kebab-case (e.g., /app/user-profile/page.tsx)',
       },
     ];
   }
@@ -1058,8 +1283,7 @@ export class ConfigLoader implements IConfigLoader {
           }
           return false;
         },
-        message:
-          'Form inputs should have associated labels or aria-label attributes',
+        message: 'Form inputs should have associated labels or aria-label attributes',
       },
       {
         name: 'Links missing accessible names',
@@ -1088,8 +1312,7 @@ export class ConfigLoader implements IConfigLoader {
           }
           return false;
         },
-        message:
-          'Links should have descriptive text content or aria-label attributes',
+        message: 'Links should have descriptive text content or aria-label attributes',
       },
       {
         name: 'Missing focus management',
