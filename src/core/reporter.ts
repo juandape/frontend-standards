@@ -152,7 +152,15 @@ export class Reporter implements IReporter {
     lines.push('='.repeat(80));
     lines.push('FRONTEND STANDARDS VALIDATION REPORT');
     lines.push('='.repeat(80));
-    lines.push(`Generated: ${new Date().toISOString()}`);
+    lines.push(`Generated: ${new Date().toLocaleString('es-ES', { 
+      year: 'numeric', 
+      month: '2-digit', 
+      day: '2-digit', 
+      hour: '2-digit', 
+      minute: '2-digit', 
+      second: '2-digit',
+      timeZone: 'America/Bogota'
+    })}`);
     lines.push(`Project: ${path.basename(this.rootDir)}`);
     lines.push(`Project Type: ${projectInfo.type}`);
     lines.push(`Monorepo: ${projectInfo.isMonorepo ? 'Yes' : 'No'}`);
