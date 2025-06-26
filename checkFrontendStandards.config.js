@@ -15,7 +15,7 @@
  *
  * **Array Configuration:**
  * - Export array of rules directly (automatically merges with defaults)
- * - Simplest approach for adding a few custom rules
+ * - Simplest approach for adding a few custom rules 
  *
  * @author Diners Club Frontend Team
  * @version 1.0.0
