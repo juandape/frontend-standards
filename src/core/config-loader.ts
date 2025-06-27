@@ -1655,6 +1655,16 @@ export class ConfigLoader implements IConfigLoader {
         message:
           'Prefer separate import statements for default and named imports for better readability',
       },
+      {
+        name: 'No unused imports',
+        category: 'imports',
+        severity: 'warning',
+        check: (content: string): boolean => {
+          return this.hasUnusedImports(content);
+        },
+        message:
+          'Remove unused imports to keep the code clean and reduce bundle size',
+      },
     ];
   }
 
@@ -1860,5 +1870,136 @@ export class ConfigLoader implements IConfigLoader {
           'Consider color contrast ratios for accessibility (WCAG AA: 4.5:1, AAA: 7:1)',
       },
     ];
+  }
+
+  /**
+   * Check if content has unused imports
+   */
+  private hasUnusedImports(content: string): boolean {
+    const lines = content.split('\n');
+    const importLines = lines.filter((line) =>
+      line.trim().startsWith('import')
+    );
+
+    for (const importLine of importLines) {
+      if (this.isUnusedImportLine(importLine, content)) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+  /**
+   * Check if a specific import line contains unused imports
+   */
+  private isUnusedImportLine(importLine: string, content: string): boolean {
+    // Skip type-only imports as they might be used in type annotations
+    if (importLine.includes('import type')) return false;
+
+    // Skip side-effect imports (imports without 'from')
+    if (!importLine.includes(' from ')) return false;
+
+    // Skip common framework imports that are often used implicitly
+    if (this.isFrameworkImport(importLine)) return false;
+
+    const importedNames = this.extractImportedNames(importLine);
+    return this.hasAnyUnusedName(importedNames, content);
+  }
+
+  /**
+   * Check if import is a common framework import that might be used implicitly
+   */
+  private isFrameworkImport(importLine: string): boolean {
+    const frameworkPatterns = [
+      /import\s+React\s+from\s+['"]react['"]/,
+      /import.*from\s+['"]next\//,
+      /import.*from\s+['"]@next\//,
+    ];
+
+    return frameworkPatterns.some((pattern) => pattern.test(importLine));
+  }
+
+  /**
+   * Extract imported names from an import line
+   */
+  private extractImportedNames(importLine: string): string[] {
+    const importRegex = /import\s+(.+?)\s+from/;
+    const importMatch = importRegex.exec(importLine);
+    if (!importMatch?.[1]) return [];
+
+    const importPart = importMatch[1].trim();
+    let importedNames: string[] = [];
+
+    // Handle namespace imports: import * as React from 'react'
+    if (importPart.includes(' as ')) {
+      const namespaceRegex = /\*\s+as\s+(\w+)/;
+      const namespaceMatch = namespaceRegex.exec(importPart);
+      if (namespaceMatch?.[1]) {
+        importedNames = [namespaceMatch[1]];
+      }
+    }
+    // Handle default imports: import React from 'react'
+    else if (!importPart.includes('{') && !importPart.includes(',')) {
+      importedNames = [importPart.trim()];
+    }
+    // Handle named imports: import { useState, useEffect } from 'react'
+    else if (importPart.includes('{')) {
+      const namedImportsRegex = /\{([^}]+)\}/;
+      const namedImportsMatch = namedImportsRegex.exec(importPart);
+      if (namedImportsMatch?.[1]) {
+        importedNames = namedImportsMatch[1].split(',').map((name) => {
+          // Remove 'type' keyword and 'as alias' parts
+          return name
+            .trim()
+            .replace(/^type\s+/, '')
+            .replace(/\s+as\s+\w+/, '');
+        });
+      }
+
+      // Handle default + named: import React, { useState } from 'react'
+      const defaultRegex = /^(\w+)\s*,/;
+      const defaultMatch = defaultRegex.exec(importPart);
+      if (defaultMatch?.[1]) {
+        importedNames.unshift(defaultMatch[1].trim());
+      }
+    }
+
+    return importedNames.filter((name) => name.length > 0);
+  }
+
+  /**
+   * Check if any of the imported names are unused
+   */
+  private hasAnyUnusedName(importedNames: string[], content: string): boolean {
+    for (const importedName of importedNames) {
+      if (this.isNameUnused(importedName, content)) {
+        return true;
+      }
+    }
+    return false;
+  }
+  /**
+   * Check if a specific imported name is unused
+   */
+  private isNameUnused(importedName: string, content: string): boolean {
+    // Create regex to find usage of the imported name
+    // Include word boundaries and handle type usage in generics
+    const usageRegex = new RegExp(`\\b${importedName}\\b`, 'g');
+    let usageCount = 0;
+
+    // Remove import statements from content for usage counting
+    // Handle both single-line and multi-line imports
+    const contentWithoutImports = content.replace(/import\s+[^;]+;?/g, '');
+
+    while (usageRegex.exec(contentWithoutImports) !== null) {
+      usageCount++;
+      // If found at least once in non-import content, it's used
+      if (usageCount >= 1) {
+        return false;
+      }
+    }
+
+    // If not found in non-import content, it's unused
+    return true;
   }
 }
