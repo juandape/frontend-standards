@@ -123,7 +123,7 @@ export class ConfigLoader implements IConfigLoader {
    */
   private isConfigFile(filePath: string): boolean {
     const fileName = path.basename(filePath);
-    
+
     // Common configuration file patterns
     const configPatterns = [
       /\.config\.(js|ts|mjs|cjs|json)$/,
@@ -142,7 +142,7 @@ export class ConfigLoader implements IConfigLoader {
       /^expo\.config/,
     ];
 
-    return configPatterns.some(pattern => pattern.test(fileName));
+    return configPatterns.some((pattern) => pattern.test(fileName));
   }
 
   /**
@@ -258,18 +258,20 @@ export class ConfigLoader implements IConfigLoader {
         severity: 'warning',
         check: (content: string, filePath: string): boolean => {
           const fileName = path.basename(filePath);
-          
+
           // Skip configuration files
-          if (fileName.includes('.config.') || 
-              fileName.startsWith('jest.config.') ||
-              fileName.startsWith('vite.config.') ||
-              fileName.startsWith('webpack.config.') ||
-              fileName.startsWith('tailwind.config.') ||
-              fileName.startsWith('next.config.') ||
-              fileName.startsWith('tsconfig.') ||
-              fileName.startsWith('eslint.config.') ||
-              fileName.includes('test.config.') ||
-              fileName.includes('spec.config.')) {
+          if (
+            fileName.includes('.config.') ||
+            fileName.startsWith('jest.config.') ||
+            fileName.startsWith('vite.config.') ||
+            fileName.startsWith('webpack.config.') ||
+            fileName.startsWith('tailwind.config.') ||
+            fileName.startsWith('next.config.') ||
+            fileName.startsWith('tsconfig.') ||
+            fileName.startsWith('eslint.config.') ||
+            fileName.includes('test.config.') ||
+            fileName.includes('spec.config.')
+          ) {
             return false;
           }
 
@@ -477,7 +479,8 @@ export class ConfigLoader implements IConfigLoader {
 
           return false;
         },
-        message: 'Type files should be camelCase and end with .type.ts (index.ts files are allowed for exports)',
+        message:
+          'Type files should be camelCase and end with .type.ts (index.ts files are allowed for exports)',
       },
       {
         name: 'Constants naming',
@@ -878,18 +881,20 @@ export class ConfigLoader implements IConfigLoader {
         severity: 'error',
         check: (content: string, filePath: string): boolean => {
           const fileName = path.basename(filePath);
-          
+
           // Skip configuration files
-          if (fileName.includes('.config.') || 
-              fileName.startsWith('jest.config.') ||
-              fileName.startsWith('vite.config.') ||
-              fileName.startsWith('webpack.config.') ||
-              fileName.startsWith('tailwind.config.') ||
-              fileName.startsWith('next.config.') ||
-              fileName.startsWith('tsconfig.') ||
-              fileName.startsWith('eslint.config.') ||
-              fileName.includes('test.config.') ||
-              fileName.includes('spec.config.')) {
+          if (
+            fileName.includes('.config.') ||
+            fileName.startsWith('jest.config.') ||
+            fileName.startsWith('vite.config.') ||
+            fileName.startsWith('webpack.config.') ||
+            fileName.startsWith('tailwind.config.') ||
+            fileName.startsWith('next.config.') ||
+            fileName.startsWith('tsconfig.') ||
+            fileName.startsWith('eslint.config.') ||
+            fileName.includes('test.config.') ||
+            fileName.includes('spec.config.')
+          ) {
             return false;
           }
 
@@ -1437,31 +1442,65 @@ export class ConfigLoader implements IConfigLoader {
         severity: 'error',
         check: (_content: string, filePath: string): boolean => {
           // Check Next.js app router directory naming
-          if (filePath.includes('/app/') && !filePath.includes('/api/')) {
-            const pathParts = filePath.split('/');
-            const appIndex = pathParts.indexOf('app');
+          if (!filePath.includes('/app/') || filePath.includes('/api/')) {
+            return false;
+          }
 
-            if (appIndex >= 0 && appIndex < pathParts.length - 1) {
-              // Check route segments (directories between app/ and file)
-              for (let i = appIndex + 1; i < pathParts.length - 1; i++) {
-                const segment = pathParts[i];
+          const pathParts = filePath.split('/');
+          const appIndex = pathParts.indexOf('app');
+          const fileName = pathParts[pathParts.length - 1];
 
-                // Skip empty segments and special Next.js directories
-                if (
-                  !segment ||
-                  segment.startsWith('(') ||
-                  segment.startsWith('[') ||
-                  segment.startsWith('_') ||
-                  segment === 'api'
-                ) {
-                  continue;
-                }
+          // Ensure fileName exists
+          if (!fileName) {
+            return false;
+          }
 
-                // Route segments should be kebab-case
-                if (!/^[a-z0-9]+(-[a-z0-9]+)*$/.test(segment)) {
-                  return true;
-                }
-              }
+          // Skip index files - they are organization files, not route files
+          if (/^index\.(tsx?|jsx?)$/.test(fileName)) {
+            return false;
+          }
+
+          // Only check if this is a Next.js route file (page, layout, loading, etc.)
+          const isNextJSRouteFile =
+            /^(page|layout|loading|error|not-found|template|default|global-error)\.(tsx?|jsx?)$/.test(
+              fileName
+            );
+
+          if (
+            appIndex < 0 ||
+            appIndex >= pathParts.length - 1 ||
+            !isNextJSRouteFile
+          ) {
+            return false;
+          }
+
+          // Check route segments (directories between app/ and file)
+          for (let i = appIndex + 1; i < pathParts.length - 1; i++) {
+            const segment = pathParts[i];
+
+            // Skip empty segments and special Next.js directories
+            if (
+              !segment ||
+              segment.startsWith('(') ||
+              segment.startsWith('[') ||
+              segment.startsWith('_') ||
+              segment === 'api' ||
+              segment === 'components' ||
+              segment === 'hooks' ||
+              segment === 'types' ||
+              segment === 'utils' ||
+              segment === 'lib' ||
+              segment === 'constants' ||
+              segment === 'helpers' ||
+              segment === 'styles' ||
+              segment === 'context'
+            ) {
+              continue;
+            }
+
+            // Route segments should be kebab-case
+            if (!/^[a-z0-9]+(-[a-z0-9]+)*$/.test(segment)) {
+              return true;
             }
           }
 
