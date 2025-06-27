@@ -405,8 +405,20 @@ export class ConfigLoader implements IConfigLoader {
           const dirName = path.basename(path.dirname(filePath));
 
           // Skip hook files - they have their own naming rule
-          if (fileName.includes('.hook.') || filePath.includes('/hooks/')) {
+          if (fileName.includes('.hook.')) {
             return false;
+          }
+
+          // Skip files directly in /hooks/ directory (but not subdirectories like hooks/constants/)
+          if (filePath.includes('/hooks/')) {
+            const pathParts = filePath.split('/');
+            const hooksIndex = pathParts.lastIndexOf('hooks');
+            const afterHooksPath = pathParts.slice(hooksIndex + 1);
+
+            // Only skip if it's directly in hooks folder (not in subdirectories)
+            if (afterHooksPath.length === 1) {
+              return false;
+            }
           }
 
           // Skip helper files - they have their own naming rule
@@ -449,7 +461,26 @@ export class ConfigLoader implements IConfigLoader {
           }
 
           // Hook files should follow useHookName.hook.ts pattern (PascalCase)
-          if (filePath.includes('/hooks/') || fileName.includes('.hook.')) {
+          if (fileName.includes('.hook.')) {
+            const hookPattern = /^use[A-Z][a-zA-Z0-9]*\.hook\.(ts|tsx)$/;
+            if (!hookPattern.test(fileName)) {
+              return true;
+            }
+          }
+
+          // Files directly in /hooks/ directory should be hooks (not in subdirectories like constants, types, etc.)
+          if (filePath.includes('/hooks/') && !fileName.includes('.hook.')) {
+            // Skip if this is in a subdirectory of hooks (like hooks/constants/, hooks/types/, etc.)
+            const pathParts = filePath.split('/');
+            const hooksIndex = pathParts.lastIndexOf('hooks');
+            const afterHooksPath = pathParts.slice(hooksIndex + 1);
+
+            // If there are more than 1 path segments after 'hooks', it's in a subdirectory
+            if (afterHooksPath.length > 1) {
+              return false; // Skip files in subdirectories
+            }
+
+            // Files directly in hooks folder should follow hook naming
             const hookPattern = /^use[A-Z][a-zA-Z0-9]*\.hook\.(ts|tsx)$/;
             if (!hookPattern.test(fileName)) {
               return true;
