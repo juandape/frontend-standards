@@ -46,9 +46,11 @@ export class Reporter implements IReporter {
     return {
       logFile: this.outputPath,
       totalErrors: reportData.totalErrors,
+      totalWarnings: reportData.totalWarnings,
       totalZones: Object.keys(zoneErrors).length,
       zoneErrors,
       summary: reportData.summary,
+      warningSummary: reportData.warningSummary,
     };
   }
 
@@ -59,13 +61,17 @@ export class Reporter implements IReporter {
     zoneErrors: Record<string, ValidationError[]>
   ): ProcessedReportData {
     const errorsByRule: Record<string, number> = {};
+    const warningsByRule: Record<string, number> = {};
     const oksByZone: Record<string, string[]> = {};
     const errorsByZone: Record<string, number> = {};
+    const warningsByZone: Record<string, number> = {};
     const totalCheckedByZone: Record<string, number> = {};
     let totalErrors = 0;
+    let totalWarnings = 0;
 
     for (const [zone, errors] of Object.entries(zoneErrors)) {
       errorsByZone[zone] = 0;
+      warningsByZone[zone] = 0;
       oksByZone[zone] = [];
       totalCheckedByZone[zone] = 0;
 
@@ -80,17 +86,25 @@ export class Reporter implements IReporter {
           errorsByZone[zone]++;
           totalErrors++;
           errorsByRule[error.rule] = (errorsByRule[error.rule] ?? 0) + 1;
+        } else if (error.severity === 'warning') {
+          warningsByZone[zone]++;
+          totalWarnings++;
+          warningsByRule[error.rule] = (warningsByRule[error.rule] ?? 0) + 1;
         }
       }
     }
 
     return {
       totalErrors,
+      totalWarnings,
       errorsByRule,
+      warningsByRule,
       errorsByZone,
+      warningsByZone,
       oksByZone,
       totalCheckedByZone,
       summary: this.generateSummary(errorsByRule, totalErrors),
+      warningSummary: this.generateSummary(warningsByRule, totalWarnings),
     };
   }
 
@@ -139,6 +153,7 @@ export class Reporter implements IReporter {
     this.addSummarySection(lines, reportData);
     this.addZoneResultsSection(lines, reportData);
     this.addDetailedErrorsSection(lines);
+    this.addDetailedWarningsSection(lines);
     this.addStatisticsSection(lines, reportData);
     this.addRecommendationsSection(lines);
 
@@ -152,18 +167,24 @@ export class Reporter implements IReporter {
     lines.push('='.repeat(80));
     lines.push('FRONTEND STANDARDS VALIDATION REPORT');
     lines.push('='.repeat(80));
-    lines.push(`Generated: ${new Date().toLocaleString('es-ES', { 
-      year: 'numeric', 
-      month: '2-digit', 
-      day: '2-digit', 
-      hour: '2-digit', 
-      minute: '2-digit', 
-      second: '2-digit',
-      timeZone: 'America/Bogota'
-    })}`);
+    lines.push(
+      `Generated: ${new Date().toLocaleString('es-ES', {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        timeZone: 'America/Bogota',
+      })}`
+    );
     lines.push(`Project: ${path.basename(this.rootDir)}`);
     lines.push(`Project Type: ${projectInfo.type}`);
     lines.push(`Monorepo: ${projectInfo.isMonorepo ? 'Yes' : 'No'}`);
+    lines.push('');
+    lines.push(
+      '💡 TIP: Use Cmd+Click (Mac) or Ctrl+Click (Windows/Linux) on file paths to open them directly in your editor'
+    );
     lines.push('');
   }
 
@@ -176,6 +197,13 @@ export class Reporter implements IReporter {
         Object.keys(reportData.errorsByZone).length
       } zones`
     );
+
+    if (reportData.totalWarnings > 0) {
+      lines.push(
+        `Additional warnings: ${reportData.totalWarnings} warnings found`
+      );
+    }
+
     lines.push('');
   }
 
@@ -190,8 +218,10 @@ export class Reporter implements IReporter {
     lines.push('-'.repeat(40));
 
     for (const [zone, errors] of Object.entries(reportData.errorsByZone)) {
+      const warnings = reportData.warningsByZone[zone] ?? 0;
       lines.push(`\n📂 Zone: ${zone}`);
       lines.push(`   Errors: ${errors}`);
+      lines.push(`   Warnings: ${warnings}`);
       lines.push(`   Status: ${errors === 0 ? '✅ PASSED' : '❌ FAILED'}`);
     }
   }
@@ -207,19 +237,61 @@ export class Reporter implements IReporter {
     const zoneErrors = this.getOriginalZoneErrors();
     for (const [zone, errors] of Object.entries(zoneErrors)) {
       const actualErrors = errors.filter(
-        (e) => !e.message.startsWith('✅') && e.severity === 'error' && !e.message.startsWith('Present:')
+        (e) =>
+          !e.message.startsWith('✅') &&
+          e.severity === 'error' &&
+          !e.message.startsWith('Present:')
       );
 
       if (actualErrors.length > 0) {
         lines.push(`\n📂 Zone: ${zone}`);
 
         for (const error of actualErrors) {
+          const absolutePath = path.isAbsolute(error.filePath)
+            ? error.filePath
+            : path.resolve(this.rootDir, error.filePath);
           const fileLocation = error.line
-            ? `${error.filePath}:${error.line}`
-            : error.filePath;
+            ? `${absolutePath}:${error.line}`
+            : absolutePath;
           lines.push(`\n  📄 ${fileLocation}`);
           lines.push(`     Rule: ${error.rule}`);
           lines.push(`     Issue: ${error.message}`);
+          lines.push('     ' + '-'.repeat(50));
+        }
+      }
+    }
+  }
+
+  /**
+   * Add detailed warnings section
+   */
+  addDetailedWarningsSection(lines: string[]): void {
+    lines.push('\n');
+    lines.push('DETAILED WARNINGS:');
+    lines.push('-'.repeat(40));
+
+    const zoneErrors = this.getOriginalZoneErrors();
+    for (const [zone, errors] of Object.entries(zoneErrors)) {
+      const actualWarnings = errors.filter(
+        (e) =>
+          !e.message.startsWith('✅') &&
+          e.severity === 'warning' &&
+          !e.message.startsWith('Present:')
+      );
+
+      if (actualWarnings.length > 0) {
+        lines.push(`\n📂 Zone: ${zone}`);
+
+        for (const warning of actualWarnings) {
+          const absolutePath = path.isAbsolute(warning.filePath)
+            ? warning.filePath
+            : path.resolve(this.rootDir, warning.filePath);
+          const fileLocation = warning.line
+            ? `${absolutePath}:${warning.line}`
+            : absolutePath;
+          lines.push(`\n  📄 ${fileLocation}`);
+          lines.push(`     Rule: ${warning.rule}`);
+          lines.push(`     Issue: ${warning.message}`);
           lines.push('     ' + '-'.repeat(50));
         }
       }
@@ -242,6 +314,20 @@ export class Reporter implements IReporter {
       }
 
       lines.push(`\nTotal violations: ${reportData.totalErrors}`);
+    }
+
+    if (reportData.warningSummary.length > 0) {
+      lines.push('\n');
+      lines.push('WARNING STATISTICS:');
+      lines.push('-'.repeat(40));
+
+      for (const stat of reportData.warningSummary) {
+        lines.push(
+          `• ${stat.rule}: ${stat.count} occurrences (${stat.percentage}%)`
+        );
+      }
+
+      lines.push(`\nTotal warnings: ${reportData.totalWarnings}`);
     }
   }
 

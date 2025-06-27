@@ -341,11 +341,15 @@ export interface IRuleEngine {
 // Enhanced Reporter types
 export interface ProcessedReportData {
   totalErrors: number;
+  totalWarnings: number;
   errorsByRule: Record<string, number>;
+  warningsByRule: Record<string, number>;
   errorsByZone: Record<string, number>;
+  warningsByZone: Record<string, number>;
   oksByZone: Record<string, string[]>;
   totalCheckedByZone: Record<string, number>;
   summary: SummaryItem[];
+  warningSummary: SummaryItem[];
 }
 
 export interface SummaryItem {
@@ -357,9 +361,11 @@ export interface SummaryItem {
 export interface ReportGenerationResult {
   logFile: string;
   totalErrors: number;
+  totalWarnings: number;
   totalZones: number;
   zoneErrors: Record<string, ValidationError[]>;
   summary: SummaryItem[];
+  warningSummary: SummaryItem[];
 }
 
 export interface IReporter {
