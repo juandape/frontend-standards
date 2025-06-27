@@ -1,5 +1,28 @@
 # 📋 Changelog - Frontend Standards Checker
 
+## [v4.5.0] - 2025-06-27
+
+### 🐛 Critical Bug Fix
+
+- **INFO Rules Reporting**: Corregido bug crítico donde las reglas con severidad 'info' no aparecían en los reportes
+  - Agregado soporte completo para reglas INFO en el reporter
+  - Nuevas secciones "DETAILED INFO SUGGESTIONS" y "INFO SUGGESTIONS STATISTICS" en el log
+  - Actualizados tipos TypeScript para incluir contadores de INFO
+  - Las 15 reglas INFO ahora aparecen correctamente en todos los proyectos
+
+### ✨ Enhancements
+
+- **Reporter Mejorado**:
+  - Contadores separados para errores, warnings e info
+  - Estadísticas detalladas por tipo de severidad
+  - Mejor organización del reporte con secciones claras
+
+### 📚 Documentation
+
+- **Lista de Reglas Actualizada**: Documento `rules-list.md` con formato mejorado y todas las reglas clasificadas correctamente
+
+---
+
 ## [v2.0.1] - 2025-06-25
 
 ### 🔧 Fixes

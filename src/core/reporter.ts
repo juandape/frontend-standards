@@ -47,10 +47,12 @@ export class Reporter implements IReporter {
       logFile: this.outputPath,
       totalErrors: reportData.totalErrors,
       totalWarnings: reportData.totalWarnings,
+      totalInfos: reportData.totalInfos,
       totalZones: Object.keys(zoneErrors).length,
       zoneErrors,
       summary: reportData.summary,
       warningSummary: reportData.warningSummary,
+      infoSummary: reportData.infoSummary,
     };
   }
 
@@ -62,16 +64,20 @@ export class Reporter implements IReporter {
   ): ProcessedReportData {
     const errorsByRule: Record<string, number> = {};
     const warningsByRule: Record<string, number> = {};
+    const infosByRule: Record<string, number> = {};
     const oksByZone: Record<string, string[]> = {};
     const errorsByZone: Record<string, number> = {};
     const warningsByZone: Record<string, number> = {};
+    const infosByZone: Record<string, number> = {};
     const totalCheckedByZone: Record<string, number> = {};
     let totalErrors = 0;
     let totalWarnings = 0;
+    let totalInfos = 0;
 
     for (const [zone, errors] of Object.entries(zoneErrors)) {
       errorsByZone[zone] = 0;
       warningsByZone[zone] = 0;
+      infosByZone[zone] = 0;
       oksByZone[zone] = [];
       totalCheckedByZone[zone] = 0;
 
@@ -90,6 +96,10 @@ export class Reporter implements IReporter {
           warningsByZone[zone]++;
           totalWarnings++;
           warningsByRule[error.rule] = (warningsByRule[error.rule] ?? 0) + 1;
+        } else if (error.severity === 'info') {
+          infosByZone[zone]++;
+          totalInfos++;
+          infosByRule[error.rule] = (infosByRule[error.rule] ?? 0) + 1;
         }
       }
     }
@@ -97,14 +107,18 @@ export class Reporter implements IReporter {
     return {
       totalErrors,
       totalWarnings,
+      totalInfos,
       errorsByRule,
       warningsByRule,
+      infosByRule,
       errorsByZone,
       warningsByZone,
+      infosByZone,
       oksByZone,
       totalCheckedByZone,
       summary: this.generateSummary(errorsByRule, totalErrors),
       warningSummary: this.generateSummary(warningsByRule, totalWarnings),
+      infoSummary: this.generateSummary(infosByRule, totalInfos),
     };
   }
 
@@ -154,6 +168,7 @@ export class Reporter implements IReporter {
     this.addZoneResultsSection(lines, reportData);
     this.addDetailedErrorsSection(lines);
     this.addDetailedWarningsSection(lines);
+    this.addDetailedInfosSection(lines);
     this.addStatisticsSection(lines, reportData);
     this.addRecommendationsSection(lines);
 
@@ -204,6 +219,12 @@ export class Reporter implements IReporter {
       );
     }
 
+    if (reportData.totalInfos > 0) {
+      lines.push(
+        `Additional suggestions: ${reportData.totalInfos} info items found`
+      );
+    }
+
     lines.push('');
   }
 
@@ -219,9 +240,13 @@ export class Reporter implements IReporter {
 
     for (const [zone, errors] of Object.entries(reportData.errorsByZone)) {
       const warnings = reportData.warningsByZone[zone] ?? 0;
+      const infos = reportData.infosByZone[zone] ?? 0;
       lines.push(`\n📂 Zone: ${zone}`);
       lines.push(`   Errors: ${errors}`);
       lines.push(`   Warnings: ${warnings}`);
+      if (infos > 0) {
+        lines.push(`   Info suggestions: ${infos}`);
+      }
       lines.push(`   Status: ${errors === 0 ? '✅ PASSED' : '❌ FAILED'}`);
     }
   }
@@ -299,6 +324,42 @@ export class Reporter implements IReporter {
   }
 
   /**
+   * Add detailed info suggestions section
+   */
+  addDetailedInfosSection(lines: string[]): void {
+    lines.push('\n');
+    lines.push('DETAILED INFO SUGGESTIONS:');
+    lines.push('-'.repeat(40));
+
+    const zoneErrors = this.getOriginalZoneErrors();
+    for (const [zone, errors] of Object.entries(zoneErrors)) {
+      const actualInfos = errors.filter(
+        (e) =>
+          !e.message.startsWith('✅') &&
+          e.severity === 'info' &&
+          !e.message.startsWith('Present:')
+      );
+
+      if (actualInfos.length > 0) {
+        lines.push(`\n📂 Zone: ${zone}`);
+
+        for (const info of actualInfos) {
+          const absolutePath = path.isAbsolute(info.filePath)
+            ? info.filePath
+            : path.resolve(this.rootDir, info.filePath);
+          const fileLocation = info.line
+            ? `${absolutePath}:${info.line}`
+            : absolutePath;
+          lines.push(`\n  📄 ${fileLocation}`);
+          lines.push(`     Rule: ${info.rule}`);
+          lines.push(`     Suggestion: ${info.message}`);
+          lines.push('     ' + '-'.repeat(50));
+        }
+      }
+    }
+  }
+
+  /**
    * Add statistics section
    */
   addStatisticsSection(lines: string[], reportData: ProcessedReportData): void {
@@ -328,6 +389,20 @@ export class Reporter implements IReporter {
       }
 
       lines.push(`\nTotal warnings: ${reportData.totalWarnings}`);
+    }
+
+    if (reportData.infoSummary.length > 0) {
+      lines.push('\n');
+      lines.push('INFO SUGGESTIONS STATISTICS:');
+      lines.push('-'.repeat(40));
+
+      for (const stat of reportData.infoSummary) {
+        lines.push(
+          `• ${stat.rule}: ${stat.count} occurrences (${stat.percentage}%)`
+        );
+      }
+
+      lines.push(`\nTotal info suggestions: ${reportData.totalInfos}`);
     }
   }
 

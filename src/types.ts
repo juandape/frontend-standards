@@ -1,6 +1,6 @@
 /**
  * Frontend Standards Checker - Type Definitions
- * @version 2.3.0
+ * @version 4.5.0
  */
 
 export interface ValidationRule {
@@ -342,14 +342,18 @@ export interface IRuleEngine {
 export interface ProcessedReportData {
   totalErrors: number;
   totalWarnings: number;
+  totalInfos: number;
   errorsByRule: Record<string, number>;
   warningsByRule: Record<string, number>;
+  infosByRule: Record<string, number>;
   errorsByZone: Record<string, number>;
   warningsByZone: Record<string, number>;
+  infosByZone: Record<string, number>;
   oksByZone: Record<string, string[]>;
   totalCheckedByZone: Record<string, number>;
   summary: SummaryItem[];
   warningSummary: SummaryItem[];
+  infoSummary: SummaryItem[];
 }
 
 export interface SummaryItem {
@@ -362,10 +366,12 @@ export interface ReportGenerationResult {
   logFile: string;
   totalErrors: number;
   totalWarnings: number;
+  totalInfos: number;
   totalZones: number;
   zoneErrors: Record<string, ValidationError[]>;
   summary: SummaryItem[];
   warningSummary: SummaryItem[];
+  infoSummary: SummaryItem[];
 }
 
 export interface IReporter {
