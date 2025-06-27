@@ -404,6 +404,16 @@ export class ConfigLoader implements IConfigLoader {
           const fileName = path.basename(filePath);
           const dirName = path.basename(path.dirname(filePath));
 
+          // Skip hook files - they have their own naming rule
+          if (fileName.includes('.hook.')) {
+            return false;
+          }
+
+          // Skip helper files - they have their own naming rule
+          if (filePath.includes('/helpers/') || fileName.includes('.helper.')) {
+            return false;
+          }
+
           // Component files should be PascalCase
           if (filePath.endsWith('.tsx') && filePath.includes('/components/')) {
             if (fileName === 'index.tsx') {
@@ -468,10 +478,14 @@ export class ConfigLoader implements IConfigLoader {
             return false;
           }
 
-          // Type files should be camelCase and end with .type.ts
-          if (filePath.includes('/types/') || fileName.endsWith('.type.ts')) {
+          // Type files should be camelCase and end with .type.ts or .types.ts
+          if (
+            filePath.includes('/types/') ||
+            fileName.endsWith('.type.ts') ||
+            fileName.endsWith('.types.ts')
+          ) {
             const typePattern =
-              /^[a-z][a-zA-Z0-9]*(\.[a-z][a-zA-Z0-9]*)*\.type\.ts$/;
+              /^[a-z][a-zA-Z0-9]*(\.[a-z][a-zA-Z0-9]*)*\.types?\.ts$/;
             if (!typePattern.test(fileName)) {
               return true;
             }
@@ -480,7 +494,7 @@ export class ConfigLoader implements IConfigLoader {
           return false;
         },
         message:
-          'Type files should be camelCase and end with .type.ts (index.ts files are allowed for exports)',
+          'Type files should be camelCase and end with .type.ts or .types.ts (index.ts files are allowed for exports)',
       },
       {
         name: 'Constants naming',
@@ -513,22 +527,22 @@ export class ConfigLoader implements IConfigLoader {
       {
         name: 'Helper naming',
         category: 'naming',
-        severity: 'info',
+        severity: 'error',
         check: (_content: string, filePath: string): boolean => {
           const fileName = path.basename(filePath);
 
           // Skip index files
-          if (fileName === 'index.ts') {
+          if (fileName === 'index.ts' || fileName === 'index.tsx') {
             return false;
           }
 
-          // Helper files should be camelCase and end with .helper.ts
+          // Helper files should be camelCase and end with .helper.ts or .helper.tsx
           if (
             filePath.includes('/helpers/') ||
-            filePath.includes('/helper/') ||
-            fileName.endsWith('.helper.ts')
+            fileName.endsWith('.helper.ts') ||
+            fileName.endsWith('.helper.tsx')
           ) {
-            const helperPattern = /^[a-z][a-zA-Z0-9]*\.helper\.ts$/;
+            const helperPattern = /^[a-z][a-zA-Z0-9]*\.helper\.(ts|tsx)$/;
             if (!helperPattern.test(fileName)) {
               return true;
             }
@@ -536,7 +550,8 @@ export class ConfigLoader implements IConfigLoader {
 
           return false;
         },
-        message: 'Helper files should be camelCase and end with .helper.ts',
+        message:
+          'Helper files should be camelCase and end with .helper.ts or .helper.tsx',
       },
       {
         name: 'Style naming',
@@ -544,6 +559,11 @@ export class ConfigLoader implements IConfigLoader {
         severity: 'error',
         check: (_content: string, filePath: string): boolean => {
           const fileName = path.basename(filePath);
+
+          // Skip index files - they are organization files, not style files
+          if (fileName === 'index.ts' || fileName === 'index.tsx') {
+            return false;
+          }
 
           // Style files should be camelCase and end with .style.ts
           if (filePath.includes('/styles/') || fileName.endsWith('.style.ts')) {
@@ -580,6 +600,29 @@ export class ConfigLoader implements IConfigLoader {
         },
         message:
           'Assets should follow kebab-case naming (e.g., service-error.svg)',
+      },
+      {
+        name: 'Folder naming convention',
+        category: 'naming',
+        severity: 'error',
+        check: (_content: string, filePath: string): boolean => {
+          // Skip configuration files
+          if (this.isConfigFile(filePath)) {
+            return false;
+          }
+
+          // Check for incorrect singular folder names
+          const incorrectFolders = [
+            '/helper/',
+            '/hook/',
+            '/type/',
+            '/constant/',
+            '/enum/',
+          ];
+          return incorrectFolders.some((folder) => filePath.includes(folder));
+        },
+        message:
+          'Use plural folder names: helpers, hooks, types, constants, enums (not singular)',
       },
       {
         name: 'Directory naming convention',
