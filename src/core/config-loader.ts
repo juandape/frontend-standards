@@ -382,6 +382,64 @@ export class ConfigLoader implements IConfigLoader {
         message:
           'Test files should follow *.test.tsx or *.spec.tsx naming convention',
       },
+      {
+        name: 'Missing index.ts in organization folders',
+        category: 'structure',
+        severity: 'warning',
+        check: (_content: string, filePath: string): boolean => {
+          // Skip configuration files
+          if (this.isConfigFile(filePath)) {
+            return false;
+          }
+
+          // Check if this is a file in an organization folder
+          const organizationFolders = [
+            '/components/',
+            '/types/',
+            '/enums/',
+            '/hooks/',
+            '/constants/',
+            '/styles/',
+            '/helpers/',
+            '/utils/',
+            '/lib/',
+          ];
+
+          const isInOrganizationFolder = organizationFolders.some((folder) =>
+            filePath.includes(folder)
+          );
+
+          if (!isInOrganizationFolder) {
+            return false;
+          }
+
+          const fileName = path.basename(filePath);
+
+          // Skip if this is already an index file
+          if (fileName === 'index.ts' || fileName === 'index.tsx') {
+            return false;
+          }
+
+          // Get the immediate parent directory of the file
+          const parentDir = path.dirname(filePath);
+
+          // Check if there's an index.ts or index.tsx in the same directory
+          const indexTsPath = path.join(parentDir, 'index.ts');
+          const indexTsxPath = path.join(parentDir, 'index.tsx');
+
+          try {
+            const fs = require('fs');
+            const hasIndexTs = fs.existsSync(indexTsPath);
+            const hasIndexTsx = fs.existsSync(indexTsxPath);
+
+            return !hasIndexTs && !hasIndexTsx;
+          } catch {
+            return true;
+          }
+        },
+        message:
+          'Organization folders (components, types, hooks, constants, etc.) should have an index.ts file for exports',
+      },
     ];
   }
 
@@ -731,7 +789,7 @@ export class ConfigLoader implements IConfigLoader {
       {
         name: 'Interface naming with I prefix',
         category: 'naming',
-        severity: 'warning',
+        severity: 'error',
         check: (content: string): boolean => {
           // Check for interface declarations that don't start with I
           const interfaceRegex = /interface\s+([A-Z][a-zA-Z0-9]*)/g;
@@ -739,13 +797,12 @@ export class ConfigLoader implements IConfigLoader {
 
           while ((match = interfaceRegex.exec(content)) !== null) {
             const interfaceName = match[1];
-            // Interface should start with I or end with Props/Type/Config
+            if (!interfaceName) continue;
+
+            // Interface must start with "I" followed by PascalCase
             if (
-              interfaceName &&
-              !interfaceName.startsWith('I') &&
-              !interfaceName.endsWith('Props') &&
-              !interfaceName.endsWith('Type') &&
-              !interfaceName.endsWith('Config')
+              !interfaceName.startsWith('I') ||
+              !/^I[A-Z][a-zA-Z0-9]*$/.test(interfaceName)
             ) {
               return true;
             }
@@ -754,7 +811,7 @@ export class ConfigLoader implements IConfigLoader {
           return false;
         },
         message:
-          'Interfaces should be prefixed with "I" or suffixed with "Props", "Type", or "Config"',
+          'Interfaces must be prefixed with "I" followed by PascalCase (e.g., IGlobalStateHashProviderProps)',
       },
     ];
   }
@@ -1281,10 +1338,39 @@ export class ConfigLoader implements IConfigLoader {
         category: 'typescript',
         severity: 'warning',
         check: (content: string): boolean => {
-          const interfaceWithUnion = /interface\s+\w+.*\{[\s\S]*?\|[\s\S]*?\}/;
-          return interfaceWithUnion.test(content);
+          // Look for interface declarations that define actual union types
+          // Not just properties that happen to have union types
+          const interfaceDeclarationRegex = /interface\s+\w+[^{]*\{([^}]*)\}/g;
+          let match;
+
+          while ((match = interfaceDeclarationRegex.exec(content)) !== null) {
+            const interfaceBody = match[1];
+
+            if (!interfaceBody) continue;
+
+            // Check if the interface itself is defining union alternatives
+            // Look for patterns like: { prop1: type1 } | { prop2: type2 }
+            // This is different from properties having union types
+            const linesInInterface = interfaceBody.split('\n');
+            const hasUnionAlternatives = linesInInterface.some((line) => {
+              const trimmed = line.trim();
+              // Look for lines that suggest union alternatives (not just union property types)
+              return (
+                trimmed.includes('|') &&
+                !trimmed.includes(':') &&
+                trimmed.length > 5
+              );
+            });
+
+            if (hasUnionAlternatives) {
+              return true;
+            }
+          }
+
+          return false;
         },
-        message: 'Use "type" instead of "interface" for union types',
+        message:
+          'Use "type" instead of "interface" for union types (union alternatives, not union properties)',
       },
       {
         name: 'Explicit return types for functions',
@@ -1338,28 +1424,6 @@ export class ConfigLoader implements IConfigLoader {
           return invalidGenerics;
         },
         message: 'Consider using more descriptive generic type parameter names',
-      },
-      {
-        name: 'Interface naming convention',
-        category: 'typescript',
-        severity: 'warning',
-        check: (content: string): boolean => {
-          const interfaceMatches = content.match(/interface\s+(\w+)/g);
-          if (!interfaceMatches) return false;
-
-          return interfaceMatches.some((match) => {
-            const interfaceName = match.split(/\s+/)[1];
-            return (
-              interfaceName &&
-              !interfaceName.endsWith('Props') &&
-              !interfaceName.endsWith('Type') &&
-              !interfaceName.endsWith('Config') &&
-              !interfaceName.startsWith('I')
-            );
-          });
-        },
-        message:
-          'Interfaces should be prefixed with "I" or suffixed with "Props", "Type", or "Config"',
       },
     ];
   }
