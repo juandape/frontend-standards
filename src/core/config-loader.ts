@@ -405,7 +405,7 @@ export class ConfigLoader implements IConfigLoader {
           const dirName = path.basename(path.dirname(filePath));
 
           // Skip hook files - they have their own naming rule
-          if (fileName.includes('.hook.')) {
+          if (fileName.includes('.hook.') || filePath.includes('/hooks/')) {
             return false;
           }
 
@@ -448,7 +448,7 @@ export class ConfigLoader implements IConfigLoader {
             return false;
           }
 
-          // Hook files should follow useHookName.hook.ts pattern
+          // Hook files should follow useHookName.hook.ts pattern (PascalCase)
           if (filePath.includes('/hooks/') || fileName.includes('.hook.')) {
             const hookPattern = /^use[A-Z][a-zA-Z0-9]*\.hook\.(ts|tsx)$/;
             if (!hookPattern.test(fileName)) {
@@ -459,7 +459,7 @@ export class ConfigLoader implements IConfigLoader {
           return false;
         },
         message:
-          'Hook files should follow "useHookName.hook.ts" pattern (index.ts files are allowed for exports)',
+          'Hook files should follow "useHookName.hook.ts" pattern with PascalCase (e.g., useFormInputPassword.hook.tsx, useApiData.hook.ts)',
       },
       {
         name: 'Type naming',
