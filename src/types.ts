@@ -27,6 +27,22 @@ export interface ZoneConfiguration {
   excludePatterns?: string[];
 }
 
+export interface RulesObjectFormat {
+  [ruleName: string]: boolean | 'error' | 'warning' | 'info';
+}
+
+export type OutputFormat = 'text' | 'json' | 'both';
+
+export interface StandardsConfigurationInput {
+  rules?: ValidationRule[] | RulesObjectFormat;
+  zones?: ZoneConfiguration;
+  merge?: boolean;
+  extensions?: string[];
+  ignorePatterns?: string[];
+  verbose?: boolean;
+  outputFormat?: OutputFormat;
+}
+
 export interface StandardsConfiguration {
   rules?: ValidationRule[];
   zones?: ZoneConfiguration;
@@ -34,7 +50,7 @@ export interface StandardsConfiguration {
   extensions?: string[];
   ignorePatterns?: string[];
   verbose?: boolean;
-  outputFormat?: 'text' | 'json' | 'both';
+  outputFormat?: OutputFormat;
 }
 
 export type ConfigurationFunction = (
@@ -43,7 +59,7 @@ export type ConfigurationFunction = (
 
 export type ConfigurationExport =
   | ValidationRule[]
-  | StandardsConfiguration
+  | StandardsConfigurationInput
   | ConfigurationFunction;
 
 export interface ValidationError {

@@ -78,11 +78,13 @@ export class FrontendStandardsChecker {
       }
 
       // Analyze project
-      const projectInfo = await this.projectAnalyzer.analyze();
+      const projectInfo = await this.projectAnalyzer.analyze(config.zones);
       this.logger.info(`📁 Project type: ${projectInfo.projectType}`);
       this.logger.info(`🏗️ Monorepo: ${projectInfo.isMonorepo ? 'Yes' : 'No'}`);
 
-      // Determine zones to validate
+      if (this.options.debug) {
+        this.logger.debug('Project analysis result:', projectInfo);
+      }
       const zonesToValidate = this.determineZones(projectInfo, config);
       this.logger.info(`🎯 Zones to validate: ${zonesToValidate.join(', ')}`);
 

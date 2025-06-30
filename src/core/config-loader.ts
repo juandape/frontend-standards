@@ -7,6 +7,7 @@ import type {
   ConfigurationExport,
   DefaultRulesStructure,
   ValidationRule,
+  RulesObjectFormat,
 } from '../types.js';
 
 /**
@@ -106,10 +107,24 @@ export class ConfigLoader implements IConfigLoader {
     }
 
     if (customConfig && typeof customConfig === 'object') {
+      let finalRules: ValidationRule[];
+
+      if (customConfig.rules && !Array.isArray(customConfig.rules)) {
+        // Convert object format to array format
+        finalRules = this.convertObjectRulesToArray(
+          customConfig.rules,
+          defaultRules
+        );
+      } else if (Array.isArray(customConfig.rules)) {
+        finalRules = customConfig.rules;
+      } else {
+        finalRules = Object.values(defaultRules).flat();
+      }
+
       return {
         ...defaultConfig,
         ...customConfig,
-        rules: customConfig.rules ?? Object.values(defaultRules).flat(),
+        rules: finalRules,
       };
     }
 
@@ -1206,6 +1221,43 @@ export class ConfigLoader implements IConfigLoader {
           'After production deployment, ensure sync branches are created to update other environments as shown in GitFlow.',
       },
     ];
+  }
+
+  /**
+   * Convert object format rules to ValidationRule array
+   */
+  private convertObjectRulesToArray(
+    rulesObject: RulesObjectFormat,
+    defaultRules: DefaultRulesStructure
+  ): ValidationRule[] {
+    const allDefaultRules = Object.values(defaultRules).flat();
+    const validationRules: ValidationRule[] = [];
+
+    for (const [ruleName, ruleValue] of Object.entries(rulesObject)) {
+      const defaultRule = allDefaultRules.find(
+        (rule) => rule.name === ruleName
+      );
+
+      if (defaultRule) {
+        // Use the default rule as base
+        if (ruleValue === true) {
+          validationRules.push(defaultRule);
+        } else if (
+          ruleValue === 'error' ||
+          ruleValue === 'warning' ||
+          ruleValue === 'info'
+        ) {
+          validationRules.push({
+            ...defaultRule,
+            severity: ruleValue,
+          });
+        }
+      } else {
+        this.logger.warn(`Unknown rule: ${ruleName}`);
+      }
+    }
+
+    return validationRules;
   }
 
   /**
