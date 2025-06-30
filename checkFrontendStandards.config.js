@@ -1,7 +1,7 @@
 /**
- * @fileoverview Configuration file for checkFrontendStandards.mjs
+ * @fileoverview Configuration file for frontend-standards-checker
  *
- * This file allows you to customize rules and zones for the frontend standards validation script.
+ * This file allows you to customize rules and zones for the frontend standards validation tool.
  * Multiple configuration patterns are supported for maximum flexibility:
  *
  * **Object Configuration:**
@@ -15,13 +15,12 @@
  *
  * **Array Configuration:**
  * - Export array of rules directly (automatically merges with defaults)
- * - Simplest approach for adding a few custom rules 
+ * - Simplest approach for adding a few custom rules
  *
- * @author Diners Club Frontend Team
- * @version 1.0.0
+ * @author Juan David Peña
+ * @version 4.5.0
  * @since 2024-01-15
- * @see {@link ./checkFrontendStandards.mjs} Main validation script
- * @see {@link ./checkFrontendStandards.types.js} Type definitions
+ * @see {@link https://github.com/juandape/frontend-standards} Documentation
  *
  * @example
  * ```js
@@ -55,8 +54,8 @@
  *
  * @type {{
  *   merge: boolean,
- *   zones: import('./checkFrontendStandards.types.js').ZoneConfig,
- *   rules: import('./checkFrontendStandards.types.js').ValidationRule[]
+ *   zones: import('./src/types.js').ZoneConfiguration,
+ *   rules: import('./src/types.js').ValidationRule[]
  * }}
  */
 export default {
@@ -83,14 +82,18 @@ export default {
     //   check: (content) => content.includes('TODO'),
     //   message: 'TODO comments should be resolved before committing.',
     // },
-    // Example: Disable a specific pattern
-    // {
-    //   name: 'Allow console.warn',
-    //   check: (content) => false, // Never triggers
-    //   message: 'This rule is disabled.',
-    // },
+    // Example: Override existing rule severity (using object format)
+    // To use object format, change the rules array to an object like this:
+    // rules: {
+    //   "Missing index.ts in organization folders": "error",
+    //   "No console.log": "warning",
+    //   "Interface naming with I prefix": "error",
+    //   "Hook naming": true,
+    //   "Component naming": true,
+    //   "Should have TSDoc comments": "info"
+    // }
   ],
-}
+};
 
 // Alternative configurations:
 
@@ -106,7 +109,39 @@ export default {
 //   ],
 // }
 
-// 2. Export a function that receives default rules
+// 2. Export rules in object format (easier to configure existing rules)
+// export default {
+//   zones: {
+//     includePackages: true, // Include packages/ in validation
+//   },
+//   rules: {
+//     // Structure rules
+//     "Missing index.ts in organization folders": "warning",
+//     "Missing test files": "info",
+//
+//     // Naming rules
+//     "Component naming": true,
+//     "Hook naming": "error",
+//     "Interface naming with I prefix": "error",
+//     "Helper naming": true,
+//     "Style naming": true,
+//
+//     // Content quality rules
+//     "No console.log": true,
+//     "No var": "error",
+//     "No any type": "warning",
+//     "Must use async/await": "warning",
+//
+//     // TypeScript rules
+//     "Prefer type over interface for unions": "warning",
+//
+//     // Documentation rules
+//     "Should have TSDoc comments": "info",
+//     "JSDoc for complex functions": "info"
+//   }
+// }
+
+// 3. Export a function that receives default rules
 // export default function(defaultRules) {
 //   return [
 //     ...defaultRules,
@@ -118,7 +153,7 @@ export default {
 //   ]
 // }
 
-// 3. Export array of rules directly (merges with defaults)
+// 4. Export array of rules directly (merges with defaults)
 // export default [
 //   {
 //     name: 'Array-based rule',
@@ -127,7 +162,7 @@ export default {
 //   },
 // ]
 
-// 4. Example with packages enabled
+// 5. Example with packages enabled and object format rules
 // export default {
 //   zones: {
 //     includePackages: true, // This will include packages/ in validation

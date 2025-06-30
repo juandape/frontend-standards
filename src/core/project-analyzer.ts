@@ -160,9 +160,36 @@ export class ProjectAnalyzer implements IProjectAnalyzer {
       'rush.json',
     ];
 
-    return monorepoMarkers.some((marker) =>
+    // Check for standard monorepo markers (directories and config files)
+    const hasStandardMarkers = monorepoMarkers.some((marker) =>
       fs.existsSync(path.join(this.rootDir, marker))
     );
+
+    if (hasStandardMarkers) {
+      return true;
+    }
+
+    // Check for workspaces in package.json
+    const packageJsonPath = path.join(this.rootDir, 'package.json');
+    if (fs.existsSync(packageJsonPath)) {
+      try {
+        const packageJsonContent = fs.readFileSync(packageJsonPath, 'utf8');
+        const packageJson = JSON.parse(packageJsonContent);
+
+        // Check for workspaces property (yarn/npm workspaces)
+        if (packageJson.workspaces) {
+          return true;
+        }
+      } catch (error) {
+        // Ignore JSON parsing errors - if package.json is malformed, treat as non-monorepo
+        this.logger.debug(
+          'Failed to parse package.json for monorepo detection:',
+          error
+        );
+      }
+    }
+
+    return false;
   }
 
   /**
@@ -178,6 +205,9 @@ export class ProjectAnalyzer implements IProjectAnalyzer {
     for (const zoneName of standardZones) {
       zones.push(...this.processZoneDirectory(zoneName));
     }
+
+    // Process workspaces from package.json
+    zones.push(...this.processWorkspaceZones(zoneConfig));
 
     // Process custom zones
     zones.push(...this.processCustomZones(zoneConfig.customZones));
@@ -250,6 +280,61 @@ export class ProjectAnalyzer implements IProjectAnalyzer {
           type: this.detectZoneType(customZonePath),
         });
       }
+    }
+
+    return zones;
+  }
+
+  /**
+   * Process workspace zones from package.json
+   */
+  processWorkspaceZones(_zoneConfig: MonorepoZoneConfig): ZoneInfo[] {
+    const zones: ZoneInfo[] = [];
+
+    const packageJsonPath = path.join(this.rootDir, 'package.json');
+    if (!fs.existsSync(packageJsonPath)) {
+      return zones;
+    }
+
+    try {
+      const packageJsonContent = fs.readFileSync(packageJsonPath, 'utf8');
+      const packageJson = JSON.parse(packageJsonContent);
+
+      if (!packageJson.workspaces) {
+        return zones;
+      }
+
+      // Handle both array and object formats for workspaces
+      let workspacePatterns: string[] = [];
+      if (Array.isArray(packageJson.workspaces)) {
+        workspacePatterns = packageJson.workspaces;
+      } else if (packageJson.workspaces.packages) {
+        workspacePatterns = packageJson.workspaces.packages;
+      }
+
+      // Process workspace patterns to find actual directories
+      for (const pattern of workspacePatterns) {
+        // For simple directory names (not glob patterns)
+        if (!pattern.includes('*') && !pattern.includes('?')) {
+          const workspacePath = path.join(this.rootDir, pattern);
+          if (
+            fs.existsSync(workspacePath) &&
+            fs.statSync(workspacePath).isDirectory()
+          ) {
+            zones.push({
+              name: pattern,
+              path: workspacePath,
+              type: this.detectZoneType(workspacePath),
+            });
+          }
+        }
+        // Note: Glob pattern support could be added here if needed for complex workspace configurations
+      }
+    } catch (error) {
+      this.logger.debug(
+        'Failed to process workspace zones from package.json:',
+        error
+      );
     }
 
     return zones;
