@@ -42,6 +42,9 @@ El validador ha sido **significativamente optimizado** para reducir falsos posit
 # Instalación desde GitHub
 yarn add frontend-standards-checker@https://github.com/juandape/frontend-standards.git
 
+# 🆕 Copiar archivos de configuración a tu proyecto
+npx frontend-standards-init
+
 # Agregar scripts al package.json
 {
   "scripts": {
@@ -62,6 +65,9 @@ yarn standards .
 ```bash
 # Instalación desde GitHub
 npm install frontend-standards-checker@https://github.com/juandape/frontend-standards.git
+
+# 🆕 Copiar archivos de configuración a tu proyecto
+npx frontend-standards-init
 
 # Agregar scripts al package.json
 {
@@ -87,6 +93,9 @@ yarn frontend-standards-checker .
 # Con npm
 npx frontend-standards-checker .
 
+# 🆕 Inicializar archivos de configuración en proyecto existente
+npx frontend-standards-init  # Copia checkFrontendStandards.config.js y guía
+
 # Con validaciones específicas
 npx frontend-standards-checker . --security-check --gitflow-check
 ```
@@ -94,16 +103,19 @@ npx frontend-standards-checker . --security-check --gitflow-check
 ## 📋 Tabla de Contenidos
 
 - [Frontend Standards Checker - Guía Completa de Configuración](#frontend-standards-checker---guía-completa-de-configuración)
-  - [✅ Estado Actual - Versión 4.5.0 con Reglas INFO Funcionales](#-estado-actual---versión-450-con-reglas-info-funcionales)
-    - [🎯 **Mejoras Principales v4.5.0:**](#-mejoras-principales-v450)
-    - [📋 **Validaciones Actuales v4.5.0:**](#-validaciones-actuales-v450)
+  - [✅ Estado Actual - Versión 4.5.1 con Nueva Funcionalidad onlyZone](#-estado-actual---versión-451-con-nueva-funcionalidad-onlyzone)
+    - [🎯 **Mejoras Principales v4.5.1:**](#-mejoras-principales-v451)
+    - [📋 **Validaciones Actuales v4.5.1:**](#-validaciones-actuales-v451)
   - [📦 Instalación Universal](#-instalación-universal)
     - [Con Yarn (Recomendado)](#con-yarn-recomendado)
     - [Con NPM](#con-npm)
     - [Ejecución Directa (sin scripts)](#ejecución-directa-sin-scripts)
   - [📋 Tabla de Contenidos](#-tabla-de-contenidos)
-  - [🚀 Nuevas Características v4.5.0](#-nuevas-características-v450)
-    - [🎯 **Optimización de Reglas Principales**](#-optimización-de-reglas-principales)
+  - [🚀 Nuevas Características v4.5.1](#-nuevas-características-v451)
+    - [🆕 **Nueva Funcionalidad: onlyZone**](#-nueva-funcionalidad-onlyzone)
+      - [**Validación Selectiva por Zona**](#validación-selectiva-por-zona)
+      - [**Ejemplos de uso onlyZone:**](#ejemplos-de-uso-onlyzone)
+    - [🎯 **Optimización de Reglas Principales (v4.5.0)**](#-optimización-de-reglas-principales-v450)
       - [**JSDoc para Funciones Complejas**](#jsdoc-para-funciones-complejas)
       - [**Tipos de Retorno Explícitos**](#tipos-de-retorno-explícitos)
       - [**Nomenclatura de Directorios**](#nomenclatura-de-directorios)
@@ -121,8 +133,9 @@ npx frontend-standards-checker . --security-check --gitflow-check
       - [Para **Pre-commit Hooks:**](#para-pre-commit-hooks)
       - [Para **Desarrollo Local:**](#para-desarrollo-local)
   - [⚙️ Configuración Rápida con Ejemplos](#️-configuración-rápida-con-ejemplos)
-    - [1. Sin configuración (Usar reglas por defecto v4.5.0)](#1-sin-configuración-usar-reglas-por-defecto-v450)
-    - [2. Configuración básica (checkFrontendStandards.config.js)](#2-configuración-básica-checkfrontendstandardsconfigjs)
+    - [1. Sin configuración (Usar reglas por defecto v4.5.1)](#1-sin-configuración-usar-reglas-por-defecto-v451)
+    - [2. 🆕 Configuración con onlyZone (v4.5.1)](#2--configuración-con-onlyzone-v451)
+    - [3. Configuración básica (checkFrontendStandards.config.js)](#3-configuración-básica-checkfrontendstandardsconfigjs)
     - [3. Configuración para proyectos grandes (monorepos)](#3-configuración-para-proyectos-grandes-monorepos)
     - [4. Configuración para revisar solo módulos específicos (auth, dashboard, etc.)](#4-configuración-para-revisar-solo-módulos-específicos-auth-dashboard-etc)
   - [📋 Lista Completa de Verificaciones v4.5.0](#-lista-completa-de-verificaciones-v450)
@@ -130,8 +143,9 @@ npx frontend-standards-checker . --security-check --gitflow-check
     - [🟡 **Reglas WARNING (21 reglas)**](#-reglas-warning-21-reglas)
     - [🔵 **Reglas INFO (15 reglas) - 🆕 v4.5.0 Funcionales**](#-reglas-info-15-reglas----v450-funcionales)
     - [📊 Resumen Total v4.5.0](#-resumen-total-v450)
-  - [🎉 Estado Final v4.5.0](#-estado-final-v450)
-    - [✅ **Corrección Crítica Implementada**](#-corrección-crítica-implementada)
+  - [🎉 Estado Final v4.5.1](#-estado-final-v451)
+    - [✅ **Nueva Funcionalidad Implementada**](#-nueva-funcionalidad-implementada)
+    - [✅ **Corrección Crítica v4.5.0 Mantenida**](#-corrección-crítica-v450-mantenida)
     - [📚 Documentación Completa](#-documentación-completa)
     - [🎯 Próximos Pasos Recomendados](#-próximos-pasos-recomendados)
 
@@ -453,6 +467,7 @@ export default {
 ```
 
 **Casos de uso principales:**
+
 - Desarrollo incremental (validar solo módulo actual)
 - Debugging específico (aislar problemas por zona)
 - CI/CD selectivo (validar solo cambios específicos)
