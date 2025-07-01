@@ -1,12 +1,15 @@
 /**
- * @fileoverview Configuration file for frontend-standards-checker
+ * @fileoverview Configuration file for checkFrontendStandards.mjs
  *
- * This file allows you to customize rules and zones for the frontend standards validation tool.
+ * This file allows you to customize rules and zones for the frontend standards validation script.
  * Multiple configuration patterns are supported for maximum flexibility:
  *
  * **Object Configuration:**
  * - `merge`: Boolean to control if custom rules merge with defaults
  * - `zones`: Object to configure which directories to validate
+ *   - `includePackages`: Include packages/ directory in monorepos
+ *   - `customZones`: Array of additional directories to validate
+ *   - `onlyZone`: 🆕 String to validate only one specific zone (ignores all others)
  * - `rules`: Array of custom validation rules
  *
  * **Function Configuration:**
@@ -18,9 +21,10 @@
  * - Simplest approach for adding a few custom rules
  *
  * @author Juan David Peña
- * @version 4.5.0
+ * @version 1.0.0
  * @since 2024-01-15
- * @see {@link https://github.com/juandape/frontend-standards} Documentation
+ * @see {@link ./checkFrontendStandards.mjs} Main validation script
+ * @see {@link ./checkFrontendStandards.types.js} Type definitions
  *
  * @example
  * ```js
@@ -29,6 +33,15 @@
  *   merge: true,
  *   zones: { includePackages: false, customZones: ['shared'] },
  *   rules: [{ name: 'Custom rule', check: (content) => false, message: 'Custom' }]
+ * }
+ * ```
+ *
+ * @example
+ * ```js
+ * // 🆕 Only validate specific zone (auth example)
+ * export default {
+ *   zones: { onlyZone: 'auth' },
+ *   rules: [{ name: 'Auth security', check: (content) => false, message: 'Secure auth' }]
  * }
  * ```
  *
@@ -54,8 +67,8 @@
  *
  * @type {{
  *   merge: boolean,
- *   zones: import('./src/types.js').ZoneConfiguration,
- *   rules: import('./src/types.js').ValidationRule[]
+ *   zones: import('./checkFrontendStandards.types.js').ZoneConfig,
+ *   rules: import('./checkFrontendStandards.types.js').ValidationRule[]
  * }}
  */
 export default {
@@ -67,7 +80,14 @@ export default {
     // Whether to include 'packages' directory in validation (default: false)
     includePackages: false,
 
-    // Custom zones to include in validation
+    // 🎯 NUEVA OPCIÓN: Revisar solo una zona específica
+    // Si se especifica, ignorará todas las demás zonas y solo procesará esta
+    // onlyZone: 'auth', // Ejemplo: 'auth', 'src', 'components', 'pages', etc.
+    // onlyZone: 'src/auth',     // Para zona dentro de src
+    // onlyZone: 'app/(auth)',   // Para Next.js App Router
+    // onlyZone: 'packages/ui',  // Para monorepos
+
+    // Custom zones to include in validation (se ignora si onlyZone está definido)
     customZones: [
       // 'custom-folder',
       // 'another-folder'
@@ -82,16 +102,12 @@ export default {
     //   check: (content) => content.includes('TODO'),
     //   message: 'TODO comments should be resolved before committing.',
     // },
-    // Example: Override existing rule severity (using object format)
-    // To use object format, change the rules array to an object like this:
-    // rules: {
-    //   "Missing index.ts in organization folders": "error",
-    //   "No console.log": "warning",
-    //   "Interface naming with I prefix": "error",
-    //   "Hook naming": true,
-    //   "Component naming": true,
-    //   "Should have TSDoc comments": "info"
-    // }
+    // Example: Disable a specific pattern
+    // {
+    //   name: 'Allow console.warn',
+    //   check: (content) => false, // Never triggers
+    //   message: 'This rule is disabled.',
+    // },
   ],
 };
 
@@ -109,39 +125,7 @@ export default {
 //   ],
 // }
 
-// 2. Export rules in object format (easier to configure existing rules)
-// export default {
-//   zones: {
-//     includePackages: true, // Include packages/ in validation
-//   },
-//   rules: {
-//     // Structure rules
-//     "Missing index.ts in organization folders": "warning",
-//     "Missing test files": "info",
-//
-//     // Naming rules
-//     "Component naming": true,
-//     "Hook naming": "error",
-//     "Interface naming with I prefix": "error",
-//     "Helper naming": true,
-//     "Style naming": true,
-//
-//     // Content quality rules
-//     "No console.log": true,
-//     "No var": "error",
-//     "No any type": "warning",
-//     "Must use async/await": "warning",
-//
-//     // TypeScript rules
-//     "Prefer type over interface for unions": "warning",
-//
-//     // Documentation rules
-//     "Should have TSDoc comments": "info",
-//     "JSDoc for complex functions": "info"
-//   }
-// }
-
-// 3. Export a function that receives default rules
+// 2. Export a function that receives default rules
 // export default function(defaultRules) {
 //   return [
 //     ...defaultRules,
@@ -153,7 +137,7 @@ export default {
 //   ]
 // }
 
-// 4. Export array of rules directly (merges with defaults)
+// 3. Export array of rules directly (merges with defaults)
 // export default [
 //   {
 //     name: 'Array-based rule',
@@ -162,7 +146,7 @@ export default {
 //   },
 // ]
 
-// 5. Example with packages enabled and object format rules
+// 4. Example with packages enabled
 // export default {
 //   zones: {
 //     includePackages: true, // This will include packages/ in validation
@@ -170,5 +154,19 @@ export default {
 //   },
 //   rules: [
 //     // Custom rules here
+//   ],
+// }
+
+// 5. 🎯 NUEVO: Example with onlyZone - revisar solo una zona específica
+// export default {
+//   zones: {
+//     onlyZone: 'auth', // Solo revisar la zona de autenticación
+//     // onlyZone: 'src/components', // Solo componentes
+//     // onlyZone: 'pages', // Solo páginas
+//     // onlyZone: 'app/(dashboard)', // Next.js App Router
+//     // onlyZone: 'packages/ui/src', // Monorepo específico
+//   },
+//   rules: [
+//     // Reglas específicas para la zona
 //   ],
 // }
