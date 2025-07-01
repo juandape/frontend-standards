@@ -21,7 +21,7 @@
  * - Simplest approach for adding a few custom rules
  *
  * @author Juan David Peña
- * @version 1.0.0
+ * @version 4.5.1
  * @since 2024-01-15
  * @see {@link ./checkFrontendStandards.mjs} Main validation script
  * @see {@link ./checkFrontendStandards.types.js} Type definitions
