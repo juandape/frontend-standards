@@ -36,13 +36,21 @@ El validador ha sido **significativamente optimizado** para reducir falsos posit
 
 ## 📦 Instalación Universal
 
+### 🚨 **Pasos de Instalación Obligatorios**
+
+1. **Instalar el paquete** con npm o yarn
+2. **Ejecutar inicialización** con `npx frontend-standards-init` (⚠️ **REQUERIDO**)
+3. **Configurar scripts** en package.json (opcional)
+
 ### Con Yarn (Recomendado)
 
 ```bash
 # Instalación desde GitHub
 yarn add frontend-standards-checker@https://github.com/juandape/frontend-standards.git
 
-# 🆕 Copiar archivos de configuración a tu proyecto
+# ⚠️ MENSAJE POST-INSTALACIÓN: Verás un mensaje recordándote el siguiente paso
+
+# Copia archivos de configuración a tu proyecto
 npx frontend-standards-init
 
 # Agregar scripts al package.json
@@ -66,7 +74,9 @@ yarn standards .
 # Instalación desde GitHub
 npm install frontend-standards-checker@https://github.com/juandape/frontend-standards.git
 
-# 🆕 Copiar archivos de configuración a tu proyecto
+# ⚠️ MENSAJE POST-INSTALACIÓN: Verás un mensaje recordándote el siguiente paso
+
+# Copia archivos de configuración a tu proyecto
 npx frontend-standards-init
 
 # Agregar scripts al package.json
@@ -107,6 +117,7 @@ npx frontend-standards-checker . --security-check --gitflow-check
     - [🎯 **Mejoras Principales v4.5.1:**](#-mejoras-principales-v451)
     - [📋 **Validaciones Actuales v4.5.1:**](#-validaciones-actuales-v451)
   - [📦 Instalación Universal](#-instalación-universal)
+    - [🚨 **Pasos de Instalación Obligatorios**](#-pasos-de-instalación-obligatorios)
     - [Con Yarn (Recomendado)](#con-yarn-recomendado)
     - [Con NPM](#con-npm)
     - [Ejecución Directa (sin scripts)](#ejecución-directa-sin-scripts)
