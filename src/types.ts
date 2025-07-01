@@ -25,6 +25,7 @@ export interface ZoneConfiguration {
   includePackages?: boolean;
   customZones?: string[];
   excludePatterns?: string[];
+  onlyZone?: string; // Nueva opción: revisar solo una zona específica
 }
 
 export interface RulesObjectFormat {
@@ -315,6 +316,7 @@ export interface ProjectAnalysisResult {
 export interface MonorepoZoneConfig {
   includePackages?: boolean;
   customZones?: string[];
+  onlyZone?: string; // Nueva opción: revisar solo una zona específica
 }
 
 export interface IProjectAnalyzer {

@@ -7,7 +7,7 @@ _Las reglas de error indican problemas críticos que pueden romper el código o 
 ### 🏷️ Naming (9 reglas)
 
 1. **Component naming** `(naming)` - Archivos de componentes deben usar PascalCase
-2. **Hook naming** `(naming)` - Hooks deben seguir patrón "useHookName.hook.ts" con PascalCase
+2. **Hook naming** `(naming)` - Hooks deben seguir patrón "useHookName.hook.ts" con PascalCase despues del "use"
 3. **Type naming** `(naming)` - Archivos de tipos deben ser camelCase + .type.ts/.types.ts
 4. **Helper naming** `(naming)` - Helpers deben ser camelCase + .helper.ts/.helper.tsx
 5. **Style naming** `(naming)` - Estilos deben ser camelCase + .style.ts

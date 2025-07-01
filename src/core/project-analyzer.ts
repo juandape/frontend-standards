@@ -200,6 +200,12 @@ export class ProjectAnalyzer implements IProjectAnalyzer {
   ): Promise<ZoneInfo[]> {
     const zones: ZoneInfo[] = [];
 
+    // If onlyZone is specified, process only that zone
+    if (zoneConfig.onlyZone) {
+      zones.push(...this.processZoneDirectory(zoneConfig.onlyZone));
+      return zones;
+    }
+
     // Process standard zones
     const standardZones = this.getStandardZones(zoneConfig);
     for (const zoneName of standardZones) {
