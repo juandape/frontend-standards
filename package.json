@@ -20,7 +20,7 @@
     "lint": "echo 'Linting temporarily disabled - TypeScript provides type checking'",
     "test": "echo 'Tests coming soon'",
     "clean": "rm -rf dist",
-    "postinstall": "echo '\n🎉 ████████████████████████████████████████\n🎉 █ Frontend Standards Checker v4.5.1 █\n🎉 █         INSTALADO CORRECTAMENTE     █\n🎉 ████████████████████████████████████████\n\n📋 ⚠️  PASO DESPUÉS DE INSTALAR:\n\n   npx frontend-standards-init\n\n📖 Este comando copia los archivos de configuración\n   necesarios a tu proyecto.\n\n💡 Puedes ejecutarlo en cualquier momento.\n🔗 Más info: checkFrontendStandards.COMPLETE-GUIDE.md\n'",
+    "postinstall": "npm run build 2>/dev/null || yarn build 2>/dev/null || echo 'Build failed, but installation continued'; echo '\n🎉 Frontend Standards Checker instalado correctamente!\n\n📋 IMPORTANTE: Para configurar tu proyecto, ejecuta:\n   npx frontend-standards-init\n\n📖 Esto copiará los archivos de configuración necesarios.\n💡 Puedes ejecutar este comando en cualquier momento.\n'",
     "prepare": "npm run build 2>/dev/null || yarn build 2>/dev/null || echo 'Prepare failed'",
     "prepublishOnly": "npm run clean && npm run build"
   },
