@@ -1,5 +1,22 @@
 # 📋 Changelog - Frontend Standards Checker
 
+## [v4.5.1] - 2025-07-01
+
+### 🚀 New Feature
+
+- **onlyZone Configuration**: Nueva opción `onlyZone` en configuración de zonas
+  - Permite validar únicamente una zona específica, ignorando todas las demás
+  - Soporte para rutas como `auth`, `src/auth`, `app/(auth)`, `packages/ui`, etc.
+  - Mejora significativa en workflows donde solo se necesita validar un módulo específico
+  - Actualizada documentación con ejemplos de uso y configuración
+
+### 🔧 Technical Improvements
+
+- Agregado `onlyZone` a interfaces `ZoneConfiguration` y `MonorepoZoneConfig`
+- Implementada lógica en `detectMonorepoZones` para procesar zona única
+- Actualizados ejemplos en `checkFrontendStandards.config.js`
+- Mejorada documentación JSDoc con ejemplos de `onlyZone`
+
 ## [v4.5.0] - 2025-06-27
 
 ### 🐛 Critical Bug Fix
