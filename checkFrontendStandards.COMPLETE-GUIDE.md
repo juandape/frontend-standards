@@ -28,6 +28,7 @@ El validador ha sido **significativamente optimizado** para reducir falsos posit
 - **✅ Documentación contextual** JSDoc/TSDoc para funciones realmente complejas (500+ chars)
 - **✅ Pruebas enfocadas** (solo componentes principales, hooks y helpers clave)
 - **✅ Next.js y React Native** optimizado (Tailwind, styled-components, archivos .web/.native)
+- **📱 Soporte multiplataforma** (validación de separación correcta para web/mobile)
 - **✅ Calidad de código** (no código comentado, no datos hardcodeados, no estilos inline)
 - **✅ Seguridad** (no credenciales, variables de entorno, detección de datos sensibles)
 - **✅ GitFlow** (nomenclatura de ramas, detección de conflictos, sync branches)
@@ -47,8 +48,6 @@ El validador ha sido **significativamente optimizado** para reducir falsos posit
 ```bash
 # Instalación desde GitHub
 yarn add frontend-standards-checker@https://github.com/juandape/frontend-standards.git
-
-# ⚠️ MENSAJE POST-INSTALACIÓN: Verás un mensaje recordándote el siguiente paso
 
 # Copia archivos de configuración a tu proyecto
 npx frontend-standards-init
@@ -73,8 +72,6 @@ yarn standards .
 ```bash
 # Instalación desde GitHub
 npm install frontend-standards-checker@https://github.com/juandape/frontend-standards.git
-
-# ⚠️ MENSAJE POST-INSTALACIÓN: Verás un mensaje recordándote el siguiente paso
 
 # Copia archivos de configuración a tu proyecto
 npx frontend-standards-init
@@ -149,6 +146,7 @@ npx frontend-standards-checker . --security-check --gitflow-check
     - [3. Configuración básica (checkFrontendStandards.config.js)](#3-configuración-básica-checkfrontendstandardsconfigjs)
     - [3. Configuración para proyectos grandes (monorepos)](#3-configuración-para-proyectos-grandes-monorepos)
     - [4. Configuración para revisar solo módulos específicos (auth, dashboard, etc.)](#4-configuración-para-revisar-solo-módulos-específicos-auth-dashboard-etc)
+    - [5. Configuración para proyectos React Native](#5-configuración-para-proyectos-react-native)
   - [📋 Lista Completa de Verificaciones v4.5.0](#-lista-completa-de-verificaciones-v450)
     - [🔴 **Reglas ERROR (21 reglas)**](#-reglas-error-21-reglas)
     - [🟡 **Reglas WARNING (21 reglas)**](#-reglas-warning-21-reglas)
@@ -429,6 +427,43 @@ npx frontend-standards-checker . --config checkFrontendStandards.config.js
 npx frontend-standards-checker ./auth
 npx frontend-standards-checker ./src/auth
 npx frontend-standards-checker ./app/\(auth\)
+```
+
+### 5. Configuración para proyectos React Native
+
+```javascript
+// checkFrontendStandards.config.js - Configuración optimizada para React Native
+export default {
+  zones: {
+    customZones: [
+      'src',
+      'app',
+      'components',
+      'screens',
+      'navigation'  // Carpetas típicas de React Native
+    ],
+    excludePatterns: [
+      '**/node_modules/**',
+      '**/android/**',   // Excluir carpetas nativas
+      '**/ios/**',
+      '**/*.native.generated.tsx'
+    ]
+  },
+
+  rules: {
+    // Reglas específicas para React Native
+    'Platform-specific code organization': 'warning', // Asegurar separación adecuada de código
+    'No inline styles': 'warning',         // Especialmente importante en RN
+    'Component size limit': 'warning',     // Mantener componentes pequeños
+    'No hardcoded URLs': 'error',          // Crítico para APIs en móvil
+    'Directory naming convention': 'info'  // Más flexible para estructura RN
+  }
+};
+```
+
+```bash
+# Ejecutar en proyecto React Native
+npx frontend-standards-checker . --config checkFrontendStandards.config.js
 ```
 
 ## 📋 Lista Completa de Verificaciones v4.5.0
