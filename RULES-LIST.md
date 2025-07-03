@@ -1,5 +1,7 @@
 # 📋 Frontend Standards Checker - Lista Completa de Reglas
 
+> **🆕 Compatibilidad**: Frontend Standards Checker soporta tanto proyectos React/Next.js como aplicaciones **React Native**. Incluye reglas específicas para organización multiplataforma (.web.tsx/.native.tsx), separación de código específico por plataforma y buenas prácticas para ambos entornos.
+
 ## 🔴 Reglas de Error (21 total)
 
 _Las reglas de error indican problemas críticos que pueden romper el código o impedir la compilación._
@@ -75,7 +77,7 @@ _Las reglas de warning señalan mejores prácticas importantes que deberían seg
 
 ---
 
-## 🔵 Reglas de Info (15 total)
+## 🔵 Reglas de Info (16 total)
 
 _Las reglas de info proporcionan sugerencias y optimizaciones opcionales._
 
@@ -103,11 +105,15 @@ _Las reglas de info proporcionan sugerencias y optimizaciones opcionales._
 11. **Missing React.memo for pure components** `(performance)` - Considerar React.memo para componentes puros
 12. **Large bundle imports** `(performance)` - Considerar imports específicos para librerías grandes
 
+### 📱 React Native (1 regla)
+
+13. **Platform-specific code organization** `(structure)` - Usar extensiones .web.tsx y .native.tsx para código específico de plataforma
+
 ### ♿ Accessibility/Styles (3 reglas)
 
-13. **Links missing accessible names** `(accessibility)` - Links deben tener texto descriptivo
-14. **Missing focus management** `(accessibility)` - Componentes con modales deben manejar focus
-15. **Color contrast considerations** `(accessibility)` - Considerar ratios de contraste de color
+14. **Links missing accessible names** `(accessibility)` - Links deben tener texto descriptivo
+15. **Missing focus management** `(accessibility)` - Componentes con modales deben manejar focus
+16. **Color contrast considerations** `(accessibility)` - Considerar ratios de contraste de color
 
 ---
 
@@ -117,22 +123,23 @@ _Las reglas de info proporcionan sugerencias y optimizaciones opcionales._
 | --------------- | ------------- | ----------------------------- |
 | 🔴 **Errores**  | **21 reglas** | Código se rompe o no compila  |
 | 🟡 **Warnings** | **21 reglas** | Mejores prácticas importantes |
-| 🔵 **Info**     | **15 reglas** | Sugerencias y optimizaciones  |
-| 📈 **Total**    | **57 reglas** |                               |
+| 🔵 **Info**     | **16 reglas** | Sugerencias y optimizaciones  |
+| 📈 **Total**    | **58 reglas** |                               |
 
 ### 🏆 Categorías Más Importantes
 
-| Categoría            | Reglas        | Descripción                            |
+| Categoría | Reglas | Descripción |
+| 📱 **React Native** | **1 regla** | Soporte específico para React Native |
 | -------------------- | ------------- | -------------------------------------- |
-| 🏷️ **Naming**        | **13 reglas** | Convenciones de nomenclatura           |
-| ⚛️ **React**         | **8 reglas**  | Mejores prácticas específicas de React |
-| 🔷 **TypeScript**    | **8 reglas**  | Tipado y convenciones TS               |
-| 💻 **Content**       | **7 reglas**  | Calidad y seguridad del código         |
-| ♿ **Accessibility** | **6 reglas**  | Accesibilidad web                      |
-| ⚡ **Performance**   | **5 reglas**  | Optimización de rendimiento            |
-| 🏗️ **Structure**     | **5 reglas**  | Organización de archivos               |
-| 📖 **Documentation** | **4 reglas**  | Documentación del código               |
-| 📦 **Imports**       | **4 reglas**  | Gestión de importaciones               |
+| 🏷️ **Naming** | **13 reglas** | Convenciones de nomenclatura |
+| ⚛️ **React** | **8 reglas** | Mejores prácticas específicas de React |
+| 🔷 **TypeScript** | **8 reglas** | Tipado y convenciones TS |
+| 💻 **Content** | **7 reglas** | Calidad y seguridad del código |
+| ♿ **Accessibility** | **6 reglas** | Accesibilidad web |
+| ⚡ **Performance** | **5 reglas** | Optimización de rendimiento |
+| 🏗️ **Structure** | **5 reglas** | Organización de archivos |
+| 📖 **Documentation** | **4 reglas** | Documentación del código |
+| 📦 **Imports** | **4 reglas** | Gestión de importaciones |
 
 ---
 
