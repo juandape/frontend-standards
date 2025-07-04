@@ -1429,6 +1429,200 @@ export class ConfigLoader implements IConfigLoader {
         message:
           'Very complex functions (500+ chars) should have JSDoc comments explaining their behavior',
       },
+      {
+        name: 'English-only comments',
+        category: 'documentation',
+        severity: 'error',
+        check: (content: string): boolean => {
+          // Extraer todos los comentarios (tanto de línea como de bloque)
+          const singleLineComments = content.match(/\/\/.*$/gm) || [];
+          const blockComments = content.match(/\/\*[\s\S]*?\*\//g) || [];
+          const jsdocComments = content.match(/\/\*\*[\s\S]*?\*\//g) || [];
+
+          // Combinar todos los comentarios
+          const allComments = [
+            ...singleLineComments,
+            ...blockComments,
+            ...jsdocComments,
+          ];
+
+          if (allComments.length === 0) {
+            return false; // No hay comentarios que revisar
+          }
+
+          // Lista de palabras comunes en español que no deberían estar en comentarios en inglés
+          const spanishWords = [
+            'de',
+            'la',
+            'el',
+            'en',
+            'para',
+            'con',
+            'por',
+            'si',
+            'esta',
+            'este',
+            'estos',
+            'estas',
+            'ese',
+            'esa',
+            'esos',
+            'esas',
+            'como',
+            'pero',
+            'porque',
+            'cuando',
+            'donde',
+            'cual',
+            'que',
+            'quien',
+            'cuyo',
+            'cuya',
+            'función',
+            'método',
+            'clase',
+            'esto',
+            'aquí',
+            'ahí',
+            'así',
+            'según',
+            'cada',
+            'todo',
+            'todos',
+            'algunas',
+            'algunos',
+            'mientras',
+            'aunque',
+            'desde',
+            'hasta',
+            'durante',
+            'después',
+            'antes',
+            'sobre',
+            'entre',
+            'sin',
+            'contra',
+            'hacia',
+            'excepto',
+            'mediante',
+            'acerca',
+            'además',
+            'luego',
+            'entonces',
+            'sino',
+            'también',
+            'tampoco',
+            'pues',
+            'ya',
+            'solo',
+            'solamente',
+            'aún',
+            'todavía',
+            'siempre',
+            'nunca',
+            'jamás',
+            'ahora',
+            'después',
+            'antes',
+            'pronto',
+            'tarde',
+            'temprano',
+            'demasiado',
+            'muy',
+            'mucho',
+            'poco',
+            'bastante',
+            'más',
+            'menos',
+            'tan',
+            'tanto',
+            'algún',
+            'alguno',
+            'ningún',
+            'ninguno',
+            'otro',
+            'cualquier',
+            'cualquiera',
+            'quienquiera',
+            'dondequiera',
+            'comoquiera',
+            'cuandoquiera',
+          ];
+
+          // Palabras técnicas que pueden parecer españolas pero son válidas en código
+          const validTechTerms = [
+            'constructor',
+            'static',
+            'public',
+            'private',
+            'protected',
+            'interface',
+            'extends',
+            'implements',
+            'abstract',
+            'readonly',
+            'const',
+            'enum',
+            'union',
+            'import',
+            'export',
+            'async',
+            'await',
+            'class',
+            'super',
+            'null',
+            'undefined',
+            'component',
+            'props',
+            'state',
+            'render',
+            'context',
+            'provider',
+            'consumer',
+            'store',
+            'action',
+            'reducer',
+            'dispatch',
+            'selector',
+            'saga',
+            'effect',
+            'query',
+            'mutation',
+            'subscription',
+            'apollo',
+            'graphql',
+          ];
+
+          // Regex para encontrar palabras completas (no partes de palabras)
+          const wordBoundaryPattern = (word: string) =>
+            new RegExp(`\\b${word}\\b`, 'i');
+
+          // Verificar cada comentario por palabras en español
+          return allComments.some((comment) => {
+            // Ignorar URLs, imports/exports y partes de código
+            const cleanComment = comment
+              .replace(/https?:\/\/[^\s)]+/g, '') // URLs
+              .replace(/import\s+.*from\s+['"][^'"]+['"]/g, '') // imports
+              .replace(/export\s+.*from\s+['"][^'"]+['"]/g, '') // exports
+              .replace(/(['"])(?:(?=(\\?))\2.)*?\1/g, ''); // strings
+
+            // Revisar por palabras en español
+            return spanishWords.some((word) => {
+              const pattern = wordBoundaryPattern(word);
+              // Evitar falsos positivos con términos técnicos válidos
+              if (pattern.test(cleanComment)) {
+                // Si encuentra una palabra española, verificar que no sea un término técnico válido
+                return !validTechTerms.some((term) =>
+                  cleanComment.includes(term)
+                );
+              }
+              return false;
+            });
+          });
+        },
+        message:
+          'Comments and JSDoc must be written in English only. Avoid using Spanish or other non-English languages in comments.',
+      },
     ];
   }
 

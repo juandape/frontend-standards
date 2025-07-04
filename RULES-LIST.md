@@ -2,7 +2,7 @@
 
 > **🆕 Compatibilidad**: Frontend Standards Checker soporta tanto proyectos React/Next.js como aplicaciones **React Native**. Incluye reglas específicas para organización multiplataforma (.web.tsx/.native.tsx), separación de código específico por plataforma y buenas prácticas para ambos entornos.
 
-## 🔴 Reglas de Error (22 total)
+## 🔴 Reglas de Error (23 total)
 
 _Las reglas de error indican problemas críticos que pueden romper el código o impedir la compilación._
 
@@ -19,7 +19,7 @@ _Las reglas de error indican problemas críticos que pueden romper el código o 
 9. **Test file naming convention** `(naming)` - Tests deben seguir _.test.tsx o _.spec.tsx
 10. **Component function name match** `(naming)` - La función principal en index.tsx debe tener el mismo nombre que su carpeta contenedora
 
-### 💻 Content/TypeScript (12 reglas)
+### 💻 Content/TypeScript (13 reglas)
 
 11. **No var** `(content)` - Usar let o const en lugar de var
 12. **No any type** `(typescript)` - Evitar tipo "any", usar tipos específicos
@@ -33,6 +33,7 @@ _Las reglas de error indican problemas críticos que pueden romper el código o 
 20. **Proper key prop in lists** `(react)` - Elementos en arrays deben tener prop key
 21. **Button missing accessible name** `(accessibility)` - Botones deben tener nombres accesibles
 22. **Form inputs missing labels** `(accessibility)` - Inputs deben tener labels asociados
+23. **English-only comments** `(documentation)` - Comentarios y JSDoc deben estar escritos solo en inglés
 
 ---
 
