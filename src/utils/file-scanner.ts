@@ -111,6 +111,7 @@ export class FileScanner implements IFileScanner {
               size: content.length,
               extension: ext,
               zone,
+              fullPath: fullPath,
             };
 
             files.push(fileInfo);
@@ -303,5 +304,46 @@ export class FileScanner implements IFileScanner {
       skippedFiles: 0, // Could be calculated if needed
       ignoredPatterns: gitIgnorePatterns.map((p) => p.pattern),
     };
+  }
+
+  /**
+   * Get files that are staged for commit
+   * @returns Array of file paths that are staged for commit
+   */
+  async getFilesInCommit(): Promise<string[]> {
+    try {
+      // Execute git command to get staged files (files added to the index)
+      const { exec } = await import('child_process');
+
+      return new Promise<string[]>((resolve) => {
+        exec(
+          'git diff --name-only --cached',
+          { cwd: this.rootDir },
+          (error, stdout) => {
+            if (error) {
+              this.logger.warn(`Failed to get staged files: ${error.message}`);
+              resolve([]);
+              return;
+            }
+
+            const files = stdout
+              .trim()
+              .split('\n')
+              .filter(Boolean)
+              .map((file) => path.join(this.rootDir, file));
+
+            this.logger.debug(`Found ${files.length} files staged for commit`);
+            resolve(files);
+          }
+        );
+      });
+    } catch (error: unknown) {
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
+      this.logger.warn(
+        `Failed to get staged files - git command failed: ${errorMessage}`
+      );
+      return [];
+    }
   }
 }

@@ -11,6 +11,7 @@ Una herramienta escalable y modular para validar estándares de frontend en proy
 - **Reportes detallados**: Genera reportes comprensivos en formato texto y JSON
 - **Soporte para monorepos**: Detecta y valida múltiples zonas automáticamente
 - **🆕 TypeScript nativo**: Tipos estrictos, autocompletado y mejor experiencia de desarrollo
+- **🆕 Validación eficiente**: Por defecto solo valida archivos que están preparados para el commit
 
 ## 📦 Instalación Rápida
 

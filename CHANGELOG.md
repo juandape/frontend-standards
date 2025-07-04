@@ -1,5 +1,23 @@
 # 📋 Changelog - Frontend Standards Checker
 
+## [v4.6.0] - 2025-07-04
+
+### 🚀 New Feature
+
+- **onlyChangedFiles Configuration**: Nueva opción para validar solo archivos preparados para commit
+  - Ahora por defecto solo valida archivos staged en Git
+  - Mejora significativa en velocidad de validación en proyectos grandes
+  - Detección automática de archivos en commit mediante Git
+  - Se puede desactivar con `--only-changed-files=false` o en configuración
+  - Ideal para usar en pre-commit hooks
+
+### 🔧 Technical Improvements
+
+- Integración directa con Git para detectar archivos staged
+- Optimización del proceso de escaneo para filtrar solo archivos relevantes
+- Actualizadas interfaces TypeScript para soportar nuevas opciones
+- Actualizada la documentación con ejemplos del nuevo workflow
+
 ## [v4.5.1] - 2025-07-01
 
 ### 🚀 New Feature
