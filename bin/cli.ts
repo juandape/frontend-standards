@@ -18,7 +18,7 @@ interface PackageJson {
 }
 
 const packageJson: PackageJson = JSON.parse(
-  readFileSync(join(__dirname, '../../package.json'), 'utf8')
+  readFileSync(join(__dirname, '../package.json'), 'utf8')
 );
 
 const program = new Command();
@@ -41,6 +41,10 @@ program
   .option('--skip-structure', 'Skip directory structure validation')
   .option('--skip-naming', 'Skip naming convention validation')
   .option('--skip-content', 'Skip content validation')
+  .option(
+    '--only-changed-files',
+    'Only check files that are staged for commit (default: true)'
+  )
   .action(async (options: CliOptions) => {
     try {
       console.log(
@@ -58,6 +62,7 @@ program
         output: options.output || null,
         verbose: options.verbose || false,
         debug: options.debug || false,
+        onlyChangedFiles: options.onlyChangedFiles || false,
         skipStructure: options.skipStructure || false,
         skipNaming: options.skipNaming || false,
         skipContent: options.skipContent || false,

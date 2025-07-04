@@ -2,11 +2,11 @@
 
 > **🆕 Compatibilidad**: Frontend Standards Checker soporta tanto proyectos React/Next.js como aplicaciones **React Native**. Incluye reglas específicas para organización multiplataforma (.web.tsx/.native.tsx), separación de código específico por plataforma y buenas prácticas para ambos entornos.
 
-## 🔴 Reglas de Error (21 total)
+## 🔴 Reglas de Error (23 total)
 
 _Las reglas de error indican problemas críticos que pueden romper el código o impedir la compilación._
 
-### 🏷️ Naming (9 reglas)
+### 🏷️ Naming (10 reglas)
 
 1. **Component naming** `(naming)` - Archivos de componentes deben usar PascalCase
 2. **Hook naming** `(naming)` - Hooks deben seguir patrón "useHookName.hook.ts" con PascalCase despues del "use"
@@ -17,21 +17,23 @@ _Las reglas de error indican problemas críticos que pueden romper el código o 
 7. **Folder naming convention** `(naming)` - Usar nombres plurales: helpers, hooks, types, etc.
 8. **Interface naming with I prefix** `(naming)` - Interfaces deben usar prefijo "I" + PascalCase
 9. **Test file naming convention** `(naming)` - Tests deben seguir _.test.tsx o _.spec.tsx
+10. **Component function name match** `(naming)` - La función principal en index.tsx debe tener el mismo nombre que su carpeta contenedora
 
-### 💻 Content/TypeScript (12 reglas)
+### 💻 Content/TypeScript (13 reglas)
 
-10. **No var** `(content)` - Usar let o const en lugar de var
-11. **No any type** `(typescript)` - Evitar tipo "any", usar tipos específicos
-12. **No alert** `(content)` - No usar alert(), usar notificaciones apropiadas
-13. **No hardcoded URLs** `(content)` - No URLs hardcodeadas, usar variables de entorno
-14. **No jQuery** `(content)` - No usar jQuery en proyectos modernos
-15. **No circular dependencies** `(content)` - Evitar dependencias circulares
-16. **No merge conflicts markers** `(content)` - Resolver marcadores de conflictos de Git
-17. **No committed credentials** `(content)` - No commitear credenciales o datos sensibles
-18. **Client component directive** `(react)` - Componentes con features client-side deben incluir "use client"
-19. **Proper key prop in lists** `(react)` - Elementos en arrays deben tener prop key
-20. **Button missing accessible name** `(accessibility)` - Botones deben tener nombres accesibles
-21. **Form inputs missing labels** `(accessibility)` - Inputs deben tener labels asociados
+11. **No var** `(content)` - Usar let o const en lugar de var
+12. **No any type** `(typescript)` - Evitar tipo "any", usar tipos específicos
+13. **No alert** `(content)` - No usar alert(), usar notificaciones apropiadas
+14. **No hardcoded URLs** `(content)` - No URLs hardcodeadas, usar variables de entorno
+15. **No jQuery** `(content)` - No usar jQuery en proyectos modernos
+16. **No circular dependencies** `(content)` - Evitar dependencias circulares
+17. **No merge conflicts markers** `(content)` - Resolver marcadores de conflictos de Git
+18. **No committed credentials** `(content)` - No commitear credenciales o datos sensibles
+19. **Client component directive** `(react)` - Componentes con features client-side deben incluir "use client"
+20. **Proper key prop in lists** `(react)` - Elementos en arrays deben tener prop key
+21. **Button missing accessible name** `(accessibility)` - Botones deben tener nombres accesibles
+22. **Form inputs missing labels** `(accessibility)` - Inputs deben tener labels asociados
+23. **English-only comments** `(documentation)` - Comentarios y JSDoc deben estar escritos solo en inglés
 
 ---
 
@@ -121,17 +123,17 @@ _Las reglas de info proporcionan sugerencias y optimizaciones opcionales._
 
 | Tipo            | Cantidad      | Descripción                   |
 | --------------- | ------------- | ----------------------------- |
-| 🔴 **Errores**  | **21 reglas** | Código se rompe o no compila  |
+| 🔴 **Errores**  | **22 reglas** | Código se rompe o no compila  |
 | 🟡 **Warnings** | **21 reglas** | Mejores prácticas importantes |
 | 🔵 **Info**     | **16 reglas** | Sugerencias y optimizaciones  |
-| 📈 **Total**    | **58 reglas** |                               |
+| 📈 **Total**    | **59 reglas** |                               |
 
 ### 🏆 Categorías Más Importantes
 
 | Categoría | Reglas | Descripción |
 | 📱 **React Native** | **1 regla** | Soporte específico para React Native |
 | -------------------- | ------------- | -------------------------------------- |
-| 🏷️ **Naming** | **13 reglas** | Convenciones de nomenclatura |
+| 🏷️ **Naming** | **14 reglas** | Convenciones de nomenclatura |
 | ⚛️ **React** | **8 reglas** | Mejores prácticas específicas de React |
 | 🔷 **TypeScript** | **8 reglas** | Tipado y convenciones TS |
 | 💻 **Content** | **7 reglas** | Calidad y seguridad del código |

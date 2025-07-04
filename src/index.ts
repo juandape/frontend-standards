@@ -1,3 +1,4 @@
+import path from 'path';
 import type {
   CliOptions,
   ValidationResult,
@@ -38,6 +39,7 @@ export class FrontendStandardsChecker {
       skipNaming: false,
       skipContent: false,
       version: false,
+      onlyChangedFiles: true, // Default to true to match documentation
       help: false,
       rootDir: process.cwd(),
       ...options,
@@ -101,16 +103,74 @@ export class FrontendStandardsChecker {
       let totalErrors = 0;
       let totalWarnings = 0;
 
+      // Si onlyChangedFiles está habilitado y no hay onlyZone configurado, solo revisar archivos modificados
+      let changedFiles: string[] = [];
+      const hasOnlyZone = config.zones?.onlyZone !== undefined;
+
+      if (
+        (this.options.onlyChangedFiles || config.onlyChangedFiles) &&
+        !hasOnlyZone
+      ) {
+        this.logger.info('🔍 Only checking files staged for commit');
+        changedFiles = await this.fileScanner.getFilesInCommit();
+        if (changedFiles.length === 0) {
+          this.logger.info(
+            'No files staged for commit found. Nothing to check.'
+          );
+          return {
+            success: true,
+            totalFiles: 0,
+            totalErrors: 0,
+            totalWarnings: 0,
+            zones: [],
+            summary: {
+              errorsByCategory: {},
+              errorsByRule: {},
+              processingTime: Date.now() - startTime,
+            },
+          };
+        }
+        this.logger.info(`Found ${changedFiles.length} files to check`);
+      } else if (hasOnlyZone) {
+        this.logger.info(
+          `🎯 Only checking zone: ${config.zones?.onlyZone} (onlyChangedFiles disabled)`
+        );
+      }
+
       for (const zone of zonesToValidate) {
         this.logger.info(`\n📂 Processing zone: ${zone}`);
 
-        const files = await this.fileScanner.scanZone(zone, {
+        let files = await this.fileScanner.scanZone(zone, {
           extensions: config.extensions || ['.js', '.ts', '.jsx', '.tsx'],
           ignorePatterns: config.ignorePatterns || [],
           zones: zonesToValidate,
           includePackages: config.zones?.includePackages || false,
           customZones: config.zones?.customZones || [],
         });
+
+        // Si onlyChangedFiles está habilitado y no hay onlyZone configurado, filtrar los archivos escaneados
+        const hasOnlyZone = config.zones?.onlyZone !== undefined;
+        if (
+          (this.options.onlyChangedFiles || config.onlyChangedFiles) &&
+          !hasOnlyZone &&
+          changedFiles.length > 0
+        ) {
+          const originalCount = files.length;
+          files = files.filter((file) =>
+            changedFiles.some((changedFile) => {
+              const fileFullPath =
+                file.fullPath ?? path.join(this.options.rootDir, file.path);
+              return (
+                fileFullPath === changedFile ||
+                changedFile.endsWith(file.path) ||
+                fileFullPath.endsWith(changedFile)
+              );
+            })
+          );
+          this.logger.debug(
+            `Filtered ${originalCount} files to ${files.length} changed files in zone ${zone}`
+          );
+        }
 
         if (this.options.debug) {
           this.logger.debug(

@@ -517,6 +517,58 @@ export class ConfigLoader implements IConfigLoader {
           'Component files should start with uppercase letter (PascalCase). For index.tsx files, the parent directory should be PascalCase.',
       },
       {
+        name: 'Component function name match',
+        category: 'naming',
+        severity: 'error',
+        check: (content: string, filePath: string): boolean => {
+          // Solo aplicar a archivos index.tsx en carpetas de componentes
+          const fileName = path.basename(filePath);
+          if (fileName !== 'index.tsx' || !filePath.includes('/components/')) {
+            return false;
+          }
+
+          // Obtener el nombre de la carpeta contenedora (debe ser PascalCase)
+          const dirName = path.basename(path.dirname(filePath));
+          if (!/^[A-Z][a-zA-Z0-9]*$/.test(dirName)) {
+            // Si la carpeta no tiene el formato correcto, no aplicar esta regla
+            return false;
+          }
+
+          // Buscar la declaración de la función principal
+          const functionPatterns = [
+            // Función nombrada: export default function StoriesList() { ... }
+            new RegExp(
+              `export\\s+default\\s+function\\s+([A-Za-z0-9_]+)\\s*\\(`
+            ),
+            // Exportación directa con const: export const StoriesList = () => { ... }
+            new RegExp(
+              `export\\s+const\\s+([A-Za-z0-9_]+)\\s*=\\s*\\(?.*\\)?\\s*=>\\s*\\{`
+            ),
+            // Función anónima asignada: const StoriesList = () => { ... }; export default StoriesList;
+            new RegExp(
+              `const\\s+([A-Za-z0-9_]+)\\s*=\\s*\\(?.*\\)?\\s*=>\\s*\\{`
+            ),
+            // Declaración de función: function StoriesList() { ... }; export default StoriesList;
+            new RegExp(`function\\s+([A-Za-z0-9_]+)\\s*\\(`),
+          ];
+
+          // Buscar un patrón de función que coincida
+          for (const pattern of functionPatterns) {
+            const match = pattern.exec(content);
+            if (match && match[1]) {
+              const functionName = match[1];
+              // La función debe tener el mismo nombre que la carpeta
+              return functionName !== dirName;
+            }
+          }
+
+          // Si no se encontró una función exportada con nombre, es un error
+          return true;
+        },
+        message:
+          'La función principal en index.tsx debe tener el mismo nombre que su carpeta contenedora. Ejemplo: Si la carpeta es StoriesList, la función debe ser StoriesList().',
+      },
+      {
         name: 'Hook naming',
         category: 'naming',
         severity: 'error',
@@ -1376,6 +1428,200 @@ export class ConfigLoader implements IConfigLoader {
         },
         message:
           'Very complex functions (500+ chars) should have JSDoc comments explaining their behavior',
+      },
+      {
+        name: 'English-only comments',
+        category: 'documentation',
+        severity: 'error',
+        check: (content: string): boolean => {
+          // Extraer todos los comentarios (tanto de línea como de bloque)
+          const singleLineComments = content.match(/\/\/.*$/gm) || [];
+          const blockComments = content.match(/\/\*[\s\S]*?\*\//g) || [];
+          const jsdocComments = content.match(/\/\*\*[\s\S]*?\*\//g) || [];
+
+          // Combinar todos los comentarios
+          const allComments = [
+            ...singleLineComments,
+            ...blockComments,
+            ...jsdocComments,
+          ];
+
+          if (allComments.length === 0) {
+            return false; // No hay comentarios que revisar
+          }
+
+          // Lista de palabras comunes en español que no deberían estar en comentarios en inglés
+          const spanishWords = [
+            'de',
+            'la',
+            'el',
+            'en',
+            'para',
+            'con',
+            'por',
+            'si',
+            'esta',
+            'este',
+            'estos',
+            'estas',
+            'ese',
+            'esa',
+            'esos',
+            'esas',
+            'como',
+            'pero',
+            'porque',
+            'cuando',
+            'donde',
+            'cual',
+            'que',
+            'quien',
+            'cuyo',
+            'cuya',
+            'función',
+            'método',
+            'clase',
+            'esto',
+            'aquí',
+            'ahí',
+            'así',
+            'según',
+            'cada',
+            'todo',
+            'todos',
+            'algunas',
+            'algunos',
+            'mientras',
+            'aunque',
+            'desde',
+            'hasta',
+            'durante',
+            'después',
+            'antes',
+            'sobre',
+            'entre',
+            'sin',
+            'contra',
+            'hacia',
+            'excepto',
+            'mediante',
+            'acerca',
+            'además',
+            'luego',
+            'entonces',
+            'sino',
+            'también',
+            'tampoco',
+            'pues',
+            'ya',
+            'solo',
+            'solamente',
+            'aún',
+            'todavía',
+            'siempre',
+            'nunca',
+            'jamás',
+            'ahora',
+            'después',
+            'antes',
+            'pronto',
+            'tarde',
+            'temprano',
+            'demasiado',
+            'muy',
+            'mucho',
+            'poco',
+            'bastante',
+            'más',
+            'menos',
+            'tan',
+            'tanto',
+            'algún',
+            'alguno',
+            'ningún',
+            'ninguno',
+            'otro',
+            'cualquier',
+            'cualquiera',
+            'quienquiera',
+            'dondequiera',
+            'comoquiera',
+            'cuandoquiera',
+          ];
+
+          // Palabras técnicas que pueden parecer españolas pero son válidas en código
+          const validTechTerms = [
+            'constructor',
+            'static',
+            'public',
+            'private',
+            'protected',
+            'interface',
+            'extends',
+            'implements',
+            'abstract',
+            'readonly',
+            'const',
+            'enum',
+            'union',
+            'import',
+            'export',
+            'async',
+            'await',
+            'class',
+            'super',
+            'null',
+            'undefined',
+            'component',
+            'props',
+            'state',
+            'render',
+            'context',
+            'provider',
+            'consumer',
+            'store',
+            'action',
+            'reducer',
+            'dispatch',
+            'selector',
+            'saga',
+            'effect',
+            'query',
+            'mutation',
+            'subscription',
+            'apollo',
+            'graphql',
+          ];
+
+          // Regex para encontrar palabras completas (no partes de palabras)
+          const wordBoundaryPattern = (word: string) =>
+            new RegExp(`\\b${word}\\b`, 'i');
+
+          // Verificar cada comentario por palabras en español
+          return allComments.some((comment) => {
+            // Ignorar URLs, imports/exports y partes de código
+            const cleanComment = comment
+              .replace(/https?:\/\/[^\s)]+/g, '') // URLs
+              .replace(/import\s+.*from\s+['"][^'"]+['"]/g, '') // imports
+              .replace(/export\s+.*from\s+['"][^'"]+['"]/g, '') // exports
+              .replace(/(['"])(?:(?=(\\?))\2.)*?\1/g, ''); // strings
+
+            // Revisar por palabras en español
+            return spanishWords.some((word) => {
+              const pattern = wordBoundaryPattern(word);
+              // Evitar falsos positivos con términos técnicos válidos
+              if (pattern.test(cleanComment)) {
+                // Si encuentra una palabra española, verificar que no sea un término técnico válido
+                return !validTechTerms.some((term) =>
+                  cleanComment.includes(term)
+                );
+              }
+              return false;
+            });
+          });
+        },
+        message:
+          'Comments and JSDoc must be written in English only. Avoid using Spanish or other non-English languages in comments.',
       },
     ];
   }

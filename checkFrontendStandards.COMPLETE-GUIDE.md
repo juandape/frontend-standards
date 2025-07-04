@@ -1,18 +1,21 @@
 # Frontend Standards Checker - Guía Completa de Configuración
 
-Esta guía contiene todos los ejemplos posibles para configurar reglas personalizadas en **Frontend Standards Checker v4.5.1** - la versión optimizada con reducción masiva de falsos positivos, validaciones inteligentes, soporte completo para reglas INFO y nueva funcionalidad `onlyZone`.
+Esta guía contiene todos los ejemplos posibles para configurar reglas personalizadas en **Frontend Standards Checker v4.6.0** - la versión optimizada con reducción masiva de falsos positivos, validaciones inteligentes, soporte completo para reglas INFO y nuevas funcionalidades `onlyZone` y `onlyChangedFiles`.
 
-## ✅ Estado Actual - Versión 4.5.1 con Nueva Funcionalidad onlyZone
+## ✅ Estado Actual - Versión 4.6.0 con Nueva Funcionalidad onlyChangedFiles
 
 El validador ha sido **significativamente optimizado** para reducir falsos positivos y enfocarse en reglas realmente importantes:
 
-### 🎯 **Mejoras Principales v4.5.1:**
+### 🎯 **Mejoras Principales v4.6.0:**
 
-- **🆕 Nueva funcionalidad onlyZone:** Validar únicamente una zona específica, ignorando todas las demás
+- **🆕 Nueva funcionalidad onlyChangedFiles:** Por defecto solo revisa los archivos que se añadirán al commit
+- **🚀 Integración con Git:** Detecta automáticamente los archivos modificados para validación
+- **⏱️ Validación más rápida:** Al revisar solo archivos modificados en lugar de todo el proyecto
+- **📝 Comentarios solo en inglés:** Nueva regla que verifica que comentarios y JSDoc estén en inglés
+- **🎯 Funcionalidad onlyZone:** Validar únicamente una zona específica, ignorando todas las demás
 - **🎯 Validación selectiva:** Soporte para `auth`, `src/auth`, `app/(auth)`, `packages/ui`, etc.
 - **⚡ Workflows optimizados:** Ideal para validar solo módulos específicos durante desarrollo
-- **🐛 Bug crítico corregido:** Las reglas INFO ahora aparecen correctamente en reportes
-- **📉 Reducción de 51.2%** en falsos positivos (de 1083 a 529 violations en proyectos reales)
+- **📉 Reducción de falsos positivos** en proyectos reales
 - **🎚️ Severidades inteligentes** (error/warning/info según impacto real)
 - **🧠 Reglas contextuales** que entienden archivos de config, tests y setup
 - **⚡ Umbrales optimizados** para funciones complejas y documentación
@@ -110,8 +113,8 @@ npx frontend-standards-checker . --security-check --gitflow-check
 ## 📋 Tabla de Contenidos
 
 - [Frontend Standards Checker - Guía Completa de Configuración](#frontend-standards-checker---guía-completa-de-configuración)
-  - [✅ Estado Actual - Versión 4.5.1 con Nueva Funcionalidad onlyZone](#-estado-actual---versión-451-con-nueva-funcionalidad-onlyzone)
-    - [🎯 **Mejoras Principales v4.5.1:**](#-mejoras-principales-v451)
+  - [✅ Estado Actual - Versión 4.6.0 con Nueva Funcionalidad onlyChangedFiles](#-estado-actual---versión-460-con-nueva-funcionalidad-onlychangedfiles)
+    - [🎯 **Mejoras Principales v4.6.0:**](#-mejoras-principales-v460)
     - [📋 **Validaciones Actuales v4.5.1:**](#-validaciones-actuales-v451)
   - [📦 Instalación Universal](#-instalación-universal)
     - [🚨 **Pasos de Instalación Obligatorios**](#-pasos-de-instalación-obligatorios)
@@ -143,6 +146,8 @@ npx frontend-standards-checker . --security-check --gitflow-check
   - [⚙️ Configuración Rápida con Ejemplos](#️-configuración-rápida-con-ejemplos)
     - [1. Sin configuración (Usar reglas por defecto v4.5.1)](#1-sin-configuración-usar-reglas-por-defecto-v451)
     - [2. 🆕 Configuración con onlyZone (v4.5.1)](#2--configuración-con-onlyzone-v451)
+    - [2.1. 🆕 Configuración con onlyChangedFiles (v4.6.0)](#21--configuración-con-onlychangedfiles-v460)
+      - [⚠️ Interacción entre onlyZone y onlyChangedFiles](#️-interacción-entre-onlyzone-y-onlychangedfiles)
     - [3. Configuración básica (checkFrontendStandards.config.js)](#3-configuración-básica-checkfrontendstandardsconfigjs)
     - [3. Configuración para proyectos grandes (monorepos)](#3-configuración-para-proyectos-grandes-monorepos)
     - [4. Configuración para revisar solo módulos específicos (auth, dashboard, etc.)](#4-configuración-para-revisar-solo-módulos-específicos-auth-dashboard-etc)
@@ -336,6 +341,29 @@ export default {
   ]
 };
 ```
+
+### 2.1. 🆕 Configuración con onlyChangedFiles (v4.6.0)
+
+```javascript
+// checkFrontendStandards.config.js - Solo validar archivos staged para commit
+export default {
+  // Por defecto es true - solo valida archivos en el commit
+  onlyChangedFiles: true,
+
+  // Para desactivar y validar todos los archivos:
+  // onlyChangedFiles: false,
+
+  // Otras configuraciones...
+};
+```
+
+#### ⚠️ Interacción entre onlyZone y onlyChangedFiles
+
+- Cuando se especifica `onlyZone`, la opción `onlyChangedFiles` se **desactiva automáticamente**
+- Esto garantiza que siempre se valide la zona completa cuando se usa `onlyZone`
+- Para validar solo los archivos modificados en una zona específica, use:
+  - CLI: `frontend-standards-checker --zones auth --only-changed-files`
+  - O en scripts: `"standards:auth-changes": "frontend-standards-checker --zones auth --only-changed-files"`
 
 ### 3. Configuración básica (checkFrontendStandards.config.js)
 

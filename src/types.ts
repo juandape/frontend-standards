@@ -1,6 +1,6 @@
 /**
  * Frontend Standards Checker - Type Definitions
- * @version 4.5.0
+ * @version 4.6.0
  */
 
 export interface ValidationRule {
@@ -42,6 +42,7 @@ export interface StandardsConfigurationInput {
   ignorePatterns?: string[];
   verbose?: boolean;
   outputFormat?: OutputFormat;
+  onlyChangedFiles?: boolean; // Nueva opción para verificar solo archivos modificados en el commit
 }
 
 export interface StandardsConfiguration {
@@ -52,6 +53,7 @@ export interface StandardsConfiguration {
   ignorePatterns?: string[];
   verbose?: boolean;
   outputFormat?: OutputFormat;
+  onlyChangedFiles?: boolean; // Nueva opción para verificar solo archivos modificados en el commit
 }
 
 export type ConfigurationFunction = (
@@ -133,6 +135,7 @@ export interface CliOptions {
   skipContent?: boolean;
   version?: boolean;
   help?: boolean;
+  onlyChangedFiles?: boolean; // Opción para verificar solo archivos modificados en el commit
 }
 
 export interface FileInfo {
@@ -141,6 +144,7 @@ export interface FileInfo {
   size: number;
   extension: string;
   zone: string;
+  fullPath?: string; // Ruta absoluta al archivo (opcional)
 }
 
 export interface ValidatorContext {

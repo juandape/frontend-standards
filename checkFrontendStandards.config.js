@@ -6,10 +6,11 @@
  *
  * **Object Configuration:**
  * - `merge`: Boolean to control if custom rules merge with defaults
+ * - `onlyChangedFiles`: 🆕 Boolean to only check files staged for commit (default: true)
  * - `zones`: Object to configure which directories to validate
  *   - `includePackages`: Include packages/ directory in monorepos
  *   - `customZones`: Array of additional directories to validate
- *   - `onlyZone`: 🆕 String to validate only one specific zone (ignores all others)
+ *   - `onlyZone`: String to validate only one specific zone (ignores all others)
  * - `rules`: Array of custom validation rules
  *
  * **Function Configuration:**
@@ -21,7 +22,7 @@
  * - Simplest approach for adding a few custom rules
  *
  * @author Juan David Peña
- * @version 4.5.1
+ * @version 4.6.0
  * @since 2024-01-15
  * @see {@link ./checkFrontendStandards.mjs} Main validation script
  * @see {@link ./checkFrontendStandards.types.js} Type definitions
@@ -75,6 +76,11 @@ export default {
   // Merge custom rules with default rules (default: true)
   merge: true,
 
+  // Por defecto, revisar solo los archivos que se van a agregar al commit (default: true)
+  // Si se establece en false, se revisarán todos los archivos del proyecto
+  // Si no se especifican zonas o onlyZone, solo se revisarán los archivos modificados
+  onlyChangedFiles: true,
+
   // Zone configuration
   zones: {
     // Whether to include 'packages' directory in validation (default: false)
@@ -88,6 +94,8 @@ export default {
     // onlyZone: 'packages/ui',  // Para monorepos
 
     // Custom zones to include in validation (se ignora si onlyZone está definido)
+    // Si se especifican customZones, se revisarán todos los archivos en esas zonas
+    // ignorando la opción onlyChangedFiles
     customZones: [
       // 'custom-folder',
       // 'another-folder'
