@@ -148,6 +148,7 @@ npx frontend-standards-checker . --security-check --gitflow-check
     - [2. 🆕 Configuración con onlyZone (v4.5.1)](#2--configuración-con-onlyzone-v451)
     - [2.1. 🆕 Configuración con onlyChangedFiles (v4.6.0)](#21--configuración-con-onlychangedfiles-v460)
       - [⚠️ Interacción entre onlyZone y onlyChangedFiles](#️-interacción-entre-onlyzone-y-onlychangedfiles)
+      - [🔍 Ejemplo: Validar TODAS las zonas y archivos del proyecto](#-ejemplo-validar-todas-las-zonas-y-archivos-del-proyecto)
     - [3. Configuración básica (checkFrontendStandards.config.js)](#3-configuración-básica-checkfrontendstandardsconfigjs)
     - [3. Configuración para proyectos grandes (monorepos)](#3-configuración-para-proyectos-grandes-monorepos)
     - [4. Configuración para revisar solo módulos específicos (auth, dashboard, etc.)](#4-configuración-para-revisar-solo-módulos-específicos-auth-dashboard-etc)
@@ -364,6 +365,33 @@ export default {
 - Para validar solo los archivos modificados en una zona específica, use:
   - CLI: `frontend-standards-checker --zones auth --only-changed-files`
   - O en scripts: `"standards:auth-changes": "frontend-standards-checker --zones auth --only-changed-files"`
+
+#### 🔍 Ejemplo: Validar TODAS las zonas y archivos del proyecto
+
+Si necesitas hacer una validación completa de todo el proyecto, puedes usar esta configuración:
+
+```javascript
+// Validar TODO el proyecto (no solo los archivos en el commit)
+export default {
+  // Desactivar validación solo de archivos modificados
+  onlyChangedFiles: false,
+
+  // Configuración para incluir más zonas (opcional)
+  zones: {
+    includePackages: true, // Incluir monorepos
+    customZones: ['src', 'app', 'components', 'pages'] // Zonas adicionales a validar
+  },
+
+  // Otras configuraciones...
+}
+```
+
+Esta configuración es útil para:
+
+- Auditorías completas del código
+- Verificación de estándares en todo el proyecto
+- Establecer una línea base de calidad de código
+- Detección de problemas en archivos que aún no has modificado
 
 ### 3. Configuración básica (checkFrontendStandards.config.js)
 
