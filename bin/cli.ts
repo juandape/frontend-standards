@@ -17,9 +17,31 @@ interface PackageJson {
   description?: string;
 }
 
-const packageJson: PackageJson = JSON.parse(
-  readFileSync(join(__dirname, '../package.json'), 'utf8')
-);
+// Función para buscar el package.json en varias ubicaciones posibles
+function findPackageJson(): PackageJson {
+  const possibleLocations = [
+    join(__dirname, '../package.json'), // Desarrollo local
+    join(__dirname, '../../package.json'), // Instalado como dependencia
+    join(process.cwd(), 'package.json'), // Directorio actual de trabajo
+    join(__dirname, '../../../package.json'), // Otra posible ubicación en node_modules
+  ];
+
+  for (const location of possibleLocations) {
+    try {
+      return JSON.parse(readFileSync(location, 'utf8'));
+    } catch (e) {
+      // Intentar con la siguiente ubicación
+    }
+  }
+
+  // Si no encontramos el package.json, usar valores predeterminados
+  return {
+    version: '4.6.0',
+    name: 'frontend-standards-checker',
+  };
+}
+
+const packageJson: PackageJson = findPackageJson();
 
 const program = new Command();
 
