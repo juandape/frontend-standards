@@ -10,7 +10,7 @@
     "frontend-standards-init": "./bin/copy-frontend-standards-files.cjs"
   },
   "scripts": {
-    "build": "tsc && chmod +x dist/bin/cli.js",
+    "build": "tsc && chmod +x dist/bin/cli.js && cp package.json dist/",
     "build:watch": "tsc --watch",
     "dev": "tsx --watch src/index.ts",
     "start": "node dist/src/index.js",
