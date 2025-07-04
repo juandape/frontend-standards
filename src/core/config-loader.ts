@@ -517,6 +517,58 @@ export class ConfigLoader implements IConfigLoader {
           'Component files should start with uppercase letter (PascalCase). For index.tsx files, the parent directory should be PascalCase.',
       },
       {
+        name: 'Component function name match',
+        category: 'naming',
+        severity: 'error',
+        check: (content: string, filePath: string): boolean => {
+          // Solo aplicar a archivos index.tsx en carpetas de componentes
+          const fileName = path.basename(filePath);
+          if (fileName !== 'index.tsx' || !filePath.includes('/components/')) {
+            return false;
+          }
+
+          // Obtener el nombre de la carpeta contenedora (debe ser PascalCase)
+          const dirName = path.basename(path.dirname(filePath));
+          if (!/^[A-Z][a-zA-Z0-9]*$/.test(dirName)) {
+            // Si la carpeta no tiene el formato correcto, no aplicar esta regla
+            return false;
+          }
+
+          // Buscar la declaración de la función principal
+          const functionPatterns = [
+            // Función nombrada: export default function StoriesList() { ... }
+            new RegExp(
+              `export\\s+default\\s+function\\s+([A-Za-z0-9_]+)\\s*\\(`
+            ),
+            // Exportación directa con const: export const StoriesList = () => { ... }
+            new RegExp(
+              `export\\s+const\\s+([A-Za-z0-9_]+)\\s*=\\s*\\(?.*\\)?\\s*=>\\s*\\{`
+            ),
+            // Función anónima asignada: const StoriesList = () => { ... }; export default StoriesList;
+            new RegExp(
+              `const\\s+([A-Za-z0-9_]+)\\s*=\\s*\\(?.*\\)?\\s*=>\\s*\\{`
+            ),
+            // Declaración de función: function StoriesList() { ... }; export default StoriesList;
+            new RegExp(`function\\s+([A-Za-z0-9_]+)\\s*\\(`),
+          ];
+
+          // Buscar un patrón de función que coincida
+          for (const pattern of functionPatterns) {
+            const match = pattern.exec(content);
+            if (match && match[1]) {
+              const functionName = match[1];
+              // La función debe tener el mismo nombre que la carpeta
+              return functionName !== dirName;
+            }
+          }
+
+          // Si no se encontró una función exportada con nombre, es un error
+          return true;
+        },
+        message:
+          'La función principal en index.tsx debe tener el mismo nombre que su carpeta contenedora. Ejemplo: Si la carpeta es StoriesList, la función debe ser StoriesList().',
+      },
+      {
         name: 'Hook naming',
         category: 'naming',
         severity: 'error',
