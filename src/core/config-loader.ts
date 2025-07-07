@@ -169,6 +169,7 @@ export class ConfigLoader implements IConfigLoader {
 
     return {
       merge: true,
+      onlyChangedFiles: true, // Por defecto, solo revisar archivos en commit
       rules: Object.values(defaultRules).flat(),
       zones: {
         includePackages: false,
