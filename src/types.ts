@@ -1,6 +1,6 @@
 /**
  * Frontend Standards Checker - Type Definitions
- * @version 4.6.0
+ * @version 4.7.0
  */
 
 export interface ValidationRule {

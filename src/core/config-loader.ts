@@ -528,12 +528,11 @@ export class ConfigLoader implements IConfigLoader {
             return false;
           }
 
-          // Obtener el nombre de la carpeta contenedora (debe ser PascalCase)
+          // Obtener el nombre de la carpeta contenedora
           const dirName = path.basename(path.dirname(filePath));
-          if (!/^[A-Z][a-zA-Z0-9]*$/.test(dirName)) {
-            // Si la carpeta no tiene el formato correcto, no aplicar esta regla
-            return false;
-          }
+
+          // Verificar si la carpeta sigue el formato PascalCase
+          const isPascalCase = /^[A-Z][a-zA-Z0-9]*$/.test(dirName);
 
           // Buscar la declaración de la función principal
           const functionPatterns = [
@@ -551,6 +550,10 @@ export class ConfigLoader implements IConfigLoader {
             ),
             // Declaración de función: function StoriesList() { ... }; export default StoriesList;
             new RegExp(`function\\s+([A-Za-z0-9_]+)\\s*\\(`),
+            // React.FC con nombre: const StoriesList: React.FC = () => { ... }
+            new RegExp(`const\\s+([A-Za-z0-9_]+)\\s*:\\s*React\\.?FC[<]?`),
+            // TypeScript FC: const StoriesList: FC<Props> = () => { ... }
+            new RegExp(`const\\s+([A-Za-z0-9_]+)\\s*:\\s*FC[<]?`),
           ];
 
           // Buscar un patrón de función que coincida
@@ -558,8 +561,18 @@ export class ConfigLoader implements IConfigLoader {
             const match = pattern.exec(content);
             if (match && match[1]) {
               const functionName = match[1];
-              // La función debe tener el mismo nombre que la carpeta
-              return functionName !== dirName;
+
+              // Si la carpeta no es PascalCase, esta es una falla doble - la carpeta debe ser PascalCase
+              // Y además el nombre de la función debe coincidir con el nombre de la carpeta
+              if (!isPascalCase) {
+                // Verificar si la función tiene el mismo nombre que la carpeta (ignorando el formato)
+                if (functionName.toLowerCase() !== dirName.toLowerCase()) {
+                  return true; // Error: ni es PascalCase ni coincide con el nombre de la función
+                }
+              } else {
+                // Si la carpeta es PascalCase, el nombre de la función debe coincidir exactamente
+                return functionName !== dirName;
+              }
             }
           }
 
@@ -567,7 +580,7 @@ export class ConfigLoader implements IConfigLoader {
           return true;
         },
         message:
-          'La función principal en index.tsx debe tener el mismo nombre que su carpeta contenedora. Ejemplo: Si la carpeta es StoriesList, la función debe ser StoriesList().',
+          'La función principal en index.tsx debe tener el mismo nombre que su carpeta contenedora. Las carpetas de componentes deben seguir PascalCase y la función debe tener exactamente el mismo nombre.',
       },
       {
         name: 'Hook naming',
@@ -893,7 +906,7 @@ export class ConfigLoader implements IConfigLoader {
       {
         name: 'No console.log',
         category: 'content',
-        severity: 'warning',
+        severity: 'error', // Cambiado de warning a error
         check: (content: string, _filePath: string): boolean => {
           return /console\.(log|warn|error|info|debug)/.test(content);
         },
@@ -911,7 +924,7 @@ export class ConfigLoader implements IConfigLoader {
       {
         name: 'No inline styles',
         category: 'content',
-        severity: 'warning',
+        severity: 'error', // Cambiado de warning a error
         check: (content: string): boolean => {
           return /style\s*=\s*\{/.test(content);
         },
