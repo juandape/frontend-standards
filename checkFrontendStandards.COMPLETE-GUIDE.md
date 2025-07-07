@@ -349,7 +349,7 @@ export default {
 // checkFrontendStandards.config.js - Solo validar archivos staged para commit
 export default {
   // Por defecto es true - solo valida archivos en el commit
-  onlyChangedFiles: true,
+  onlyChangedFiles: true, // Este es el valor por defecto
 
   // Para desactivar y validar todos los archivos:
   // onlyChangedFiles: false,
