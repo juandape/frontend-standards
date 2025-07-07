@@ -1,6 +1,6 @@
-# Frontend Standards Checker
+# Frontend Standards Checker v4.7.0
 
-Una herramienta escalable y modular para validar estándares de frontend en proyectos JavaScript/TypeScript. **Migrada a TypeScript para máxima seguridad de tipos.**
+Una herramienta escalable y modular para validar estándares de frontend en proyectos JavaScript/TypeScript. **Versión 4.7.0 con nuevas funcionalidades y mejoras de rendimiento.**
 
 ## 🚀 Características
 
@@ -8,10 +8,12 @@ Una herramienta escalable y modular para validar estándares de frontend en proy
 - **Escalable**: Fácil agregar nuevas reglas y validadores
 - **Configurable**: Configuración flexible mediante archivo de configuración
 - **CLI amigable**: Interfaz de línea de comandos con opciones detalladas
-- **Reportes detallados**: Genera reportes comprensivos en formato texto y JSON
+- **Reportes detallados**: Genera reportes comprensivos con secciones para errors, warnings e info
 - **Soporte para monorepos**: Detecta y valida múltiples zonas automáticamente
+- **🆕 Validación selectiva**: Opción `onlyZone` para validar solo módulos específicos
+- **🆕 Validación eficiente**: Por defecto solo valida archivos en staging para commit (`onlyChangedFiles: true`)
 - **🆕 TypeScript nativo**: Tipos estrictos, autocompletado y mejor experiencia de desarrollo
-- **🆕 Validación eficiente**: Por defecto solo valida archivos que están preparados para el commit
+- **🆕 Reglas actualizadas**: "No console.log" y "No inline styles" ahora son errores críticos
 
 ## 📦 Instalación Rápida
 
@@ -49,14 +51,23 @@ Una vez instalado en tu proyecto:
 
 ```bash
 # Con NPM
-npm run lint:standards
+npm run standards
 
 # Con Yarn
-yarn lint:standards
+yarn standards
 
 # Validar zonas específicas
-npm run lint:standards -- --zones src components
-yarn lint:standards:zones src components
+npm run standards -- --zones src components
+yarn standards:zones src components
+
+# 🆕 Solo validar archivos staged en commit (comportamiento predeterminado)
+yarn standards
+
+# 🆕 Validar todos los archivos (no solo los staged)
+yarn standards -- --only-changed-files=false
+
+# 🆕 Validar únicamente una zona específica
+yarn standards -- --only-zone auth
 ```
 
 ## 📚 Documentación Completa
@@ -71,25 +82,67 @@ La guía completa incluye:
 - ⚙️ Ejemplos de configuración para React, Next.js, monorepos
 - 🔧 Configuración avanzada de reglas y zonas
 - 🐛 Troubleshooting y comandos de debug
-- 📋 Lista completa de validaciones disponibles
+- 📋 Lista completa de validaciones disponibles (60 reglas en total)
+- 🆕 Configuración de `onlyChangedFiles` y `onlyZone`
+- 🆕 Interacción entre diferentes opciones de configuración
+- 🆕 Niveles de severidad actualizados (ERROR/WARNING/INFO)
 
+## 🆕 Novedades en v4.7.0
+
+### Validación Eficiente con onlyChangedFiles
+
+Por defecto, la herramienta ahora solo valida archivos que están preparados para commit (staged):
+
+```javascript
+// checkFrontendStandards.config.js - Este es el comportamiento predeterminado
+export default {
+  onlyChangedFiles: true, // Por defecto es true
+}
+```
+
+Para validar todos los archivos del proyecto:
+
+```bash
+# CLI
+frontend-standards-checker --only-changed-files=false
+
+# Configuración
+export default {
+  onlyChangedFiles: false
+}
+```
+
+### Reglas Actualizadas a ERROR
+
+Las siguientes reglas ahora son consideradas errores críticos:
+
+- **"No console.log"** - Prohibido el uso de console.log en código de producción
+- **"No inline styles"** - Los estilos inline están prohibidos, usar CSS o styled-components
+
+### Validación por Zonas
+
+Valida únicamente una zona específica, ignorando todas las demás:
+
+```javascript
+// Validar solo módulo de autenticación
+export default {
+  zones: { onlyZone: 'auth' }
+};
+```
+
+```bash
 # Validar zonas específicas
-
 ./bin/cli.js --zones apps/frontend packages/ui
 
-# Modo verbose
-
+# Modo verbose (incluye reglas INFO)
 ./bin/cli.js --verbose
 
 # Saltar validaciones específicas
-
 ./bin/cli.js --skip-structure --skip-naming
 
 # Configuración personalizada
-
 ./bin/cli.js --config ./my-config.js --output ./my-report.log
-
-````
+```
 
 ### Como módulo
 
@@ -97,6 +150,7 @@ La guía completa incluye:
 import { FrontendStandardsChecker } from './src/index.js';
 
 const checker = new FrontendStandardsChecker({
+  onlyChangedFiles: true, // Por defecto solo archivos en commit
   zones: ['apps/frontend'],
   verbose: true,
   skipStructure: false
@@ -104,7 +158,7 @@ const checker = new FrontendStandardsChecker({
 
 const results = await checker.run();
 console.log(`Found ${results.totalErrors} violations`);
-````
+```
 
 ### Scripts npm
 
@@ -239,6 +293,38 @@ Sistema de logging consistente con niveles configurables.
 - **Datos hardcodeados**: Identifica datos hardcodeados
 - **Comentarios en funciones complejas**: Requiere documentación en funciones complejas
 - **Convenciones de nombres**: Valida naming conventions por tipo de archivo
+
+## 📊 Resumen de Reglas
+
+La herramienta incluye un total de **60 reglas** organizadas por nivel de severidad:
+
+### 🔴 Reglas de Error (25 total)
+
+_Las reglas de error indican problemas críticos que pueden romper el código o impedir la compilación._
+
+- **Naming**: Nomenclatura de componentes, hooks, tipos, helpers, estilos, assets
+- **Content/TypeScript**: No var, no any, no alert, no console.log, no estilos inline
+- **Accesibilidad**: Botones con nombres accesibles, inputs con labels
+- **React**: Key prop en listas, directivas client component
+
+### 🟡 Reglas de Warning (19 total)
+
+_Las reglas de warning señalan mejores prácticas importantes que deberían seguirse._
+
+- **Structure**: Estructura de carpetas, límites de tamaño de componentes
+- **React/Performance**: Dependencias de hooks, interfaces para props, evitar React.FC
+- **Imports**: Orden de imports, imports absolutos, no imports sin uso
+
+### 🔵 Reglas de Info (16 total)
+
+_Las reglas de info proporcionan sugerencias y optimizaciones opcionales._
+
+- **Documentation**: JSDoc para funciones complejas, comentarios TSDoc
+- **TypeScript**: Tipos de retorno explícitos, naming de genéricos
+- **Performance**: React.memo para componentes puros, imports específicos
+- **Accessibility**: Nombres accesibles para links, manejo de focus, contraste de color
+
+> **👉 Para ver la lista completa de reglas detalladas, revisa [rules-list.md](./rules-list.md)**
 
 ## 🎯 Opciones de CLI
 
