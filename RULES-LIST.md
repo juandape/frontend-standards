@@ -2,7 +2,7 @@
 
 > **🆕 Compatibilidad**: Frontend Standards Checker soporta tanto proyectos React/Next.js como aplicaciones **React Native**. Incluye reglas específicas para organización multiplataforma (.web.tsx/.native.tsx), separación de código específico por plataforma y buenas prácticas para ambos entornos.
 
-## 🔴 Reglas de Error (23 total)
+## 🔴 Reglas de Error (25 total)
 
 _Las reglas de error indican problemas críticos que pueden romper el código o impedir la compilación._
 
@@ -19,7 +19,7 @@ _Las reglas de error indican problemas críticos que pueden romper el código o 
 9. **Test file naming convention** `(naming)` - Tests deben seguir _.test.tsx o _.spec.tsx
 10. **Component function name match** `(naming)` - La función principal en index.tsx debe tener el mismo nombre que su carpeta contenedora
 
-### 💻 Content/TypeScript (13 reglas)
+### 💻 Content/TypeScript (15 reglas)
 
 11. **No var** `(content)` - Usar let o const en lugar de var
 12. **No any type** `(typescript)` - Evitar tipo "any", usar tipos específicos
@@ -29,15 +29,17 @@ _Las reglas de error indican problemas críticos que pueden romper el código o 
 16. **No circular dependencies** `(content)` - Evitar dependencias circulares
 17. **No merge conflicts markers** `(content)` - Resolver marcadores de conflictos de Git
 18. **No committed credentials** `(content)` - No commitear credenciales o datos sensibles
-19. **Client component directive** `(react)` - Componentes con features client-side deben incluir "use client"
-20. **Proper key prop in lists** `(react)` - Elementos en arrays deben tener prop key
-21. **Button missing accessible name** `(accessibility)` - Botones deben tener nombres accesibles
-22. **Form inputs missing labels** `(accessibility)` - Inputs deben tener labels asociados
-23. **English-only comments** `(documentation)` - Comentarios y JSDoc deben estar escritos solo en inglés
+19. **No console.log** `(content)` - Remover console statements antes de producción
+20. **No inline styles** `(content)` - Evitar estilos inline, usar CSS classes
+21. **Client component directive** `(react)` - Componentes con features client-side deben incluir "use client"
+22. **Proper key prop in lists** `(react)` - Elementos en arrays deben tener prop key
+23. **Button missing accessible name** `(accessibility)` - Botones deben tener nombres accesibles
+24. **Form inputs missing labels** `(accessibility)` - Inputs deben tener labels asociados
+25. **English-only comments** `(documentation)` - Comentarios y JSDoc deben estar escritos solo en inglés
 
 ---
 
-## 🟡 Reglas de Warning (21 total)
+## 🟡 Reglas de Warning (19 total)
 
 _Las reglas de warning señalan mejores prácticas importantes que deberían seguirse._
 
@@ -48,14 +50,12 @@ _Las reglas de warning señalan mejores prácticas importantes que deberían seg
 3. **Component size limit** `(structure)` - Componentes no deben exceder 200 líneas
 4. **No circular dependencies** `(structure)` - Detectar dependencias circulares potenciales
 
-### 📝 Content/Documentation (6 reglas)
+### 📝 Content/Documentation (4 reglas)
 
-5. **No console.log** `(content)` - Remover console statements antes de producción
-6. **No inline styles** `(content)` - Evitar estilos inline, usar CSS classes
-7. **Next.js Image optimization** `(performance)` - Usar componente Image de Next.js
-8. **Image alt text** `(accessibility)` - Imágenes deben tener texto alt
-9. **Must use async/await** `(content)` - Preferir async/await sobre .then()
-10. **Missing comment in complex function** `(documentation)` - Funciones complejas deben tener comentarios
+5. **Next.js Image optimization** `(performance)` - Usar componente Image de Next.js
+6. **Image alt text** `(accessibility)` - Imágenes deben tener texto alt
+7. **Must use async/await** `(content)` - Preferir async/await sobre .then()
+8. **Missing comment in complex function** `(documentation)` - Funciones complejas deben tener comentarios
 
 ### 🔷 TypeScript (3 reglas)
 
@@ -123,10 +123,10 @@ _Las reglas de info proporcionan sugerencias y optimizaciones opcionales._
 
 | Tipo            | Cantidad      | Descripción                   |
 | --------------- | ------------- | ----------------------------- |
-| 🔴 **Errores**  | **22 reglas** | Código se rompe o no compila  |
-| 🟡 **Warnings** | **21 reglas** | Mejores prácticas importantes |
+| 🔴 **Errores**  | **25 reglas** | Código se rompe o no compila  |
+| 🟡 **Warnings** | **19 reglas** | Mejores prácticas importantes |
 | 🔵 **Info**     | **16 reglas** | Sugerencias y optimizaciones  |
-| 📈 **Total**    | **59 reglas** |                               |
+| 📈 **Total**    | **60 reglas** |                               |
 
 ### 🏆 Categorías Más Importantes
 

@@ -893,7 +893,7 @@ export class ConfigLoader implements IConfigLoader {
       {
         name: 'No console.log',
         category: 'content',
-        severity: 'warning',
+        severity: 'error', // Cambiado de warning a error
         check: (content: string, _filePath: string): boolean => {
           return /console\.(log|warn|error|info|debug)/.test(content);
         },
@@ -911,7 +911,7 @@ export class ConfigLoader implements IConfigLoader {
       {
         name: 'No inline styles',
         category: 'content',
-        severity: 'warning',
+        severity: 'error', // Cambiado de warning a error
         check: (content: string): boolean => {
           return /style\s*=\s*\{/.test(content);
         },
@@ -1714,9 +1714,7 @@ export class ConfigLoader implements IConfigLoader {
               .map((g) => g.trim());
             return generics.some((g) => {
               // Solo marcar como inválido si es una sola letra minúscula sin contexto
-              return (
-                /^[a-z]$/.test(g) && !['T', 'K', 'V', 'P', 'R'].includes(g)
-              );
+              return /^[a-z]$/.test(g) && !['T', 'K', 'V', 'P', 'R'].includes(g);
             });
           });
 

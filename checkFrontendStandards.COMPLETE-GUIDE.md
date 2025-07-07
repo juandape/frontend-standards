@@ -1,12 +1,12 @@
 # Frontend Standards Checker - Guía Completa de Configuración
 
-Esta guía contiene todos los ejemplos posibles para configurar reglas personalizadas en **Frontend Standards Checker v4.6.0** - la versión optimizada con reducción masiva de falsos positivos, validaciones inteligentes, soporte completo para reglas INFO y nuevas funcionalidades `onlyZone` y `onlyChangedFiles`.
+Esta guía contiene todos los ejemplos posibles para configurar reglas personalizadas en **Frontend Standards Checker v4.7.0** - la versión optimizada con reducción masiva de falsos positivos, validaciones inteligentes, soporte completo para reglas INFO y nuevas funcionalidades `onlyZone` y `onlyChangedFiles`.
 
-## ✅ Estado Actual - Versión 4.6.0 con Nueva Funcionalidad onlyChangedFiles
+## ✅ Estado Actual - Versión 4.7.0 con Nueva Funcionalidad onlyChangedFiles y Reglas Actualizadas
 
 El validador ha sido **significativamente optimizado** para reducir falsos positivos y enfocarse en reglas realmente importantes:
 
-### 🎯 **Mejoras Principales v4.6.0:**
+### 🎯 **Mejoras Principales v4.7.0:**
 
 - **🆕 Nueva funcionalidad onlyChangedFiles:** Por defecto solo revisa los archivos que se añadirán al commit
 - **🚀 Integración con Git:** Detecta automáticamente los archivos modificados para validación
@@ -113,8 +113,8 @@ npx frontend-standards-checker . --security-check --gitflow-check
 ## 📋 Tabla de Contenidos
 
 - [Frontend Standards Checker - Guía Completa de Configuración](#frontend-standards-checker---guía-completa-de-configuración)
-  - [✅ Estado Actual - Versión 4.6.0 con Nueva Funcionalidad onlyChangedFiles](#-estado-actual---versión-460-con-nueva-funcionalidad-onlychangedfiles)
-    - [🎯 **Mejoras Principales v4.6.0:**](#-mejoras-principales-v460)
+  - [✅ Estado Actual - Versión 4.7.0 con Nueva Funcionalidad onlyChangedFiles y Reglas Actualizadas](#-estado-actual---versión-470-con-nueva-funcionalidad-onlychangedfiles-y-reglas-actualizadas)
+    - [🎯 **Mejoras Principales v4.7.0:**](#-mejoras-principales-v470)
     - [📋 **Validaciones Actuales v4.5.1:**](#-validaciones-actuales-v451)
   - [📦 Instalación Universal](#-instalación-universal)
     - [🚨 **Pasos de Instalación Obligatorios**](#-pasos-de-instalación-obligatorios)
@@ -146,7 +146,7 @@ npx frontend-standards-checker . --security-check --gitflow-check
   - [⚙️ Configuración Rápida con Ejemplos](#️-configuración-rápida-con-ejemplos)
     - [1. Sin configuración (Usar reglas por defecto v4.5.1)](#1-sin-configuración-usar-reglas-por-defecto-v451)
     - [2. 🆕 Configuración con onlyZone (v4.5.1)](#2--configuración-con-onlyzone-v451)
-    - [2.1. 🆕 Configuración con onlyChangedFiles (v4.6.0)](#21--configuración-con-onlychangedfiles-v460)
+    - [2.1. 🆕 Configuración con onlyChangedFiles (v4.7.0)](#21--configuración-con-onlychangedfiles-v470)
       - [⚠️ Interacción entre onlyZone y onlyChangedFiles](#️-interacción-entre-onlyzone-y-onlychangedfiles)
       - [🔍 Ejemplo: Validar TODAS las zonas y archivos del proyecto](#-ejemplo-validar-todas-las-zonas-y-archivos-del-proyecto)
     - [3. Configuración básica (checkFrontendStandards.config.js)](#3-configuración-básica-checkfrontendstandardsconfigjs)
@@ -343,7 +343,7 @@ export default {
 };
 ```
 
-### 2.1. 🆕 Configuración con onlyChangedFiles (v4.6.0)
+### 2.1. 🆕 Configuración con onlyChangedFiles (v4.7.0)
 
 ```javascript
 // checkFrontendStandards.config.js - Solo validar archivos staged para commit

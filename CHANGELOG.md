@@ -1,5 +1,22 @@
 # 📋 Changelog - Frontend Standards Checker
 
+## [v4.7.0] - 2025-07-11
+
+### 🔒 Rule Severity Updates
+
+- **Reglas elevadas a ERROR**:
+  - "No console.log" - Ahora produce errores en lugar de advertencias
+  - "No inline styles" - Ahora produce errores en lugar de advertencias
+  - Actualizada la documentación para reflejar estas reglas como errores críticos
+
+### 🚀 Default Behavior Change
+
+- **onlyChangedFiles por defecto**:
+  - Ahora el validador solo procesa archivos en stage por defecto (`onlyChangedFiles: true`)
+  - Se puede desactivar explícitamente en configuración o con `--only-changed-files=false`
+  - Mejora significativa de rendimiento en flujos de trabajo habituales
+  - Ideal para usar en pre-commit hooks sin configuración adicional
+
 ## [v4.6.0] - 2025-07-04
 
 ### 🚀 New Feature
