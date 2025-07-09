@@ -2,7 +2,7 @@
 
 > **🆕 Compatibilidad**: Frontend Standards Checker soporta tanto proyectos React/Next.js como aplicaciones **React Native**. Incluye reglas específicas para organización multiplataforma (.web.tsx/.native.tsx), separación de código específico por plataforma y buenas prácticas para ambos entornos.
 
-## 🔴 Reglas de Error (25 total)
+## 🔴 Reglas de Error (26 total)
 
 _Las reglas de error indican problemas críticos que pueden romper el código o impedir la compilación._
 
@@ -19,7 +19,7 @@ _Las reglas de error indican problemas críticos que pueden romper el código o 
 9. **Test file naming convention** `(naming)` - Tests deben seguir _.test.tsx o _.spec.tsx
 10. **Component function name match** `(naming)` - La función principal en index.tsx debe tener el mismo nombre que su carpeta contenedora
 
-### 💻 Content/TypeScript (15 reglas)
+### 💻 Content/TypeScript (16 reglas)
 
 11. **No var** `(content)` - Usar let o const en lugar de var
 12. **No any type** `(typescript)` - Evitar tipo "any", usar tipos específicos
@@ -31,11 +31,12 @@ _Las reglas de error indican problemas críticos que pueden romper el código o 
 18. **No committed credentials** `(content)` - No commitear credenciales o datos sensibles
 19. **No console.log** `(content)` - Remover console statements antes de producción
 20. **No inline styles** `(content)` - Evitar estilos inline, usar CSS classes
-21. **Client component directive** `(react)` - Componentes con features client-side deben incluir "use client"
-22. **Proper key prop in lists** `(react)` - Elementos en arrays deben tener prop key
-23. **Button missing accessible name** `(accessibility)` - Botones deben tener nombres accesibles
-24. **Form inputs missing labels** `(accessibility)` - Inputs deben tener labels asociados
-25. **English-only comments** `(documentation)` - Comentarios y JSDoc deben estar escritos solo en inglés
+21. **Direct imports for sibling files** `(imports)` - Archivos al mismo nivel deben importarse directamente, no a través del index
+22. **Client component directive** `(react)` - Componentes con features client-side deben incluir "use client"
+23. **Proper key prop in lists** `(react)` - Elementos en arrays deben tener prop key
+24. **Button missing accessible name** `(accessibility)` - Botones deben tener nombres accesibles
+25. **Form inputs missing labels** `(accessibility)` - Inputs deben tener labels asociados
+26. **English-only comments** `(documentation)` - Comentarios y JSDoc deben estar escritos solo en inglés
 
 ---
 
@@ -123,10 +124,10 @@ _Las reglas de info proporcionan sugerencias y optimizaciones opcionales._
 
 | Tipo            | Cantidad      | Descripción                   |
 | --------------- | ------------- | ----------------------------- |
-| 🔴 **Errores**  | **25 reglas** | Código se rompe o no compila  |
+| 🔴 **Errores**  | **26 reglas** | Código se rompe o no compila  |
 | 🟡 **Warnings** | **19 reglas** | Mejores prácticas importantes |
 | 🔵 **Info**     | **16 reglas** | Sugerencias y optimizaciones  |
-| 📈 **Total**    | **60 reglas** |                               |
+| 📈 **Total**    | **61 reglas** |                               |
 
 ### 🏆 Categorías Más Importantes
 
@@ -141,7 +142,7 @@ _Las reglas de info proporcionan sugerencias y optimizaciones opcionales._
 | ⚡ **Performance** | **5 reglas** | Optimización de rendimiento |
 | 🏗️ **Structure** | **5 reglas** | Organización de archivos |
 | 📖 **Documentation** | **4 reglas** | Documentación del código |
-| 📦 **Imports** | **4 reglas** | Gestión de importaciones |
+| 📦 **Imports** | **5 reglas** | Gestión de importaciones |
 
 ---
 

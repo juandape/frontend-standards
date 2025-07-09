@@ -1,6 +1,6 @@
-# Frontend Standards Checker v4.7.0
+# Frontend Standards Checker v4.8.0
 
-Una herramienta escalable y modular para validar estándares de frontend en proyectos JavaScript/TypeScript. **Versión 4.7.0 con nuevas funcionalidades y mejoras de rendimiento.**
+Una herramienta escalable y modular para validar estándares de frontend en proyectos JavaScript/TypeScript. **Versión 4.8.0 con nuevas funcionalidades y mejoras de rendimiento.**
 
 ## 🚀 Características
 
@@ -87,7 +87,15 @@ La guía completa incluye:
 - 🆕 Interacción entre diferentes opciones de configuración
 - 🆕 Niveles de severidad actualizados (ERROR/WARNING/INFO)
 
-## 🆕 Novedades en v4.7.0
+## 🆕 Novedades en v4.8.0
+
+### Nueva regla: Direct imports for sibling files
+
+Se ha implementado una nueva regla de error que evita dependencias circulares:
+
+- Detecta cuando archivos hermanos (que están en el mismo directorio) se importan a través del index.
+- Obliga a importar directamente desde el archivo fuente en lugar de a través del index.
+- Mejora la organización del código y evita posibles dependencias circulares.
 
 ### Validación Eficiente con onlyChangedFiles
 

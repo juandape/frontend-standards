@@ -1968,6 +1968,173 @@ export class ConfigLoader implements IConfigLoader {
   private getImportRules(): ValidationRule[] {
     return [
       {
+        name: 'Direct imports for sibling files',
+        category: 'imports',
+        severity: 'error',
+        check: (content: string, filePath: string): boolean => {
+          // Skip if this is an index file
+          if (
+            path.basename(filePath) === 'index.ts' ||
+            path.basename(filePath) === 'index.tsx' ||
+            path.basename(filePath) === 'index.js' ||
+            path.basename(filePath) === 'index.jsx'
+          ) {
+            return false;
+          }
+
+          const currentDir = path.dirname(filePath);
+          const fileName = path.basename(filePath);
+
+          // Get all imports from current file
+          const importRegex =
+            /import\s+(?:(?:{[^}]*})|(?:[\w*]+))\s+from\s+['"`]([^'"`]+)['"`]/g;
+          let match;
+          let foundViolation = false;
+
+          // Variables for storing detected violation details for better error messages
+          let detectedSymbol = '';
+          let detectedFile = '';
+
+          while ((match = importRegex.exec(content)) !== null) {
+            const importPath = match[1];
+
+            // Only check relative imports that go through index
+            if (importPath === './' || importPath === '.') {
+              try {
+                const fs = require('fs');
+
+                // Find the index file in the current directory
+                let indexContent = '';
+
+                for (const ext of ['ts', 'tsx', 'js', 'jsx']) {
+                  const testPath = path.join(currentDir, `index.${ext}`);
+                  if (fs.existsSync(testPath)) {
+                    indexContent = fs.readFileSync(testPath, 'utf8');
+                    break;
+                  }
+                }
+
+                if (indexContent) {
+                  // Extract the imported symbol names
+                  const importedSymbols: string[] = [];
+                  const symbolsMatch = match[0].match(
+                    /import\s+(?:{([^}]*)}|(\w+))/
+                  );
+
+                  if (symbolsMatch) {
+                    if (symbolsMatch[1]) {
+                      // Named imports in curly braces
+                      importedSymbols.push(
+                        ...symbolsMatch[1].split(',').map((s) => s.trim())
+                      );
+                    } else if (symbolsMatch[2]) {
+                      // Default import
+                      importedSymbols.push(symbolsMatch[2]);
+                    }
+                  }
+
+                  // Look for the imported symbols in the index exports
+                  const dirFiles = fs.readdirSync(currentDir);
+
+                  for (const dirFile of dirFiles) {
+                    // Skip index files and current file
+                    if (dirFile.startsWith('index.') || dirFile === fileName) {
+                      continue;
+                    }
+
+                    const dirFileWithoutExt = dirFile.replace(
+                      /\.(ts|tsx|js|jsx)$/,
+                      ''
+                    );
+
+                    // Check if the file is exported in index
+                    const exportPatterns = [
+                      `export * from './${dirFileWithoutExt}'`,
+                      `export * from "./${dirFileWithoutExt}"`,
+                      `export { default } from './${dirFileWithoutExt}'`,
+                      `export { default } from "./${dirFileWithoutExt}"`,
+                      `export { default as ${dirFileWithoutExt} }`,
+                      `export * as ${dirFileWithoutExt}`,
+                    ];
+
+                    // Check for named exports as well
+                    const namedExportMatches = indexContent.match(
+                      new RegExp(
+                        `export\\s+{([^}]*)}\\s+from\\s+['"]\\.\/${dirFileWithoutExt}['"]`,
+                        'g'
+                      )
+                    );
+
+                    if (namedExportMatches) {
+                      for (const namedExport of namedExportMatches) {
+                        exportPatterns.push(namedExport);
+                      }
+                    }
+
+                    const isExported = exportPatterns.some((pattern) =>
+                      indexContent.includes(pattern)
+                    );
+
+                    if (isExported) {
+                      // Check if any of the imported symbols come from this file
+                      for (const symbol of importedSymbols) {
+                        // For default exports
+                        if (
+                          symbol === dirFileWithoutExt ||
+                          indexContent.includes(
+                            `export { default as ${symbol} } from './${dirFileWithoutExt}'`
+                          ) ||
+                          indexContent.includes(
+                            `export { default as ${symbol} } from "./${dirFileWithoutExt}"`
+                          )
+                        ) {
+                          foundViolation = true;
+                          detectedSymbol = symbol;
+                          detectedFile = dirFileWithoutExt;
+                          break;
+                        }
+
+                        // For named exports
+                        if (
+                          indexContent.includes(
+                            `export { ${symbol} } from './${dirFileWithoutExt}'`
+                          ) ||
+                          indexContent.includes(
+                            `export { ${symbol} } from "./${dirFileWithoutExt}"`
+                          ) ||
+                          namedExportMatches?.some((exp) =>
+                            exp.includes(symbol)
+                          )
+                        ) {
+                          foundViolation = true;
+                          detectedSymbol = symbol;
+                          detectedFile = dirFileWithoutExt;
+                          break;
+                        }
+                      }
+
+                      if (foundViolation) {
+                        // Use the detected symbol and file in the error message
+                        if (detectedSymbol && detectedFile) {
+                          return true;
+                        }
+                        break;
+                      }
+                    }
+                  }
+                }
+              } catch (error) {
+                // Ignore file system errors
+                return false;
+              }
+            }
+          }
+
+          return foundViolation;
+        },
+        message: `Archivos al mismo nivel deben importarse directamente, no a través del index. Reemplace import { Component } from "." con import { Component } from "./component"`,
+      },
+      {
         name: 'Import order',
         category: 'structure',
         severity: 'warning',
