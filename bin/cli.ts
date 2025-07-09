@@ -36,7 +36,7 @@ function findPackageJson(): PackageJson {
 
   // Si no encontramos el package.json, usar valores predeterminados
   return {
-    version: '4.7.0',
+    version: '4.8.0',
     name: 'frontend-standards-checker',
   };
 }

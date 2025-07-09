@@ -1,5 +1,14 @@
 # 📋 Changelog - Frontend Standards Checker
 
+## [v4.8.0] - 2025-07-09
+
+### 🆕 Nuevas Reglas
+
+- **Direct imports for sibling files** - Nueva regla de error que evita posibles dependencias circulares:
+  - Detecta cuando archivos hermanos (dentro de la misma carpeta) se importan a través del index.
+  - Obliga a importar directamente del archivo original en lugar de usar el index.
+  - Proporciona mensajes de error claros que indican cómo corregir el problema.
+
 ## [v4.7.0] - 2025-07-11
 
 ### 🔒 Rule Severity Updates
