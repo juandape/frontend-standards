@@ -116,6 +116,18 @@ export default {
     //   check: (content) => false, // Never triggers
     //   message: 'This rule is disabled.',
     // },
+    // Desactivar la regla de console.log
+    // {
+    //   name: 'No console.log',
+    //   check: () => false, // Nunca se activará
+    //   message: 'Regla desactivada',
+    // },
+    // Desactivar la regla de comentarios solo en inglés
+    // {
+    //   name: 'English-only comments',
+    //   check: () => false,
+    //   message: 'Regla desactivada',
+    // },
   ],
 };
 
