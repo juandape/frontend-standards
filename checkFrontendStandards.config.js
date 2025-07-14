@@ -22,7 +22,7 @@
  * - Simplest approach for adding a few custom rules
  *
  * @author Juan David Peña
- * @version 4.8.0
+ * @version 4.9.0
  * @since 2024-01-15
  * @see {@link ./checkFrontendStandards.mjs} Main validation script
  * @see {@link ./checkFrontendStandards.types.js} Type definitions

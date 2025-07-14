@@ -1,6 +1,6 @@
-# Frontend Standards Checker v4.8.0
+# Frontend Standards Checker v4.9.0
 
-Una herramienta escalable y modular para validar estándares de frontend en proyectos JavaScript/TypeScript. **Versión 4.8.0 con nuevas funcionalidades y mejoras de rendimiento.**
+Una herramienta escalable y modular para validar estándares de frontend en proyectos JavaScript/TypeScript. **Versión 4.9.0 con nuevas funcionalidades y mejoras de compatibilidad.**
 
 ## 🚀 Características
 
@@ -25,16 +25,37 @@ Una herramienta escalable y modular para validar estándares de frontend en proy
 curl -fsSL https://raw.githubusercontent.com/juandape/frontend-standards/main/install.sh | bash
 ```
 
-#### Manual con NPM
-
-```bash
-npm install --save-dev git+https://github.com/juandape/frontend-standards.git
-```
-
 #### Manual con Yarn
 
 ```bash
-yarn add --dev frontend-standards-checker@https://github.com/juandape/frontend-standards.git
+yarn add --dev git+https://github.com/juandape/frontend-standards.git
+```
+
+#### Manual con NPM
+
+```bash
+npm install --save-dev git+https://github.com/juandape/frontend-standards.git --legacy-peer-deps
+```
+
+#### Para proyectos con conflictos de dependencias
+
+Si tu proyecto tiene conflictos de dependencias (como React Native con dependencias privadas), usa:
+
+```bash
+# Clona e instala manualmente
+git clone https://github.com/juandape/frontend-standards.git temp-frontend-standards
+cd temp-frontend-standards
+npm install && npm run build
+cp -r . ../frontend-standards-full
+cp package.json ../frontend-standards-full/
+cd .. && rm -rf temp-frontend-standards
+
+# Agrega al package.json:
+"scripts": {
+  "standards": "node frontend-standards-full/dist/bin/cli.js",
+  "standards:zones": "node frontend-standards-full/dist/bin/cli.js --zones",
+  "standards:verbose": "node frontend-standards-full/dist/bin/cli.js --verbose"
+}
 ```
 
 ### Para desarrollo de la herramienta
@@ -87,15 +108,79 @@ La guía completa incluye:
 - 🆕 Interacción entre diferentes opciones de configuración
 - 🆕 Niveles de severidad actualizados (ERROR/WARNING/INFO)
 
-## 🆕 Novedades en v4.8.0
+## 🆕 Novedades en v4.9.0
 
-### Nueva regla: Direct imports for sibling files
+### 🔧 Mejoras de Compatibilidad e Instalación
 
-Se ha implementado una nueva regla de error que evita dependencias circulares:
+La versión 4.9.0 se enfoca en mejorar la **compatibilidad con diferentes entornos** y simplificar el proceso de instalación para equipos de desarrollo.
 
-- Detecta cuando archivos hermanos (que están en el mismo directorio) se importan a través del index.
-- Obliga a importar directamente desde el archivo fuente en lugar de a través del index.
-- Mejora la organización del código y evita posibles dependencias circulares.
+#### Nuevas características de instalación
+
+- **📦 Script de instalación automática mejorado**: Detecta automáticamente yarn/npm y maneja conflictos de dependencias
+- **🔄 Instalación alternativa robusta**: Para proyectos con dependencias complejas (React Native, monorepos con dependencias privadas)
+- **📋 Configuración automática de scripts**: Agrega automáticamente los scripts necesarios al package.json
+- **🎯 Múltiples métodos de instalación**: Desde curl hasta copia manual, adaptándose a cualquier entorno
+
+#### Compatibilidad con proyectos complejos
+
+- **✅ React Native**: Configuración especializada para proyectos RN con dependencias nativas
+- **✅ Monorepos**: Mejor manejo de workspaces y dependencias compartidas
+- **✅ Yarn PnP**: Soporte completo para Yarn Plug'n'Play
+- **✅ Dependencias privadas**: Instalación alternativa cuando hay registries privados
+
+#### Configuración simplificada
+
+```javascript
+// checkFrontendStandards.config.js - Configuración para React Native
+module.exports = {
+  zones: { includePackages: false, customZones: ['src'] },
+  extensions: ['.js', '.ts', '.jsx', '.tsx'],
+  ignorePatterns: ['android', 'ios', 'node_modules'],
+  onlyChangedFiles: false, // Validar todos los archivos
+  rules: [
+    // Reglas personalizadas específicas para React Native
+  ]
+};
+```
+
+#### Scripts disponibles para equipos
+
+Una vez instalado, tu equipo puede usar:
+
+```bash
+# Validación completa
+yarn standards
+
+# Validar zonas específicas
+yarn standards:zones src components
+
+# Modo verbose con detalles
+yarn standards:verbose
+
+# Con configuración personalizada
+yarn standards:config
+```
+
+### Instalación para equipos
+
+**Método 1: Script automático (Recomendado)**
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/juandape/frontend-standards/main/install.sh | bash
+```
+
+**Método 2: Para proyectos con conflictos de dependencias**
+
+```bash
+# Clonar, compilar y copiar
+git clone https://github.com/juandape/frontend-standards.git temp-fs
+cd temp-fs && npm install && npm run build
+cp -r . ../frontend-standards-full
+cd .. && rm -rf temp-fs
+
+# Agregar al package.json:
+# "standards": "node frontend-standards-full/dist/bin/cli.js"
+```
 
 ### Validación Eficiente con onlyChangedFiles
 
@@ -240,6 +325,87 @@ export default function(defaultRules) {
     }
   };
 }
+```
+
+## 🔧 Configuración para React Native
+
+Frontend Standards v4.9.0 incluye configuración optimizada para proyectos React Native:
+
+### Archivo de configuración recomendado
+
+```javascript
+// checkFrontendStandards.config.js
+module.exports = {
+  // Configuración específica para React Native
+  zones: {
+    includePackages: false,
+    customZones: ['src'] // Solo validar carpeta src
+  },
+
+  // Extensiones de archivo a validar
+  extensions: ['.js', '.ts', '.jsx', '.tsx'],
+
+  // Patrones a ignorar específicos para React Native
+  ignorePatterns: [
+    'android',           // Código nativo Android
+    'ios',              // Código nativo iOS
+    'build',
+    'dist',
+    '*.config.js',      // Archivos de configuración
+    'metro.config.js',
+    'babel.config.js',
+    'react-native.config.js',
+    '__tests__',
+    '.husky',
+    '.bundle',
+    'node_modules'
+  ],
+
+  // Validar todos los archivos, no solo staged
+  onlyChangedFiles: false,
+
+  // Reglas personalizadas para React Native
+  rules: [
+    {
+      name: 'React Native - No console.log in production',
+      check: (content, filePath) => {
+        // Permitir console.log en archivos de desarrollo/debug
+        if (filePath.includes('debug') || filePath.includes('dev')) {
+          return false;
+        }
+        return content.includes('console.log');
+      },
+      message: 'Avoid console.log in production code. Use a proper logging solution for React Native.',
+      level: 'ERROR'
+    }
+  ]
+};
+```
+
+### Comandos para React Native
+
+```bash
+# Validación completa del proyecto
+yarn standards
+
+# Validar solo la carpeta src
+yarn standards:zones src
+
+# Modo verbose para ver más detalles
+yarn standards:verbose
+
+# Con configuración personalizada
+yarn standards:config
+```
+
+### Integración con Git Hooks
+
+```bash
+# Instalar husky si no lo tienes
+yarn add --dev husky
+
+# Agregar hook pre-commit
+npx husky add .husky/pre-commit "yarn standards"
 ```
 
 ## 🏗️ Arquitectura

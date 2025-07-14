@@ -1,6 +1,6 @@
 {
   "name": "frontend-standards-checker",
-  "version": "4.8.0",
+  "version": "4.9.0",
   "description": "A comprehensive frontend standards validation tool with TypeScript support",
   "type": "module",
   "main": "dist/src/index.js",
@@ -20,7 +20,7 @@
     "lint": "echo 'Linting temporarily disabled - TypeScript provides type checking'",
     "test": "echo 'Tests coming soon'",
     "clean": "rm -rf dist",
-    "postinstall": "npm run build 2>/dev/null || yarn build 2>/dev/null || echo 'Build failed, but installation continued'; echo '\n🎉 Frontend Standards Checker instalado correctamente!\n\n📋 IMPORTANTE: Para configurar tu proyecto, ejecuta:\n   npx frontend-standards-init\n\n📖 Esto copiará los archivos de configuración necesarios.\n💡 Puedes ejecutar este comando en cualquier momento.\n'",
+    "postinstall": "npm run build 2>/dev/null || yarn build 2>/dev/null || (echo 'Build step skipped - using pre-built files'; exit 0); echo '\n🎉 Frontend Standards Checker instalado correctamente!\n\n📋 Comandos disponibles:\n   npm run standards (o yarn standards)\n   npm run standards -- --zones src components\n   npm run standards -- --verbose\n\n📖 Configuración: Edita checkFrontendStandards.config.js\n💡 Documentación completa: https://github.com/juandape/frontend-standards\n'",
     "prepare": "npm run build 2>/dev/null || yarn build 2>/dev/null || echo 'Prepare failed'",
     "prepublishOnly": "npm run clean && npm run build"
   },

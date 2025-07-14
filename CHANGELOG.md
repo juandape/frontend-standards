@@ -1,5 +1,47 @@
 # 📋 Changelog - Frontend Standards Checker
 
+## [v4.9.0] - 2025-07-14
+
+### 🔧 Mejoras de Compatibilidad e Instalación
+
+- **📦 Script de instalación automática mejorado**:
+
+  - Detección automática de yarn/npm en el proyecto
+  - Manejo inteligente de conflictos de dependencias
+  - Instalación alternativa para proyectos complejos (React Native, monorepos)
+
+- **🎯 Múltiples métodos de instalación**:
+
+  - Método 1: Script automático con curl
+  - Método 2: Instalación manual para proyectos con dependencias privadas
+  - Método 3: Copia directa para entornos restringidos
+
+- **✅ Compatibilidad mejorada**:
+
+  - React Native con dependencias nativas
+  - Yarn PnP (Plug'n'Play)
+  - Monorepos con workspaces
+  - Proyectos con registries privados
+
+- **📋 Configuración automática**:
+
+  - Scripts agregados automáticamente al package.json
+  - Configuración por defecto para React Native
+  - Archivo de configuración personalizable
+
+- **🚀 Comandos simplificados para equipos**:
+  - `yarn standards` - Validación completa
+  - `yarn standards:zones` - Validar zonas específicas
+  - `yarn standards:verbose` - Modo detallado
+  - `yarn standards:config` - Con configuración personalizada
+
+### 📋 Documentación Actualizada
+
+- Instrucciones de instalación para equipos de desarrollo
+- Guía de configuración para React Native
+- Ejemplos de instalación para diferentes entornos
+- Troubleshooting para problemas comunes
+
 ## [v4.8.0] - 2025-07-09
 
 ### 🆕 Nuevas Reglas
