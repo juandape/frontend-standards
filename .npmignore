@@ -34,8 +34,8 @@ TECHNICAL.md
 TYPESCRIPT-MIGRATION-*
 migrate.js
 debug-scanner.js
+# Scripts de desarrollo
 quick-install.sh
-install.sh
 test-install.sh
 
 # Config examples (keep the working config)

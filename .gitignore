@@ -69,7 +69,7 @@ test-results/
 
 # Migration and install scripts (project specific)
 migrate.js
-install.sh
+# Scripts de instalación de desarrollo
 quick-install.sh
 test-install.sh
 debug-scanner.js
