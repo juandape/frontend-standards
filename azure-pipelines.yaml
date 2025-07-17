@@ -14,9 +14,8 @@ resources:
     - repository: templates
       type: git
       name: cbf-itmgt-pipelines
-      ref: dev
-
-
+      ref: feature/integrations-front-validator
+      
 pool:
   vmImage: 'ubuntu-latest'      
 
