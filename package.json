@@ -1,0 +1,60 @@
+{
+  "name": "frontend-standards-checker",
+  "version": "4.10.0",
+  "description": "A comprehensive frontend standards validation tool with TypeScript support",
+  "type": "module",
+  "main": "dist/src/index.js",
+  "types": "dist/src/index.d.ts",
+  "bin": {
+    "frontend-standards-checker": "./dist/bin/cli.js",
+    "frontend-standards-init": "./bin/copy-frontend-standards-files.cjs"
+  },
+  "scripts": {
+    "build": "tsc && chmod +x dist/bin/cli.js && cp package.json dist/",
+    "build:watch": "tsc --watch",
+    "dev": "tsx --watch src/index.ts",
+    "start": "node dist/src/index.js",
+    "cli": "tsx bin/cli.ts",
+    "cli:build": "node dist/bin/cli.js",
+    "type-check": "tsc --noEmit",
+    "lint": "echo 'Linting temporarily disabled - TypeScript provides type checking'",
+    "test": "echo 'Tests coming soon'",
+    "clean": "rm -rf dist",
+    "postinstall": "npm run build 2>/dev/null || yarn build 2>/dev/null || (echo 'Build step skipped - using pre-built files'; exit 0); echo '\n🎉 Frontend Standards Checker instalado correctamente!\n\n📋 Comandos disponibles:\n   npm run standards (o yarn standards)\n   npm run standards -- --zones src components\n   npm run standards -- --verbose\n\n📖 Configuración: Edita checkFrontendStandards.config.js\n💡 Documentación completa: https://github.com/juandape/frontend-standards\n'",
+    "prepare": "npm run build 2>/dev/null || yarn build 2>/dev/null || echo 'Prepare failed'",
+    "prepublishOnly": "npm run clean && npm run build",
+    "standards": "node dist/bin/cli.js --config \"/Users/juan.pena/Projects/Personal/frontend-standards/checkFrontendStandards.config.js\"",
+    "standards:zones": "node frontend-standards-full/dist/bin/cli.js --zones --config \"/Users/juan.pena/Projects/Personal/frontend-standards/checkFrontendStandards.config.js\"",
+    "standards:verbose": "node frontend-standards-full/dist/bin/cli.js --verbose --config \"/Users/juan.pena/Projects/Personal/frontend-standards/checkFrontendStandards.config.js\"",
+    "standards:all": "node frontend-standards-full/dist/bin/cli.js --config \"/Users/juan.pena/Projects/Personal/frontend-standards/checkFrontendStandards.config.js\"",
+    "standards:init": "node frontend-standards-full/bin/copy-frontend-standards-files.cjs"
+  },
+  "keywords": [
+    "frontend",
+    "standards",
+    "validation",
+    "typescript",
+    "javascript",
+    "react"
+  ],
+  "author": "Juan David Peña",
+  "license": "MIT",
+  "dependencies": {
+    "acorn": "^8.11.3",
+    "acorn-walk": "^8.3.2",
+    "chalk": "^5.3.0",
+    "commander": "^11.1.0",
+    "typescript": "^5.3.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.0",
+    "@typescript-eslint/eslint-plugin": "^6.21.0",
+    "@typescript-eslint/parser": "^6.21.0",
+    "eslint": "^8.57.1",
+    "tsx": "^4.6.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "packageManager": "yarn@4.9.2+sha512.1fc009bc09d13cfd0e19efa44cbfc2b9cf6ca61482725eb35bbc5e257e093ebf4130db6dfe15d604ff4b79efd8e1e8e99b25fa7d0a6197c9f9826358d4d65c3c"
+}

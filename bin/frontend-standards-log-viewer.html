@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Frontend Standards Log Viewer</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+  </head>
+  <body class="bg-gray-50 text-gray-900 font-sans h-screen">
+    <div class="flex h-full">
+      <!-- Sidebar listing all rules grouped by category with filter -->
+      <aside
+        class="w-96 bg-white shadow-xl border-r border-gray-200 flex flex-col overflow-y-auto"
+      >
+        <div class="p-6 border-b">
+          <h2 class="text-2xl font-bold text-blue-600">Logs Viewer</h2>
+          <p class="text-sm text-gray-500">Frontend Standards</p>
+        </div>
+        <div class="px-6 py-4">
+          <div id="sidebarRules" class="space-y-6"></div>
+        </div>
+        <button
+          id="exportCsvBtn"
+          class="mt-4 w-40 mx-auto text-sm p-2 bg-green-600 text-white rounded hover:bg-green-700 transition"
+        >
+          Export to CSV
+        </button>
+      </aside>
+
+      <!-- Main content -->
+      <main class="flex-1 overflow-y-auto p-10 bg-gray-50">
+        <div class="max-w-4xl mx-auto">
+          <h1 class="text-4xl font-bold mb-8 text-blue-700">
+            Frontend Standards Log Viewer
+          </h1>
+
+          <div id="summarySection" class="hidden mb-8">
+            <h2 class="text-2xl font-semibold mb-4 text-gray-800">
+              General Summary
+            </h2>
+            <div id="summaryInfo" class="space-y-6 text-sm"></div>
+          </div>
+
+          <div id="detailsSection" class="hidden">
+            <h2 class="text-2xl font-semibold mb-4 text-gray-800">Details</h2>
+            <div id="detailsList" class="space-y-4 text-sm"></div>
+          </div>
+        </div>
+      </main>
+    </div>
+
+    <script>
+
+      function exportLogToCSV() {
+        const rows = [];
+        rows.push(["Type","Rule","File","Detail/Suggestion","Last Modification","Last Collaborator"]);
+        function addEntries(type, rule, entries, isInfo) {
+          entries.forEach(entry => {
+            let file = entry.file || '';
+            let ruleName = rule || '';
+            let detail = '';
+            let modDate = '';
+            let collaborator = '';
+            if (isInfo) {
+              let suggestion = entry.suggestion || entry.issue || '';
+              const match = suggestion.match(/^(.*?)\n\s*Last modification:\s*(.*?)\n\s*Last collaborator:\s*(.*)$/s);
+              if (match) {
+                detail = match[1].trim();
+                modDate = match[2].trim();
+                collaborator = match[3].trim();
+              } else {
+                detail = suggestion;
+                modDate = '';
+                collaborator = '';
+              }
+            } else {
+              detail = entry.issue || entry.suggestion || '';
+              modDate = entry.modDate || '';
+              collaborator = entry.author || '';
+            }
+            rows.push([type, ruleName, file, detail, modDate, collaborator]);
+          });
+        }
+
+        Object.entries(groupedRules.error).forEach(([rule, entries]) => {
+          addEntries('Error', rule, entries, false);
+        });
+
+        Object.entries(groupedRules.warning).forEach(([rule, entries]) => {
+          addEntries('Warning', rule, entries, false);
+        });
+
+        Object.entries(groupedRules.info).forEach(([rule, entries]) => {
+          addEntries('Info', rule, entries, true);
+        });
+
+        const csvContent = rows.map(row => row.map(field => '"' + String(field).replace(/"/g, '""') + '"').join(",")).join("\n");
+
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'frontend-standards-log.csv';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      }
+
+
+            const sidebarRules = document.getElementById('sidebarRules')
+            const summarySection = document.getElementById('summarySection')
+            const summaryInfo = document.getElementById('summaryInfo')
+            const detailsSection = document.getElementById('detailsSection')
+            const detailsList = document.getElementById('detailsList')
+
+            let logData = ''
+            let groupedRules = { error: {}, warning: {}, info: {} }
+            let totalItems = 0
+
+            const sidebarDate = document.createElement('div')
+            sidebarDate.className = 'text-xs text-gray-400 mt-1'
+            const sidebarProjectInfo = document.createElement('div')
+            sidebarProjectInfo.className = 'text-xs text-gray-500 mt-1 space-y-1'
+            const sidebarHeader = document.querySelector('.p-6.border-b')
+            sidebarHeader.appendChild(sidebarDate)
+            sidebarHeader.appendChild(sidebarProjectInfo)
+
+            window.addEventListener('DOMContentLoaded', () => {
+
+        document.getElementById('exportCsvBtn').addEventListener('click', exportLogToCSV);
+              fetch('frontend-standards.log')
+                .then(response => {
+                  if (!response.ok) throw new Error('No se encontró el archivo de log.')
+                  return response.text()
+                })
+                .then(text => {
+                  logData = text
+
+                  const matchDate = logData.match(/^Generated:\s*(.+)$/m)
+                  sidebarDate.textContent = matchDate ? `Generated: ${matchDate[1]}` : ''
+
+
+                  const matchProject = logData.match(/^Project:\s*(.+)$/m)
+                  const matchType = logData.match(/^Project Type:\s*(.+)$/m)
+                  const matchMonorepo = logData.match(/^Monorepo:\s*(.+)$/m)
+
+                  sidebarProjectInfo.innerHTML = `
+                    <div><span class="font-semibold text-gray-700">Project:</span> ${matchProject ? matchProject[1] : '-'}</div>
+                    <div><span class="font-semibold text-gray-700">Project Type:</span> ${matchType ? matchType[1] : '-'}</div>
+                    <div><span class="font-semibold text-gray-700">Monorepo:</span> ${matchMonorepo ? matchMonorepo[1] : '-'}</div>
+                  `
+                  if (!logData.trim()) {
+                    summarySection.classList.remove('hidden')
+                    summaryInfo.innerHTML = '<div class="text-red-600">No se encontró información en el log.</div>'
+                    return
+                  }
+                  parseGroupedData()
+                  renderSidebarRules()
+                  renderSummary()
+                })
+                .catch(err => {
+                  sidebarDate.textContent = ''
+                  summarySection.classList.remove('hidden')
+                  summaryInfo.innerHTML = `<div class="text-red-600">No se pudo cargar el log: ${err.message}</div>`
+                  console.warn('Log loading error:', err.message)
+                })
+            })
+
+            function parseGroupedData() {
+              groupedRules = { error: {}, warning: {}, info: {} }
+              totalItems = 0
+
+              function parseBlock(block, type) {
+                const regex = /📄 (.*?)\n\s*Rule: (.*?)\n\s*Issue: (.*?)\n\s*Last modification: (.*?)\n\s*Last collaborator: (.*?)\n/g
+                const matches = [...block.matchAll(regex)]
+                matches.forEach(([, file, rule, issue, modDate, author]) => {
+                  if (!groupedRules[type][rule]) groupedRules[type][rule] = []
+                  groupedRules[type][rule].push({ file, issue, modDate, author })
+                  totalItems++
+                })
+              }
+
+              const errorBlock = logData.split('DETAILED VIOLATIONS:')[1]?.split('DETAILED WARNINGS:')[0] || ''
+              const warningBlock = logData.split('DETAILED WARNINGS:')[1]?.split('DETAILED INFO SUGGESTIONS:')[0] || ''
+              const infoBlock = logData.split('DETAILED INFO SUGGESTIONS:')[1]?.split('INFO SUGGESTIONS STATISTICS:')[0] || ''
+              parseBlock(errorBlock, 'error')
+              parseBlock(warningBlock, 'warning')
+
+              const infoDetails = {}
+              const infoRegex = /📄 (.*?)\n\s*Rule: (.*?)\n\s*Suggestion: ([\s\S]*?)(?:\n\s*-{5,}|$)/g
+              let infoMatch
+              let infoDetailsCount = 0
+              while ((infoMatch = infoRegex.exec(infoBlock)) !== null) {
+                const file = infoMatch[1].trim()
+                const rule = infoMatch[2].trim()
+                const suggestion = infoMatch[3].trim()
+                if (!infoDetails[rule]) infoDetails[rule] = []
+                infoDetails[rule].push({ file, suggestion })
+                infoDetailsCount++
+              }
+              if (infoDetailsCount > 0) {
+                groupedRules.info = infoDetails
+                totalItems += infoDetailsCount
+                return
+              }
+
+              groupedRules.info = {}
+              const infoStatsMatch = logData.match(/INFO SUGGESTIONS STATISTICS:[\s\S]*?(?:\n[-]+|$)/)
+              let infoSuggestionsCount = 0
+              let foundDetails = false
+              if (infoStatsMatch) {
+                const infoBlockStats = infoStatsMatch[0]
+                const infoLineRegex = /^\s*[•\u2022\-*]?\s*(.*?):\s*(\d+)\s*(occurrences|ocurrencias)?/img
+                let m
+                while ((m = infoLineRegex.exec(infoBlockStats)) !== null) {
+                  foundDetails = true
+                  const rule = m[1].trim()
+                  const count = parseInt(m[2], 10)
+                  if (rule && count) {
+                    groupedRules.info[rule] = Array.from({ length: count }, () => ({ file: '', issue: rule }))
+                    totalItems += count
+                    infoSuggestionsCount += count
+                  }
+                }
+
+                if (!foundDetails) {
+                  infoBlockStats.split('\n').forEach(line => {
+                    const parts = line.split(':')
+                    if (parts.length === 2) {
+                      const rule = parts[0].replace(/[•\u2022\-*]/g, '').trim()
+                      const count = parseInt(parts[1].replace(/[^0-9]/g, ''), 10)
+                      if (rule && count) {
+                        groupedRules.info[rule] = Array.from({ length: count }, () => ({ file: '', issue: rule }))
+                        totalItems += count
+                        infoSuggestionsCount += count
+                      }
+                    }
+                  })
+                }
+              }
+
+              if (!foundDetails && infoSuggestionsCount === 0) {
+                const summaryMatch = logData.match(/Info suggestions:\s*(\d+)/)
+                if (summaryMatch) {
+                  infoSuggestionsCount = parseInt(summaryMatch[1], 10)
+                  groupedRules.info['Total Info Suggestions'] = Array.from({ length: infoSuggestionsCount }, () => ({ file: '', issue: 'Info suggestion' }))
+                  totalItems += infoSuggestionsCount
+                }
+              }
+            }
+
+            function renderSidebarRules(filter = 'all') {
+              sidebarRules.innerHTML = ''
+              const types = [
+                {
+                  key: 'error',
+                  label: 'Errors',
+                  color: 'red',
+                  icon: '<svg class="w-6 h-6 text-red-500 mr-2" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>'
+                },
+                {
+                  key: 'warning',
+                  label: 'Warnings',
+                  color: 'yellow',
+                  icon: '<svg class="w-6 h-6 text-yellow-500 mr-2" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>'
+                },
+                {
+                  key: 'info',
+                  label: 'Suggestions',
+                  color: 'blue',
+                  icon: '<svg class="w-6 h-6 text-blue-500 mr-2" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>'
+                }
+              ]
+
+              types.forEach(typeObj => {
+                if (filter !== 'all' && filter !== typeObj.key) return
+                const rules = groupedRules[typeObj.key]
+                const ruleEntries = Object.entries(rules)
+
+                if (!ruleEntries.length && typeObj.key !== 'info') return
+
+                const total = ruleEntries.reduce((sum, [, arr]) => sum + arr.length, 0)
+                const card = document.createElement('div')
+                card.className = `bg-white rounded-lg shadow border-l-8 border-${typeObj.color}-500 mb-4`
+
+                let expanded = false
+                const header = document.createElement('div')
+                header.className = 'flex items-center justify-between cursor-pointer p-4'
+                header.innerHTML = `
+                  <div class="flex items-center">
+                    ${typeObj.icon}
+                    <span class="text-lg font-bold text-${typeObj.color}-600">${typeObj.label}</span>
+                    <span class="ml-2 text-xs bg-${typeObj.color}-100 text-${typeObj.color}-700 rounded px-2 py-1">${total} occurrences</span>
+                  </div>
+                  <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
+                `
+                card.appendChild(header)
+
+                const rulesList = document.createElement('div')
+                rulesList.className = 'px-4 pb-4 hidden'
+                if (ruleEntries.length) {
+                  ruleEntries.forEach(([ruleName, entries]) => {
+                    const ruleRow = document.createElement('div')
+                    ruleRow.className = 'flex items-center justify-between py-2 border-b last:border-b-0'
+                    ruleRow.innerHTML = `
+                      <span class="font-medium text-gray-800">${ruleName}</span>
+                      <button class="text-xs bg-${typeObj.color}-100 text-${typeObj.color}-700 rounded px-2 py-1 hover:bg-${typeObj.color}-200 transition" style="min-width: 48px;" title="Ver detalles">${entries.length}</button>
+                    `
+                    ruleRow.querySelector('button').addEventListener('click', () => renderDetails(entries, ruleName))
+                    rulesList.appendChild(ruleRow)
+                  })
+                } else if (typeObj.key === 'info') {
+                  const noDetails = document.createElement('div')
+                  noDetails.className = 'text-gray-500 px-4 pb-4'
+                  let debugHtml = '<span class="font-semibold text-gray-700">No info suggestions found in this log.</span>'
+                  if (window.logData) {
+                    const infoDetailsBlock = window.logData.split('DETAILED INFO SUGGESTIONS:')[1]?.split('INFO SUGGESTIONS STATISTICS:')[0] || ''
+                    if (infoDetailsBlock.trim()) {
+                      debugHtml += `<div class="mt-2 text-xs">Bloque DETAILED INFO SUGGESTIONS detectado:</div><pre class="mt-1 text-xs bg-gray-100 p-2 rounded">${infoDetailsBlock.replace(/</g,'&lt;').replace(/>/g,'&gt;')}</pre>`
+                    } else {
+                      debugHtml += '<div class="mt-2 text-xs">No DETAILED INFO SUGGESTIONS block found o está vacío.</div>'
+                    }
+                    const infoStatsMatch = window.logData.match(/INFO SUGGESTIONS STATISTICS:[\s\S]*?(?:\n[-]+|$)/)
+                    if (infoStatsMatch) {
+                      debugHtml += `<div class="mt-2 text-xs">Bloque INFO SUGGESTIONS STATISTICS detectado:</div><pre class="mt-1 text-xs bg-gray-100 p-2 rounded">${infoStatsMatch[0].replace(/</g,'&lt;').replace(/>/g,'&gt;')}</pre>`
+                    } else {
+                      debugHtml += '<div class="mt-2 text-xs">No INFO SUGGESTIONS STATISTICS block found.</div>'
+                    }
+                  }
+                  noDetails.innerHTML = debugHtml
+                  rulesList.appendChild(noDetails)
+                }
+                card.appendChild(rulesList)
+
+                header.addEventListener('click', () => {
+                  expanded = !expanded
+                  rulesList.classList.toggle('hidden', !expanded)
+                  header.querySelector('svg').classList.toggle('rotate-180', expanded)
+                })
+
+                sidebarRules.appendChild(card)
+              })
+            }
+
+            function renderSummary() {
+              summarySection.classList.remove('hidden')
+              summaryInfo.innerHTML = ''
+              const types = [
+                {
+                  key: 'error',
+                  label: 'Errors',
+                  color: 'red'
+                },
+                {
+                  key: 'warning',
+                  label: 'Warnings',
+                  color: 'yellow'
+                },
+                {
+                  key: 'info',
+                  label: 'Suggestions',
+                  color: 'blue'
+                }
+              ]
+              types.forEach(typeObj => {
+                const rules = groupedRules[typeObj.key]
+                const ruleEntries = Object.entries(rules)
+                if (!ruleEntries.length) return
+                const totalType = ruleEntries.reduce((sum, [, arr]) => sum + arr.length, 0)
+                const percentType = totalItems ? ((totalType / totalItems) * 100).toFixed(1) : 0
+
+                const summaryBlock = document.createElement('div')
+                summaryBlock.className = `bg-white rounded shadow p-4 border-t-4 border-${typeObj.color}-500`
+                summaryBlock.innerHTML = `
+                  <p class="text-lg font-bold mb-2">${typeObj.label}</p>
+                  <p><strong>Total occurrences:</strong> ${totalType} (${percentType}%)</p>
+                  <ul class="list-disc list-inside mt-2 space-y-1">${ruleEntries.map(([rule, entries]) => `<li>${rule}: ${entries.length}</li>`).join('')}</ul>
+                `
+                summaryInfo.appendChild(summaryBlock)
+              })
+            }
+            function renderDetails(data, rule) {
+              const isInfo = Object.values(groupedRules.info).some(arr => arr === data)
+              if (isInfo && rule === 'Total Info Suggestions') {
+                detailsList.innerHTML = `
+                  <button id="backToSummary" class="mb-4 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition">Back to Summary</button>
+                  <h3 class="text-xl font-bold mb-4">${rule}</h3>
+                  <div class="border-l-4 border-green-500 pl-4 mb-4">
+                    <p><strong>Total suggestions:</strong> ${data.length}</p>
+                    <p class="text-xs text-gray-500">No info suggestions found.</p>
+                  </div>
+                `
+              } else if (isInfo) {
+                detailsList.innerHTML = `
+        <button id="backToSummary" class="mb-4 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition">Back to Summary</button>
+        <h3 class="text-xl font-bold mb-4">${rule}</h3>
+        ${data.map(({ file, suggestion }) => {
+          let cleanSuggestion = suggestion;
+          let rawModDate = 'No date';
+          let lastCollaborator = 'Unknown';
+          const match = suggestion.match(/^(.*?)\n\s*Last modification:\s*(.*?)\n\s*Last collaborator:\s*(.*)$/s);
+          if (match) {
+            cleanSuggestion = match[1].trim();
+            rawModDate = match[2].trim();
+            lastCollaborator = match[3].trim();
+          }
+                 return `
+                   <div class="border-l-4 border-green-500 pl-4 mb-2">
+                     <p><strong>File:</strong> ${file}</p>
+                     <p class="mb-1"><strong>Suggestion:</strong> ${cleanSuggestion}</p>
+                     <p class="mt-1"><strong>Last modification:</strong> ${rawModDate}</p>
+                     <p class="mt-1"><strong>Last collaborator:</strong> ${lastCollaborator}</p>
+                   </div>
+                 `;
+               }).join('')}
+             `
+              } else {
+                detailsList.innerHTML = `
+                  <button id="backToSummary" class="mb-4 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition">Back to Summary</button>
+                  <h3 class="text-xl font-bold mb-4">${rule}</h3>
+                  ${data.map(({ file, issue, modDate, author }) => `
+                    <div class="border-l-4 border-blue-500 pl-4 mb-2">
+                      <p><strong>File:</strong> ${file}</p>
+                      <p><strong>Detail:</strong> ${issue}</p>
+                      <p><strong>Last modification:</strong> ${modDate || 'No date'}</p>
+                      <p class="mt-1"><strong>Last collaborator:</strong> ${author || 'Unknown'}</p>
+                    </div>
+                  `).join('')}
+                `
+              }
+              summarySection.classList.add('hidden')
+              detailsSection.classList.remove('hidden')
+              document.getElementById('backToSummary').addEventListener('click', () => {
+                detailsSection.classList.add('hidden')
+                summarySection.classList.remove('hidden')
+              })
+            }
+    </script>
+  </body>
+</html>
