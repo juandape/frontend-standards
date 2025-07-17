@@ -1,6 +1,6 @@
 {
   "name": "frontend-standards-checker",
-  "version": "4.10.0",
+  "version": "0.0.2",
   "description": "A comprehensive frontend standards validation tool with TypeScript support",
   "type": "module",
   "main": "dist/src/index.js",
@@ -9,9 +9,28 @@
     "frontend-standards-checker": "./dist/bin/cli.js",
     "frontend-standards-init": "./bin/copy-frontend-standards-files.cjs"
   },
+  "exports": {
+    ".": {
+      "import": "./dist/src/index.js",
+      "require": "./dist/src/index.js"
+    },
+    "./bin/cli": {
+      "import": "./dist/bin/cli.js",
+      "require": "./dist/bin/cli.js"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE",
+    "checkFrontendStandards.config.js",
+    "checkFrontendStandards.COMPLETE-GUIDE.md",
+    "bin/frontend-standards-log-viewer.html"
+  ],
   "scripts": {
-    "build": "tsc && chmod +x dist/bin/cli.js && cp package.json dist/",
+    "build": "tsc && chmod +x dist/bin/cli.js && cp bin/frontend-standards-log-viewer.html dist/bin/ && cp checkFrontendStandards.COMPLETE-GUIDE.md dist/",
     "build:watch": "tsc --watch",
+    "watch": "npm run build:watch",
     "dev": "tsx --watch src/index.ts",
     "start": "node dist/src/index.js",
     "cli": "tsx bin/cli.ts",

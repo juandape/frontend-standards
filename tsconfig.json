@@ -29,9 +29,17 @@
     "noImplicitUseStrict": false,
     "noStrictGenericChecks": false,
     "useDefineForClassFields": true,
-    "verbatimModuleSyntax": false
+    "verbatimModuleSyntax": false,
+    "allowJs": true
   },
-  "include": ["src/**/*", "bin/**/*", "types/**/*"],
+  "include": [
+    "src/**/*",
+    "bin/**/*",
+    "types/**/*",
+    "checkFrontendStandards.config.js",
+    "package.json",
+    "frontend-standards.log"
+  ],
   "exclude": [
     "node_modules",
     "dist",

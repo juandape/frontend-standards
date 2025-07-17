@@ -78,7 +78,7 @@ debug-scanner.js
 
 # Generated reports
 frontend-standards-full/
-checkFrontendStandards.config.js
-checkFrontendStandards.COMPLETE-GUIDE.md
+# checkFrontendStandards.config.js
+# checkFrontendStandards.COMPLETE-GUIDE.md
 frontend-standards.log
 logs-standards-validations/
