@@ -20,6 +20,8 @@ pool:
   vmImage: 'ubuntu-latest'      
 
 variables:
+  - group: snyk-credentials
+  - group: security-information
   - group: blu-front-validator
 
 stages:
