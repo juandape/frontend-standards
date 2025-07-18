@@ -1,12 +1,12 @@
 import path from 'path';
 import type {
-  CliOptions,
-  ValidationResult,
-  ProjectInfo,
-  StandardsConfiguration,
-  ValidationError,
-  ZoneResult,
-} from './types.js';
+  ICliOptions,
+  IValidationResult,
+  IProjectInfo,
+  IStandardsConfiguration,
+  IValidationError,
+  IZoneResult,
+} from './types';
 
 import { Logger } from './utils/logger.js';
 import { ConfigLoader } from './core/config-loader.js';
@@ -20,7 +20,7 @@ import { Reporter } from './core/reporter.js';
  * Orchestrates the validation process and coordinates all modules
  */
 export class FrontendStandardsChecker {
-  private readonly options: Partial<CliOptions> & { rootDir: string };
+  private readonly options: Partial<ICliOptions> & { rootDir: string };
   private readonly logger: Logger;
   private readonly configLoader: ConfigLoader;
   private readonly projectAnalyzer: ProjectAnalyzer;
@@ -28,7 +28,7 @@ export class FrontendStandardsChecker {
   private readonly ruleEngine: RuleEngine;
   private readonly reporter: Reporter;
 
-  constructor(options: Partial<CliOptions> = {}) {
+  constructor(options: Partial<ICliOptions> = {}) {
     this.options = {
       zones: [],
       config: null,
@@ -63,7 +63,7 @@ export class FrontendStandardsChecker {
    * Main execution method
    * @returns Promise<ValidationResult> - Complete validation results
    */
-  async run(): Promise<ValidationResult> {
+  async run(): Promise<IValidationResult> {
     try {
       const startTime = Date.now();
 
@@ -97,7 +97,7 @@ export class FrontendStandardsChecker {
       });
 
       // Process each zone
-      const zoneResults: ZoneResult[] = [];
+      const zoneResults: IZoneResult[] = [];
       let totalFiles = 0;
       let totalErrors = 0;
       let totalWarnings = 0;
@@ -178,7 +178,7 @@ export class FrontendStandardsChecker {
           );
         }
 
-        const zoneErrors: ValidationError[] = [];
+        const zoneErrors: IValidationError[] = [];
 
         // Filter out configuration files before processing
         const validFiles = files.filter((file) => {
@@ -215,7 +215,7 @@ export class FrontendStandardsChecker {
           (e) => e.severity === 'warning'
         ).length;
 
-        const zoneResult: ZoneResult = {
+        const zoneResult: IZoneResult = {
           zone,
           filesProcessed: validFiles.length,
           errors: zoneErrors,
@@ -247,7 +247,7 @@ export class FrontendStandardsChecker {
         });
       });
 
-      const result: ValidationResult = {
+      const result: IValidationResult = {
         success: totalErrors === 0,
         totalFiles,
         totalErrors,
@@ -261,7 +261,7 @@ export class FrontendStandardsChecker {
       };
 
       // Generate report - convert zoneResults to the format expected by Reporter
-      const zoneErrors: Record<string, ValidationError[]> = {};
+      const zoneErrors: Record<string, IValidationError[]> = {};
       zoneResults.forEach((zone) => {
         zoneErrors[zone.zone] = zone.errors;
         // Debug: log errors count per zone before passing to reporter
@@ -296,8 +296,8 @@ export class FrontendStandardsChecker {
    * Determine which zones to validate based on project structure and options
    */
   private determineZones(
-    projectInfo: ProjectInfo | { zones: string[] | { name: string }[] },
-    config: StandardsConfiguration
+    projectInfo: IProjectInfo | { zones: string[] | { name: string }[] },
+    config: IStandardsConfiguration
   ): string[] {
     if (this.options.zones && this.options.zones.length > 0) {
       return this.options.zones;
@@ -326,4 +326,4 @@ export class FrontendStandardsChecker {
 
 // Export default class and types
 export default FrontendStandardsChecker;
-export * from './types.js';
+export * from './types/standardConfiguration.type.js';

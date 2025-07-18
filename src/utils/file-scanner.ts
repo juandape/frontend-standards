@@ -3,11 +3,11 @@ import path from 'path';
 import type {
   IFileScanner,
   ILogger,
-  FileInfo,
-  ScanOptions,
-  GitIgnorePattern,
-  FileScanResult,
-} from '../types.js';
+  IFileInfo,
+  IScanOptions,
+  IGitIgnorePattern,
+  IFileScanResult,
+} from '../types';
 
 /**
  * File scanner utility for finding and filtering project files
@@ -15,7 +15,7 @@ import type {
 export class FileScanner implements IFileScanner {
   public readonly rootDir: string;
   public readonly logger: ILogger;
-  public readonly gitignorePatterns: GitIgnorePattern[] = [];
+  public readonly gitignorePatterns: IGitIgnorePattern[] = [];
   private readonly defaultIgnorePatterns: string[];
 
   constructor(rootDir: string, logger: ILogger) {
@@ -42,7 +42,7 @@ export class FileScanner implements IFileScanner {
    * @param options Scan options
    * @returns Array of file information
    */
-  async scanZone(zone: string, options: ScanOptions): Promise<FileInfo[]> {
+  async scanZone(zone: string, options: IScanOptions): Promise<IFileInfo[]> {
     const zonePath = path.join(this.rootDir, zone);
 
     if (!fs.existsSync(zonePath)) {
@@ -75,9 +75,9 @@ export class FileScanner implements IFileScanner {
    */
   async scanDirectory(
     dirPath: string,
-    options: ScanOptions
-  ): Promise<FileInfo[]> {
-    const files: FileInfo[] = [];
+    options: IScanOptions
+  ): Promise<IFileInfo[]> {
+    const files: IFileInfo[] = [];
     const gitIgnorePatterns = await this.loadGitignorePatterns();
 
     try {
@@ -105,7 +105,7 @@ export class FileScanner implements IFileScanner {
             const content = await fs.promises.readFile(fullPath, 'utf8');
             const zone = this.determineZone(relativePath, options);
 
-            const fileInfo: FileInfo = {
+            const fileInfo: IFileInfo = {
               path: relativePath,
               content,
               size: content.length,
@@ -129,7 +129,7 @@ export class FileScanner implements IFileScanner {
    * Load gitignore patterns from .gitignore file
    * @returns Array of gitignore patterns
    */
-  async loadGitignorePatterns(): Promise<GitIgnorePattern[]> {
+  async loadGitignorePatterns(): Promise<IGitIgnorePattern[]> {
     if (this.gitignorePatterns.length > 0) {
       return this.gitignorePatterns;
     }
@@ -148,7 +148,7 @@ export class FileScanner implements IFileScanner {
         .map((line) => line.trim())
         .filter((line) => line && !line.startsWith('#'));
 
-      const patterns: GitIgnorePattern[] = lines.map((line) => {
+      const patterns: IGitIgnorePattern[] = lines.map((line) => {
         const isNegation = line.startsWith('!');
         const pattern = isNegation ? line.slice(1) : line;
         const isDirectory = pattern.endsWith('/');
@@ -176,7 +176,7 @@ export class FileScanner implements IFileScanner {
    * @param patterns Array of gitignore patterns
    * @returns True if file should be ignored
    */
-  isIgnored(filePath: string, patterns: GitIgnorePattern[]): boolean {
+  isIgnored(filePath: string, patterns: IGitIgnorePattern[]): boolean {
     // Normalize path separators
     const normalizedPath = filePath.replace(/\\/g, '/');
 
@@ -264,7 +264,7 @@ export class FileScanner implements IFileScanner {
    * @param options Scan options
    * @returns Zone name
    */
-  private determineZone(filePath: string, options: ScanOptions): string {
+  private determineZone(filePath: string, options: IScanOptions): string {
     const pathParts = filePath.split('/');
 
     // Check for specific zones
@@ -294,7 +294,7 @@ export class FileScanner implements IFileScanner {
    * @param options Scan options
    * @returns File scan statistics
    */
-  async getStatistics(options: ScanOptions): Promise<FileScanResult> {
+  async getStatistics(options: IScanOptions): Promise<IFileScanResult> {
     const allFiles = await this.scanDirectory(this.rootDir, options);
     const gitIgnorePatterns = await this.loadGitignorePatterns();
 
