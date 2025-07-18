@@ -515,6 +515,13 @@ export class Reporter implements IReporter {
           'bin',
           'frontend-standards-log-viewer.html'
         ),
+        path.join(
+          this.rootDir,
+          'node_modules',
+          'frontend-standards-checker',
+          'bin',
+          'frontend-standards-log-viewer.html'
+        ),
       ];
       let viewerSrc = '';
       for (const p of possibleViewerPaths) {
