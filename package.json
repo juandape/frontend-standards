@@ -37,12 +37,12 @@
     "cli:build": "node dist/bin/cli.js",
     "type-check": "tsc --noEmit",
     "lint": "echo 'Linting temporarily disabled - TypeScript provides type checking'",
-    "test": "echo 'Tests coming soon'",
+    "test": "jest --coverage",
     "clean": "rm -rf dist",
     "postinstall": "npm run build 2>/dev/null || yarn build 2>/dev/null || (echo 'Build step skipped - using pre-built files'; exit 0); echo '\n🎉 Frontend Standards Checker instalado correctamente!\n\n📋 Comandos disponibles:\n   npm run standards (o yarn standards)\n   npm run standards -- --zones src components\n   npm run standards -- --verbose\n\n📖 Configuración: Edita checkFrontendStandards.config.js\n💡 Documentación completa: https://github.com/juandape/frontend-standards\n'",
     "prepare": "npm run build 2>/dev/null || yarn build 2>/dev/null || echo 'Prepare failed'",
     "prepublishOnly": "npm run clean && npm run build",
-    "standards": "yarn frontend-standards-checker"
+    "standards": "frontend-standards-checker"
   },
   "keywords": [
     "frontend",
@@ -62,10 +62,13 @@
     "typescript": "^5.3.0"
   },
   "devDependencies": {
+    "@types/jest": "^30.0.0",
     "@types/node": "^24.0.14",
     "@typescript-eslint/eslint-plugin": "^6.21.0",
     "@typescript-eslint/parser": "^6.21.0",
     "eslint": "^8.57.1",
+    "jest": "^30.0.4",
+    "ts-jest": "^29.4.0",
     "tsx": "^4.6.0"
   },
   "engines": {

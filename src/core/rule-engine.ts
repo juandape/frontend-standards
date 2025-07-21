@@ -3,19 +3,19 @@ import path from 'path';
 import type {
   IRuleEngine,
   ILogger,
-  ValidationRule,
-  ValidationError,
-  StandardsConfiguration,
-  RuleEngineInitOptions,
-} from '../types.js';
+  IValidationRule,
+  IValidationError,
+  IStandardsConfiguration,
+  IRuleEngineInitOptions,
+} from '../types';
 
 /**
  * Rule engine for validating file content against defined rules
  */
 export class RuleEngine implements IRuleEngine {
   public readonly logger: ILogger;
-  public rules: ValidationRule[];
-  public config: StandardsConfiguration | null;
+  public rules: IValidationRule[];
+  public config: IStandardsConfiguration | null;
 
   constructor(logger: ILogger) {
     this.logger = logger;
@@ -56,8 +56,8 @@ export class RuleEngine implements IRuleEngine {
    * Initialize the rule engine with configuration
    */
   initialize(
-    config: StandardsConfiguration,
-    _options?: RuleEngineInitOptions
+    config: IStandardsConfiguration,
+    _options?: IRuleEngineInitOptions
   ): void {
     this.config = config;
     this.rules = config.rules || [];
@@ -69,8 +69,8 @@ export class RuleEngine implements IRuleEngine {
   /**
    * Validate a file against all rules
    */
-  async validateFile(filePath: string): Promise<ValidationError[]> {
-    const errors: ValidationError[] = [];
+  async validateFile(filePath: string): Promise<IValidationError[]> {
+    const errors: IValidationError[] = [];
 
     // Skip configuration files completely
     if (this.isConfigFile(filePath)) {
@@ -95,7 +95,7 @@ export class RuleEngine implements IRuleEngine {
         try {
           const ruleResult = await rule.check(content, filePath);
           if (ruleResult) {
-            const errorInfo: ValidationError = {
+            const errorInfo: IValidationError = {
               rule: rule.name,
               message: rule.message,
               filePath,
@@ -157,7 +157,7 @@ export class RuleEngine implements IRuleEngine {
 
     // Deduplicate errors by filePath, rule, and line
     const seen = new Set<string>();
-    const dedupedErrors: ValidationError[] = [];
+    const dedupedErrors: IValidationError[] = [];
     for (const err of errors) {
       // Compose a unique key for each error
       const key = `${err.filePath}|${err.rule}|${err.line ?? 'no-line'}`;
@@ -176,7 +176,7 @@ export class RuleEngine implements IRuleEngine {
     _content: string,
     filePath: string,
     _context?: any
-  ): Promise<ValidationError[]> {
+  ): Promise<IValidationError[]> {
     // For now, we use validateFile method which reads the file content
     // In future, we could refactor to use the provided content directly
     return this.validateFile(filePath);
@@ -213,7 +213,7 @@ export class RuleEngine implements IRuleEngine {
     additionalValidators: any,
     content: string,
     filePath: string,
-    errors: ValidationError[]
+    errors: IValidationError[]
   ): void {
     try {
       const {
@@ -247,7 +247,7 @@ export class RuleEngine implements IRuleEngine {
   private runFileValidators(
     additionalValidators: any,
     filePath: string,
-    errors: ValidationError[]
+    errors: IValidationError[]
   ): void {
     try {
       const {

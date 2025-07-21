@@ -6,7 +6,7 @@ import { readFileSync } from 'fs';
 import { dirname, join } from 'path';
 import { fileURLToPath } from 'url';
 import { FrontendStandardsChecker } from '../src/index.js';
-import type { CliOptions } from '../src/types.js';
+import type { ICliOptions } from '../src/types';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -67,7 +67,7 @@ program
     '--only-changed-files',
     'Only check files that are staged for commit (default: true)'
   )
-  .action(async (options: CliOptions) => {
+  .action(async (options: ICliOptions) => {
     try {
       console.log(
         chalk.blue(`🔍 Frontend Standards Checker v${packageJson.version}`)
