@@ -9,8 +9,8 @@ import type {
   IValidationRule,
   IRulesObjectFormat,
 } from '../types';
-import { isReactNativeProject } from '../utils/file-scanner.js';
-import { checkInlineStyles } from './additional-validators.js';
+import { isReactNativeProject } from '../utils/file-scanner';
+import { checkInlineStyles } from './additional-validators';
 
 /**
  * Configuration loader and manager
