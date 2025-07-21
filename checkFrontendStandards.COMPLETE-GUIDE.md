@@ -1,6 +1,6 @@
-# Frontend Standards Checker v0.0.8 - Guía Completa de Configuración
+# Frontend Standards Checker Guía Completa de Configuración
 
-Esta guía contiene todos los ejemplos posibles para configurar reglas personalizadas en **Frontend Standards Checker v0.0.8**.
+Esta guía contiene todos los ejemplos posibles para configurar reglas personalizadas en **Frontend Standards Checker**.
 
 > **⚠️ Importante**: Esta versión incluye validadores avanzados, mensajes de error enriquecidos y mejoras de precisión. Si tienes una versión anterior, actualiza usando la instalación recomendada.
 
@@ -38,11 +38,11 @@ Ahora los mensajes incluyen número de línea, nombre de carpeta y función, fac
 
 ## 📋 Tabla de Contenidos
 
-- [Frontend Standards Checker v0.0.8 - Guía Completa de Configuración](#frontend-standards-checker-v008---guía-completa-de-configuración)
+- [Frontend Standards Checker Guía Completa de Configuración](#frontend-standards-checker-guía-completa-de-configuración)
   - [🆕 Novedades](#-novedades)
     - [🔎 Ejemplo de mensaje de error enriquecido](#-ejemplo-de-mensaje-de-error-enriquecido)
   - [📋 Tabla de Contenidos](#-tabla-de-contenidos)
-  - [� Instalación Rápida (v0.0.8)](#-instalación-rápida-v008)
+  - [� Instalación Rápida](#-instalación-rápida)
     - [Instalación estándar (Recomendado)](#instalación-estándar-recomendado)
     - [Scripts en package.json](#scripts-en-packagejson)
     - [Copiar guía de instalación y archivo de configuración](#copiar-guía-de-instalación-y-archivo-de-configuración)
@@ -76,7 +76,7 @@ Ahora los mensajes incluyen número de línea, nombre de carpeta y función, fac
   - [Resumen de Estadísticas Actuales](#resumen-de-estadísticas-actuales)
   - [Estructura de Directorio Estándar](#estructura-de-directorio-estándar)
 
-## � Instalación Rápida (v0.0.8)
+## � Instalación Rápida
 
 ### Instalación estándar (Recomendado)
 

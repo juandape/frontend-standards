@@ -22,7 +22,6 @@
  * - Simplest approach for adding a few custom rules
  *
  * @author Juan David Peña
- * @version 0.0.7
  * @license MIT
  * @since 2024-01-15
  * @see {@link ./checkFrontendStandards.mjs} Main validation script
