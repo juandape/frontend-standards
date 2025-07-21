@@ -1,6 +1,6 @@
-# Frontend Standards Checker v0.0.7 - Guía Completa de Configuración
+# Frontend Standards Checker v0.0.8 - Guía Completa de Configuración
 
-Esta guía contiene todos los ejemplos posibles para configurar reglas personalizadas en **Frontend Standards Checker v0.0.7**.
+Esta guía contiene todos los ejemplos posibles para configurar reglas personalizadas en **Frontend Standards Checker v0.0.8**.
 
 > **⚠️ Importante**: Esta versión incluye validadores avanzados, mensajes de error enriquecidos y mejoras de precisión. Si tienes una versión anterior, actualiza usando la instalación recomendada.
 
@@ -38,15 +38,14 @@ Ahora los mensajes incluyen número de línea, nombre de carpeta y función, fac
 
 ## 📋 Tabla de Contenidos
 
-- [Frontend Standards Checker v0.0.7 - Guía Completa de Configuración](#frontend-standards-checker-v007---guía-completa-de-configuración)
+- [Frontend Standards Checker v0.0.8 - Guía Completa de Configuración](#frontend-standards-checker-v008---guía-completa-de-configuración)
   - [🆕 Novedades](#-novedades)
     - [🔎 Ejemplo de mensaje de error enriquecido](#-ejemplo-de-mensaje-de-error-enriquecido)
   - [📋 Tabla de Contenidos](#-tabla-de-contenidos)
-  - [� Instalación Rápida (v0.0.7)](#-instalación-rápida-v007)
+  - [� Instalación Rápida (v0.0.8)](#-instalación-rápida-v008)
     - [Instalación estándar (Recomendado)](#instalación-estándar-recomendado)
     - [Scripts en package.json](#scripts-en-packagejson)
     - [Copiar guía de instalación y archivo de configuración](#copiar-guía-de-instalación-y-archivo-de-configuración)
-  - [📋 Tabla de Contenidos](#-tabla-de-contenidos-1)
   - [🚀 Instrucciones de Uso](#-instrucciones-de-uso)
   - [📁 Configuración de Zonas](#-configuración-de-zonas)
     - [Incluir zonas packages/](#incluir-zonas-packages)
@@ -77,7 +76,7 @@ Ahora los mensajes incluyen número de línea, nombre de carpeta y función, fac
   - [Resumen de Estadísticas Actuales](#resumen-de-estadísticas-actuales)
   - [Estructura de Directorio Estándar](#estructura-de-directorio-estándar)
 
-## � Instalación Rápida (v0.0.7)
+## � Instalación Rápida (v0.0.8)
 
 ### Instalación estándar (Recomendado)
 
@@ -117,46 +116,6 @@ npx frontend-standards-init
 
 Esto copiará la guía completa y el archivo `checkFrontendStandards.config.js` en la raíz de tu proyecto.
 
-## 📋 Tabla de Contenidos
-
-- [Frontend Standards Checker v0.0.7 - Guía Completa de Configuración](#frontend-standards-checker-v007---guía-completa-de-configuración)
-  - [🆕 Novedades](#-novedades)
-    - [🔎 Ejemplo de mensaje de error enriquecido](#-ejemplo-de-mensaje-de-error-enriquecido)
-  - [📋 Tabla de Contenidos](#-tabla-de-contenidos)
-  - [� Instalación Rápida (v0.0.7)](#-instalación-rápida-v007)
-    - [Instalación estándar (Recomendado)](#instalación-estándar-recomendado)
-    - [Scripts en package.json](#scripts-en-packagejson)
-    - [Copiar guía de instalación y archivo de configuración](#copiar-guía-de-instalación-y-archivo-de-configuración)
-  - [📋 Tabla de Contenidos](#-tabla-de-contenidos-1)
-  - [🚀 Instrucciones de Uso](#-instrucciones-de-uso)
-  - [📁 Configuración de Zonas](#-configuración-de-zonas)
-    - [Incluir zonas packages/](#incluir-zonas-packages)
-    - [Agregar zonas personalizadas](#agregar-zonas-personalizadas)
-    - [Configuración completa de zonas](#configuración-completa-de-zonas)
-  - [Sección 1: Agregar Reglas Simples](#sección-1-agregar-reglas-simples)
-  - [Sección 2: Modificar Reglas Existentes](#sección-2-modificar-reglas-existentes)
-  - [Sección 3: Reemplazar Completamente las Reglas](#sección-3-reemplazar-completamente-las-reglas)
-  - [Sección 4: Reglas Condicionales Avanzadas](#sección-4-reglas-condicionales-avanzadas)
-  - [Sección 5: Zonas Personalizadas](#sección-5-zonas-personalizadas)
-    - [📋 Zonas Personalizadas Disponibles](#-zonas-personalizadas-disponibles)
-  - [Sección 6: Reglas por Tipo de Archivo](#sección-6-reglas-por-tipo-de-archivo)
-  - [Sección 7: Arquitectura y Mejores Prácticas](#sección-7-arquitectura-y-mejores-prácticas)
-  - [📋 Comandos Útiles](#-comandos-útiles)
-    - [Comandos Principales (Post-instalación)](#comandos-principales-post-instalación)
-    - [Opciones de CLI Avanzadas](#opciones-de-cli-avanzadas)
-  - [🎯 Ejemplo Activo para Probar](#-ejemplo-activo-para-probar)
-  - [💡 Consejos](#-consejos)
-  - [📋 Lista Completa de Verificaciones](#-lista-completa-de-verificaciones)
-    - [🔍 Reglas de Código Base](#-reglas-de-código-base)
-    - [📁 Reglas de Estructura de Archivos](#-reglas-de-estructura-de-archivos)
-    - [🏗️ Reglas de Arquitectura](#️-reglas-de-arquitectura)
-    - [📝 Reglas de Nomenclatura](#-reglas-de-nomenclatura)
-    - [🔧 Reglas de Componentes React](#-reglas-de-componentes-react)
-    - [🎨 Reglas de Estilos](#-reglas-de-estilos)
-    - [📚 Reglas de Documentación](#-reglas-de-documentación)
-    - [⚙️ Reglas de Configuración](#️-reglas-de-configuración)
-  - [Resumen de Estadísticas Actuales](#resumen-de-estadísticas-actuales)
-  - [Estructura de Directorio Estándar](#estructura-de-directorio-estándar)
 
 ## 🚀 Instrucciones de Uso
 

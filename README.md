@@ -1,6 +1,6 @@
-# Frontend Standards Checker v0.0.7
+# Frontend Standards Checker v0.0.8
 
-Una herramienta escalable y modular para validar estándares de frontend en proyectos JavaScript/TypeScript. **Versión 0.0.7 con validadores mejorados, mensajes de error enriquecidos y compatibilidad total para React Native. Visualización de reportes en HTML.**
+Una herramienta escalable y modular para validar estándares de frontend en proyectos JavaScript/TypeScript. **Versión 0.0.8 con validadores mejorados, mensajes de error enriquecidos y compatibilidad total para React Native. Visualización de reportes en HTML.**
 
 ## 🚀 Características
 
@@ -28,7 +28,7 @@ Una herramienta escalable y modular para validar estándares de frontend en proy
 - **🆕 Visor html**: Herramienta para visualizar los reportes de validación en formato HTML
 - **🆕 Exportación a CSV**: Posibilidad de exportar los reportes a formato CSV para análisis externo
 
-## 📦 Instalación Rápida (v0.0.7)
+## 📦 Instalación Rápida (v0.0.8)
 
 ### Instalación estándar (Recomendado)
 

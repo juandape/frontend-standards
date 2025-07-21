@@ -1,6 +1,6 @@
 {
   "name": "frontend-standards-checker",
-  "version": "0.0.7",
+  "version": "0.0.8",
   "description": "A comprehensive frontend standards validation tool with TypeScript support",
   "type": "module",
   "main": "dist/src/index.js",
