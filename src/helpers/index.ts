@@ -1,1 +1,1 @@
-export * from './additionalValidators.helper';
+export * from './additionalValidators.helper.js';
