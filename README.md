@@ -1,4 +1,4 @@
-# Frontend Standards Checker v0.0.8
+# Frontend Standards Checker
 
 Una herramienta escalable y modular para validar estándares de frontend en proyectos JavaScript/TypeScript. **Versión 0.0.8 con validadores mejorados, mensajes de error enriquecidos y compatibilidad total para React Native. Visualización de reportes en HTML.**
 
@@ -28,7 +28,7 @@ Una herramienta escalable y modular para validar estándares de frontend en proy
 - **🆕 Visor html**: Herramienta para visualizar los reportes de validación en formato HTML
 - **🆕 Exportación a CSV**: Posibilidad de exportar los reportes a formato CSV para análisis externo
 
-## 📦 Instalación Rápida (v0.0.8)
+## 📦 Instalación Rápida
 
 ### Instalación estándar (Recomendado)
 
@@ -107,27 +107,8 @@ La guía completa incluye:
 - 🆕 Interacción entre diferentes opciones de configuración
 - 🆕 Niveles de severidad actualizados (ERROR/WARNING/INFO)
 
-## 🆕 Novedades en v4.9.0
 
-### 🔧 Mejoras de Compatibilidad e Instalación
-
-La versión 0.0.7 se enfoca en mejorar la **compatibilidad con diferentes entornos** y simplificar el proceso de instalación para equipos de desarrollo.
-
-#### Nuevas características de instalación
-
-- **📦 Script de instalación automática mejorado**: Detecta automáticamente yarn/npm y maneja conflictos de dependencias
-- **🔄 Instalación alternativa robusta**: Para proyectos con dependencias complejas (React Native, monorepos con dependencias privadas)
-- **📋 Configuración automática de scripts**: Agrega automáticamente los scripts necesarios al package.json
-- **🎯 Múltiples métodos de instalación**: Desde curl hasta copia manual, adaptándose a cualquier entorno
-
-#### Compatibilidad con proyectos complejos
-
-- **✅ React Native**: Configuración especializada para proyectos RN con dependencias nativas
-- **✅ Monorepos**: Mejor manejo de workspaces y dependencias compartidas
-- **✅ Yarn PnP**: Soporte completo para Yarn Plug'n'Play
-- **✅ Dependencias privadas**: Instalación alternativa cuando hay registries privados
-
-#### Configuración simplificada
+#### Configuración simplificada archivo checkFrontendStandards.config.js
 
 ```javascript
 // checkFrontendStandards.config.js - Configuración para React Native
