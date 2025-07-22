@@ -1,15 +1,15 @@
 import fs from 'fs';
 import path from 'path';
 import type {
-  IProjectAnalyzer,
   ILogger,
-  ProjectAnalysisResult,
-  ZoneInfo,
-  MonorepoZoneConfig,
-  PackageJsonContent,
-  ValidationError,
-  ProjectInfo,
-} from '../types.js';
+  IValidationError,
+  IProjectAnalyzer,
+  IMonorepoZoneConfig,
+  IProjectAnalysisResult,
+  IProjectInfo,
+  IZoneInfo,
+  IPackageJsonContent,
+} from '../types';
 
 /**
  * Project analyzer for detecting project type, structure, and zones
@@ -27,9 +27,9 @@ export class ProjectAnalyzer implements IProjectAnalyzer {
    * Analyze the project structure and return project information
    */
   async analyze(
-    config: MonorepoZoneConfig = {}
-  ): Promise<ProjectAnalysisResult> {
-    const projectInfo: ProjectAnalysisResult = {
+    config: IMonorepoZoneConfig = {}
+  ): Promise<IProjectAnalysisResult> {
+    const projectInfo: IProjectAnalysisResult = {
       type: this.detectProjectType(),
       projectType: this.detectProjectType(), // Alias for backwards compatibility
       isMonorepo: this.isMonorepo(),
@@ -69,7 +69,7 @@ export class ProjectAnalyzer implements IProjectAnalyzer {
    */
   detectProjectType(
     projectPath: string = this.rootDir
-  ): ProjectInfo['projectType'] {
+  ): IProjectInfo['projectType'] {
     const packageJsonPath = path.join(projectPath, 'package.json');
     const hasPackageJson = fs.existsSync(packageJsonPath);
 
@@ -87,10 +87,10 @@ export class ProjectAnalyzer implements IProjectAnalyzer {
    */
   private detectProjectTypeFromPackageJson(
     packageJsonPath: string
-  ): ProjectInfo['projectType'] | null {
+  ): IProjectInfo['projectType'] | null {
     try {
       const packageJsonContent = fs.readFileSync(packageJsonPath, 'utf8');
-      const packageJson: PackageJsonContent = JSON.parse(packageJsonContent);
+      const packageJson: IPackageJsonContent = JSON.parse(packageJsonContent);
 
       // Check for Next.js app
       if (packageJson.dependencies?.next || packageJson.devDependencies?.next) {
@@ -139,7 +139,7 @@ export class ProjectAnalyzer implements IProjectAnalyzer {
   private detectProjectTypeFromHeuristics(
     projectPath: string,
     hasPackageJson: boolean
-  ): ProjectInfo['projectType'] {
+  ): IProjectInfo['projectType'] {
     const hasSrc = fs.existsSync(path.join(projectPath, 'src'));
     const hasPages = fs.existsSync(path.join(projectPath, 'pages'));
     const hasApp = fs.existsSync(path.join(projectPath, 'app'));
@@ -153,7 +153,7 @@ export class ProjectAnalyzer implements IProjectAnalyzer {
   /**
    * Detect zone type for a specific path
    */
-  detectZoneType(zonePath: string): ProjectInfo['projectType'] {
+  detectZoneType(zonePath: string): IProjectInfo['projectType'] {
     return this.detectProjectType(zonePath);
   }
 
@@ -206,9 +206,9 @@ export class ProjectAnalyzer implements IProjectAnalyzer {
    * Detect zones in a monorepo
    */
   async detectMonorepoZones(
-    zoneConfig: MonorepoZoneConfig = {}
-  ): Promise<ZoneInfo[]> {
-    const zones: ZoneInfo[] = [];
+    zoneConfig: IMonorepoZoneConfig = {}
+  ): Promise<IZoneInfo[]> {
+    const zones: IZoneInfo[] = [];
 
     // If onlyZone is specified, process only that zone
     if (zoneConfig.onlyZone) {
@@ -234,7 +234,7 @@ export class ProjectAnalyzer implements IProjectAnalyzer {
   /**
    * Get list of standard zones to process based on configuration
    */
-  getStandardZones(zoneConfig: MonorepoZoneConfig): string[] {
+  getStandardZones(zoneConfig: IMonorepoZoneConfig): string[] {
     const zones = ['apps', 'libs', 'projects']; // Always include these
 
     if (zoneConfig.includePackages === true) {
@@ -247,8 +247,8 @@ export class ProjectAnalyzer implements IProjectAnalyzer {
   /**
    * Process a zone directory and return its sub-zones
    */
-  processZoneDirectory(zoneName: string): ZoneInfo[] {
-    const zones: ZoneInfo[] = [];
+  processZoneDirectory(zoneName: string): IZoneInfo[] {
+    const zones: IZoneInfo[] = [];
     const candidatePath = path.join(this.rootDir, zoneName);
 
     if (
@@ -277,8 +277,8 @@ export class ProjectAnalyzer implements IProjectAnalyzer {
   /**
    * Process custom zones from configuration
    */
-  processCustomZones(customZones?: string[]): ZoneInfo[] {
-    const zones: ZoneInfo[] = [];
+  processCustomZones(customZones?: string[]): IZoneInfo[] {
+    const zones: IZoneInfo[] = [];
 
     if (!Array.isArray(customZones)) {
       return zones;
@@ -304,8 +304,8 @@ export class ProjectAnalyzer implements IProjectAnalyzer {
   /**
    * Process workspace zones from package.json
    */
-  processWorkspaceZones(_zoneConfig: MonorepoZoneConfig): ZoneInfo[] {
-    const zones: ZoneInfo[] = [];
+  processWorkspaceZones(_zoneConfig: IMonorepoZoneConfig): IZoneInfo[] {
+    const zones: IZoneInfo[] = [];
 
     const packageJsonPath = path.join(this.rootDir, 'package.json');
     if (!fs.existsSync(packageJsonPath)) {
@@ -402,8 +402,8 @@ export class ProjectAnalyzer implements IProjectAnalyzer {
     files: string[],
     directories: string[],
     _zoneName: string
-  ): Promise<ValidationError[]> {
-    const errors: ValidationError[] = [];
+  ): Promise<IValidationError[]> {
+    const errors: IValidationError[] = [];
 
     try {
       // Import validation functions - temporary import until additional-validators migration

@@ -1,7 +1,6 @@
-# Frontend Standards Checker v4.10.0
+# Frontend Standards Checker
 
-Una herramienta escalable y modular para validar estándares de frontend en proyectos JavaScript/TypeScript. **Versión 4.10.0 con validadores mejorados, mensajes de error enriquecidos y compatibilidad total para React Native. Visualización de reportes en HTML.**
-
+Una herramienta escalable y modular para validar estándares de frontend en proyectos JavaScript/TypeScript. **Versión 0.0.8 con validadores mejorados, mensajes de error enriquecidos y compatibilidad total para React Native. Visualización de reportes en HTML.**
 
 ## 🚀 Características
 
@@ -29,22 +28,9 @@ Una herramienta escalable y modular para validar estándares de frontend en proy
 - **🆕 Visor html**: Herramienta para visualizar los reportes de validación en formato HTML
 - **🆕 Exportación a CSV**: Posibilidad de exportar los reportes a formato CSV para análisis externo
 
-## 📦 Instalación Rápida (v4.9.5)
+## 📦 Instalación Rápida
 
-### Script automático (Recomendado)
-
-```bash
-curl -sSL https://raw.githubusercontent.com/juandape/frontend-standards/main/install.sh | bash
-```
-
-**El script detecta automáticamente:**
-
-- ✅ **Monorepos y proyectos web**: Instala como dependencia `frontend-standards-checker`
-- ✅ **React Native**: Copia el proyecto completo para evitar conflictos de dependencias
-
-### Instalación Manual
-
-#### Para proyectos estándar (monorepos, Next.js, Vite, etc.)
+### Instalación estándar (Recomendado)
 
 ```bash
 # Con Yarn
@@ -54,31 +40,33 @@ yarn add --dev frontend-standards-checker@latest
 npm install --save-dev frontend-standards-checker@latest
 ```
 
-#### Para proyectos React Native
+### Scripts en package.json
 
-```bash
-# Clona e instala localmente
-git clone https://github.com/juandape/frontend-standards.git frontend-standards-full
-cd frontend-standards-full
-npm install && npm run build
-cd ..
+```json
+{
+  "scripts": {
+    "standards": "frontend-standards-checker",
+    "standards:zones": "frontend-standards-checker --zones",
+    "standards:verbose": "frontend-standards-checker --verbose",
+    "standards:all": "frontend-standards-checker --all",
+    "standards:init": "frontend-standards-checker --init"
+  }
+}
 ```
 
-### Para desarrollo de la herramienta
+**Nota importante:**
+
+- Instala siempre desde npm usando los comandos anteriores.
+- No uses tarballs locales ni referencias workspace para evitar errores de instalación.
+- El paquete incluye todos los archivos necesarios y es compatible con monorepos, Next.js, Vite y React Native.
+
+### Copiar guía de instalación y archivo de configuración
 
 ```bash
-git clone https://github.com/juandape/frontend-standards.git
-cd frontend-standards
-npm install
-
----
-
-## 🆕 Novedades en v4.9.5
-- Mejoras en la precisión de reglas de componentes y hooks
-- Mensajes de error más claros y útiles para debugging rápido
-- Compatibilidad total con React Native y monorepos
-- Documentación y ejemplos actualizados
+npx frontend-standards-init
 ```
+
+Esto copiará la guía completa y el archivo `checkFrontendStandards.config.js` en la raíz de tu proyecto.
 
 ## 🚀 Uso Rápido
 
@@ -86,46 +74,19 @@ npm install
 
 ```bash
 # Validación estándar (solo archivos modificados)
-npm run standards        # o yarn standards
+yarn standards        # o npm run standards
 
 # Validar zonas específicas
-npm run standards:zones  # o yarn standards:zones
+yarn standards:zones  # o npm run standards:zones
 
 # Modo verbose (más detalles)
-npm run standards:verbose  # o yarn standards:verbose
+yarn standards:verbose  # o npm run standards:verbose
 
 # Validar TODOS los archivos (no solo modificados)
-npm run standards:all    # o yarn standards:all
+yarn standards:all    # o npm run standards:all
 
 # Copiar archivos de configuración adicionales
-npm run standards:init   # o yarn standards:init
-```
-
-### Opciones de CLI (para instalación estándar)
-
-```bash
-# Validar zonas específicas
-npm run standards -- --zones src components
-
-# Validar solo una zona
-npm run standards -- --only-zone auth
-
-# Validar todos los archivos (override config)
-npm run standards -- --only-changed-files=false
-
-# Modo verbose
-npm run standards -- --verbose
-```
-
-### Con yarn
-
-```bash
-# Los comandos se ejecutan automáticamente desde frontend-standards-full/
-yarn standards           # Validación estándar
-yarn standards:zones     # Zonas específicas
-yarn standards:verbose   # Modo detallado
-yarn standards:all       # Todos los archivos
-yarn standards:init      # Copiar configuraciones
+yarn standards:init   # o npm run standards:init
 ```
 
 ## 📚 Documentación Completa
@@ -146,27 +107,8 @@ La guía completa incluye:
 - 🆕 Interacción entre diferentes opciones de configuración
 - 🆕 Niveles de severidad actualizados (ERROR/WARNING/INFO)
 
-## 🆕 Novedades en v4.9.0
 
-### 🔧 Mejoras de Compatibilidad e Instalación
-
-La versión 4.9.0 se enfoca en mejorar la **compatibilidad con diferentes entornos** y simplificar el proceso de instalación para equipos de desarrollo.
-
-#### Nuevas características de instalación
-
-- **📦 Script de instalación automática mejorado**: Detecta automáticamente yarn/npm y maneja conflictos de dependencias
-- **🔄 Instalación alternativa robusta**: Para proyectos con dependencias complejas (React Native, monorepos con dependencias privadas)
-- **📋 Configuración automática de scripts**: Agrega automáticamente los scripts necesarios al package.json
-- **🎯 Múltiples métodos de instalación**: Desde curl hasta copia manual, adaptándose a cualquier entorno
-
-#### Compatibilidad con proyectos complejos
-
-- **✅ React Native**: Configuración especializada para proyectos RN con dependencias nativas
-- **✅ Monorepos**: Mejor manejo de workspaces y dependencias compartidas
-- **✅ Yarn PnP**: Soporte completo para Yarn Plug'n'Play
-- **✅ Dependencias privadas**: Instalación alternativa cuando hay registries privados
-
-#### Configuración simplificada
+#### Configuración simplificada archivo checkFrontendStandards.config.js
 
 ```javascript
 // checkFrontendStandards.config.js - Configuración para React Native
@@ -179,45 +121,6 @@ module.exports = {
     // Reglas personalizadas específicas para React Native
   ]
 };
-```
-
-#### Scripts disponibles para equipos
-
-Una vez instalado, tu equipo puede usar:
-
-```bash
-# Validación completa
-yarn standards
-
-# Validar zonas específicas
-yarn standards:zones src components
-
-# Modo verbose con detalles
-yarn standards:verbose
-
-# Con configuración personalizada
-yarn standards:config
-```
-
-### Instalación para equipos
-
-**Método 1: Script automático (Recomendado)**
-
-```bash
-curl -fsSL https://raw.githubusercontent.com/juandape/frontend-standards/main/install.sh | bash
-```
-
-**Método 2: Para proyectos con conflictos de dependencias**
-
-```bash
-# Clonar, compilar y copiar
-git clone https://github.com/juandape/frontend-standards.git temp-fs
-cd temp-fs && npm install && npm run build
-cp -r . ../frontend-standards-full
-cd .. && rm -rf temp-fs
-
-# Agregar al package.json:
-# "standards": "node frontend-standards-full/dist/bin/cli.js"
 ```
 
 ### Validación Eficiente con onlyChangedFiles
@@ -420,31 +323,6 @@ module.exports = {
 };
 ```
 
-### Comandos para React Native
-
-```bash
-# Validación completa del proyecto
-yarn standards
-
-# Validar solo la carpeta src
-yarn standards:zones src
-
-# Modo verbose para ver más detalles
-yarn standards:verbose
-
-# Con configuración personalizada
-yarn standards:config
-```
-
-### Integración con Git Hooks
-
-```bash
-# Instalar husky si no lo tienes
-yarn add --dev husky
-
-# Agregar hook pre-commit
-npx husky add .husky/pre-commit "yarn standards"
-```
 
 ## 🏗️ Arquitectura
 
@@ -598,55 +476,3 @@ initializeValidators() {
   this.validators.set('mi-validador', this.validateMiRegla.bind(this));
 }
 ```
-
-## 📊 Reportes
-
-La herramienta genera reportes detallados que incluyen:
-
-- **Resumen ejecutivo**: Estadísticas generales
-- **Resultados por zona**: Estado de cada zona validada
-- **Violaciones detalladas**: Lista completa de errores con ubicación
-- **Estadísticas de errores**: Tipos de errores más frecuentes
-- **Recomendaciones**: Sugerencias para mejorar
-
-### Formatos de salida
-
-- **Texto**: Reporte legible para humanos (`.log`)
-- **JSON**: Datos estructurados para integración (`.json`)
-
-## 🤝 Contribución
-
-1. Fork el proyecto
-2. Crea una rama para tu feature (`git checkout -b feature/nueva-funcionalidad`)
-3. Commit tus cambios (`git commit -am 'Agregar nueva funcionalidad'`)
-4. Push a la rama (`git push origin feature/nueva-funcionalidad`)
-5. Crear un Pull Request
-
-## 📄 Licencia
-
-MIT
-
-## 🆚 Diferencias con la versión anterior
-
-### Mejoras de escalabilidad
-
-- **Arquitectura modular**: Separación clara de responsabilidades
-- **Inyección de dependencias**: Fácil testing y extensibilidad
-- **Configuración flexible**: Soporte para configuraciones complejas
-- **Logging estructurado**: Sistema de logging consistente
-- **Manejo de errores robusto**: Mejor recuperación de errores
-
-### Nuevas características
-
-- **CLI completo**: Interfaz de línea de comandos con múltiples opciones
-- **Reportes mejorados**: Reportes más detallados y en múltiples formatos
-- **Detección automática de proyecto**: Identifica automáticamente tipo y estructura
-- **Soporte para monorepos mejorado**: Mejor manejo de proyectos complejos
-- **Validadores especializados**: Sistema extensible de validadores
-
-### Mantenibilidad
-
-- **Código más limpio**: Funciones más pequeñas y enfocadas
-- **Mejor documentación**: JSDoc completo en todas las funciones
-- **Testing facilitado**: Arquitectura que facilita pruebas unitarias
-- **Configuración centralizada**: Un solo punto de configuración
