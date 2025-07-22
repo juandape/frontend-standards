@@ -35,7 +35,7 @@
     "build": "tsc && chmod +x dist/bin/cli.js && cp bin/frontend-standards-log-viewer.html dist/bin/ && cp checkFrontendStandards.COMPLETE-GUIDE.md dist/",
     "build:watch": "tsc --watch",
     "watch": "npm run build:watch",
-    "pub": "npm publish --scope=@frontend-standards-checker",
+    "pub": "npm publish --scope=@dcefront",
     "dev": "tsx --watch src/index.ts",
     "start": "node dist/src/index.js",
     "cli": "tsx bin/cli.ts",
