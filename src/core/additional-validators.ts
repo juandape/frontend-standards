@@ -10,12 +10,25 @@ import * as acornWalk from 'acorn-walk';
 import { isReactNativeProject } from '../utils/file-scanner.js';
 import { isConfigOrConstantsFile } from '../helpers/index.js';
 import { IDeclaredVariable, INamingRule, IValidationError } from '../types/';
+import {
+  shouldProcessFile,
+  findFunctionMatch,
+  validateFunctionName,
+  createNoFunctionError,
+  shouldSkipLine,
+  detectFunctionDeclaration,
+  getFunctionName,
+  shouldSkipFunction,
+  analyzeFunctionComplexity,
+  hasProperComments,
+  createCommentError,
+} from '../helpers';
 
 // Naming conventions by file type
 const NAMING_RULES: INamingRule[] = [
   {
     dir: 'components',
-    regex: /^[A-Z][A-ZaZ0-9]+\.tsx$/,
+    regex: /^[A-Z][a-zA-Z0-9]+\.tsx$/,
     desc: 'Components must be in PascalCase and end with .tsx',
   },
   {
@@ -177,7 +190,7 @@ export function checkCommentedCode(
           commentContent
         ) ||
         // Comments that end with periods (likely explanations)
-        /\.$/.test(commentContent.trim()) ||
+        commentContent.trim().endsWith('.test') ||
         // Comments that are clearly explanatory
         (commentContent.length > 50 && !/^[a-z]+\(/.test(commentContent))
       ) {
@@ -195,7 +208,7 @@ export function checkCommentedCode(
         // Import/export statements
         /^(import|export)\s+/.test(commentContent) ||
         // Object/array syntax
-        /^[{[].*[}]]$/.test(commentContent) ||
+        /^[{[].*}]$/.test(commentContent) ||
         // Console statements
         /^console\.[a-z]+\s*\(/.test(commentContent) ||
         // Control flow statements with parentheses
@@ -271,23 +284,36 @@ export function checkHardcodedData(
 
     // Check for hardcoded data but exclude CSS classes, Tailwind classes, and other valid cases
     const hasHardcodedPattern =
-      /(['"]).*([0-9]{3,}|lorem|dummy|test|prueba|foo|bar|baz).*\1/.test(line);
+      /(['"]).*(\d{3,}|lorem|dummy|test|prueba|foo|bar|baz).*\1/.test(line);
     const isCSSClass = /className\s*=|class\s*=|style\s*=/.test(line);
 
     // Comprehensive Tailwind CSS pattern matching
     const tailwindPatterns = [
-      // Common Tailwind prefixes with numbers
-      /\b(p|m|w|h|text|bg|border|rounded|shadow|grid|flex|space|gap|top|bottom|left|right|inset|absolute|relative|fixed|static|sticky|block|inline|hidden|visible|font|leading|tracking|opacity|scale|rotate|translate|cursor|pointer|select|transition|duration|ease|hover|focus|active|disabled)-\d+/,
+      // Base spacing and layout utilities
+      /\b[pmwh]-\d+\b/, // padding, margin, width, height
+      /\b(text|bg|border|rounded|shadow)-\d+\b/, // typography, colors, border, etc.
+      /\b(grid|flex|space|gap)-\d+\b/,
+      /\b(top|bottom|left|right|inset)-\d+\b/,
+      /\b(font|leading|tracking|opacity)-\d+\b/,
+      /\b(scale|rotate|translate)-\d+\b/,
+      /\b(cursor|select)-\d+\b/,
+      /\b(transition|duration|ease)-\d+\b/,
+      /\b(hover|focus|active|disabled)-\d+\b/,
+      /\b(absolute|relative|fixed|static|sticky|block|inline|hidden|visible)-\d+\b/,
       // Responsive prefixes
-      /\b(sm|md|lg|xl|2xl):/,
-      // Standard Tailwind color patterns with numbers
-      /\b(text|bg|border)-(red|blue|green|yellow|purple|pink|gray|grey|indigo|teal|orange|amber|lime|emerald|cyan|sky|violet|fuchsia|rose|slate|zinc|neutral|stone)-(50|100|200|300|400|500|600|700|800|900|950)\b/,
-      // Additional color patterns
-      /\b(from|via|to|ring|outline|divide|decoration)-(red|blue|green|yellow|purple|pink|gray|grey|indigo|teal|orange|amber|lime|emerald|cyan|sky|violet|fuchsia|rose|slate|zinc|neutral|stone)-(50|100|200|300|400|500|600|700|800|900|950)\b/,
-      // Custom semantic color patterns (like semantic-green-500, semantic-red-600, etc.)
-      /\b(text|bg|border)-(semantic|custom|brand|primary|secondary|accent|success|warning|error|info|muted|disabled)-(red|blue|green|yellow|purple|pink|gray|grey|indigo|teal|orange|amber|lime|emerald|cyan|sky|violet|fuchsia|rose|slate|zinc|neutral|stone|black|white)-(50|100|200|300|400|500|600|700|800|900|950)\b/,
-      // General custom color patterns with numbers (covers custom prefix)
-      /\b(text|bg|border)-[a-zA-Z]+-[a-zA-Z]*-?\d{2,3}\b/,
+      /\b([smd]|lg|xl|2xl):/,
+
+      // Color utilities with standard palette
+      /\b(text|bg|border)-([a-z]+)-(50|100|200|300|400|500|600|700|800|900|950)\b/,
+
+      // Extended color utilities (gradients, rings, etc.)
+      /\b(from|via|to|ring|outline|divide|decoration)-([a-z]+)-(50|100|200|300|400|500|600|700|800|900|950)\b/,
+
+      // Semantic color utilities
+      /\b(text|bg|border)-(semantic|custom|brand|primary|secondary|accent|success|warning|error|info|muted|disabled)-[a-z]+-(?:[5-9]0|[1-9]00|950)\b/,
+
+      // General custom color patterns
+      /\b(text|bg|border)-[a-z]+-[a-z]*-?\d{2,3}\b/,
     ];
 
     const isTailwindClass = tailwindPatterns.some((pattern) =>
@@ -316,7 +342,7 @@ export function checkHardcodedData(
           content.indexOf(line) + 100
         )
       ) &&
-        /['"][\d]{3}['"]/.test(line)) ||
+        /['"]\d{3}['"]/.test(line)) ||
       // Configuration objects with numeric values that are library-specific
       /\b(timeout|port|delay|duration|interval|retry|maxRetries|limit|size|width|height|fontSize|lineHeight)\s*:\s*['"]?\d+['"]?/.test(
         line
@@ -397,158 +423,22 @@ export function checkFunctionComments(
 
     const trimmedLine = line.trim();
 
-    // Skip empty lines and comments
-    if (
-      !trimmedLine ||
-      trimmedLine.startsWith('//') ||
-      trimmedLine.startsWith('*') ||
-      trimmedLine.startsWith('/*')
-    ) {
+    if (shouldSkipLine(trimmedLine)) continue;
+
+    const functionMatch = detectFunctionDeclaration(trimmedLine);
+    if (!functionMatch) continue;
+
+    const functionName = getFunctionName(functionMatch);
+    if (!functionName || shouldSkipFunction(trimmedLine, functionName))
       continue;
-    }
 
-    // Detect function declarations (including arrow functions and function expressions)
-    const functionMatch =
-      trimmedLine.match(
-        /(export\s+)?(const|let|var|function)\s+([a-zA-Z_$][a-zA-Z0-9_$]*)\s*[:=]?\s*(\([^)]*\)\s*=>|\([^)]*\)\s*\{|async\s*\([^)]*\)\s*=>|function)/
-      ) ||
-      trimmedLine.match(
-        /(export\s+)?function\s+([a-zA-Z_$][a-zA-Z0-9_$]*)\s*\(/
+    const functionAnalysis = analyzeFunctionComplexity(lines, i, content);
+    if (!functionAnalysis.isComplex) continue;
+
+    if (!hasProperComments(lines, i, content)) {
+      errors.push(
+        createCommentError(functionName, functionAnalysis, filePath, i)
       );
-
-    if (functionMatch) {
-      const functionName = functionMatch[3] || functionMatch[2];
-
-      if (!functionName) {
-        continue;
-      }
-
-      // Skip if it's a type declaration or interface
-      if (trimmedLine.includes('interface ') || trimmedLine.includes('type ')) {
-        continue;
-      }
-
-      // Skip simple getters/setters or single-line functions
-      if (
-        trimmedLine.includes('=>') &&
-        trimmedLine.length < 80 &&
-        !trimmedLine.includes('async')
-      ) {
-        continue;
-      }
-
-      // Look ahead to check if this function has complex logic
-      let complexityScore = 0;
-      let braceCount = 0;
-      let inFunction = false;
-      let linesInFunction = 0;
-
-      // Find the function body and check for complexity
-      for (let j = i; j < Math.min(i + 30, lines.length); j++) {
-        const bodyLine = lines[j];
-        if (!bodyLine) continue;
-
-        if (bodyLine.includes('{')) {
-          braceCount += (bodyLine.match(/\{/g) || []).length;
-          inFunction = true;
-        }
-        if (bodyLine.includes('}')) {
-          braceCount -= (bodyLine.match(/\}/g) || []).length;
-        }
-
-        if (inFunction) {
-          linesInFunction++;
-
-          // Check for complex patterns and assign complexity scores
-          if (/\b(if|else if|switch|case)\b/.test(bodyLine)) {
-            complexityScore += 1;
-          }
-          if (/\b(for|while|do)\b/.test(bodyLine)) {
-            complexityScore += 2;
-          }
-          if (/\b(try|catch|finally)\b/.test(bodyLine)) {
-            complexityScore += 2;
-          }
-          if (
-            /\b(async|await|Promise\.all|Promise\.resolve|Promise\.reject|\.then|\.catch)\b/.test(
-              bodyLine
-            )
-          ) {
-            complexityScore += 2;
-          }
-          if (
-            /\.(map|filter|reduce|forEach|find|some|every)\s*\(/.test(bodyLine)
-          ) {
-            complexityScore += 1;
-          }
-          if (/\?\s*[^:]*\s*:/.test(bodyLine)) {
-            // Ternary operators
-            complexityScore += 1;
-          }
-          if (/&&|\|\|/.test(bodyLine)) {
-            // Logical operators
-            complexityScore += 0.5;
-          }
-        }
-
-        if (inFunction && braceCount === 0) {
-          break;
-        }
-      }
-
-      // A function is complex if:
-      // - It has a complexity score >= 3, OR
-      // - It has more than 8 lines in the function body, OR
-      // - It has async operations with complexity score >= 2
-      const isComplex =
-        complexityScore >= 3 ||
-        linesInFunction > 8 ||
-        (complexityScore >= 2 &&
-          /async|await|Promise/.test(
-            content.substring(content.indexOf(trimmedLine))
-          ));
-
-      // If function is complex, check for comments
-      if (isComplex) {
-        let hasComment = false;
-
-        // Look for JSDoc comments or regular comments above the function
-        for (let k = Math.max(0, i - 15); k < i; k++) {
-          const commentLine = lines[k];
-          if (!commentLine) continue;
-
-          const trimmedCommentLine = commentLine.trim();
-          if (
-            // JSDoc comments
-            trimmedCommentLine.includes('/**') ||
-            trimmedCommentLine.includes('*/') ||
-            (trimmedCommentLine.startsWith('*') &&
-              trimmedCommentLine.length > 5) ||
-            // Multi-line comments
-            trimmedCommentLine.includes('/*') ||
-            // Detailed single-line comments (more than just a word or two)
-            (trimmedCommentLine.startsWith('//') &&
-              trimmedCommentLine.length > 15 &&
-              !/^\s*\/\/\s*(TODO|FIXME|NOTE|HACK)/.test(trimmedCommentLine))
-          ) {
-            hasComment = true;
-            break;
-          }
-        }
-
-        if (!hasComment) {
-          errors.push({
-            rule: 'Missing comment in complex function',
-            message: `Complex function '${functionName}' (complexity: ${complexityScore.toFixed(
-              1
-            )}, lines: ${linesInFunction}) must have comments explaining its behavior.`,
-            filePath: `${filePath}:${i + 1}`,
-            line: i + 1,
-            severity: 'warning',
-            category: 'documentation',
-          });
-        }
-      }
     }
   }
 
@@ -631,7 +521,7 @@ export function checkUnusedVariables(
           if (!declared.has(name)) {
             declared.set(name, {
               node: declNode.id,
-              exported: Boolean(isInlineExport || isSpecifierExport),
+              exported: Boolean(isInlineExport ?? isSpecifierExport),
             });
           }
         }
@@ -725,42 +615,49 @@ export function checkFunctionNaming(
   const lines = content.split('\n');
 
   lines.forEach((line, idx) => {
-    // Match function declarations and arrow functions
-    const functionMatches = line.match(
-      /(?:function\s+|const\s+|let\s+|var\s+)([a-zA-Z_$][a-zA-Z0-9_$]*)\s*(?:\(|\s*=\s*(?:\(|async\s*\())/g
+    // Match function declarations
+    const functionDeclMatch = line.match(
+      /function\s+([a-zA-Z_$][a-zA-Z0-9_$]*)\s*\(/g
+    );
+    // Match arrow function assignments
+    const arrowFuncMatch = line.match(
+      /(?:const|let|var)\s+([a-zA-Z_$][a-zA-Z0-9_$]*)\s*=\s*(?:async\s*)?\(/g
     );
 
-    if (functionMatches) {
-      functionMatches.forEach((match) => {
-        const nameMatch = match.match(
-          /(?:function\s+|const\s+|let\s+|var\s+)([a-zA-Z_$][a-zA-Z0-9_$]*)/
+    const matches: string[] = [];
+    if (functionDeclMatch) matches.push(...functionDeclMatch);
+    if (arrowFuncMatch) matches.push(...arrowFuncMatch);
+
+    matches.forEach((match) => {
+      const nameMatch =
+        /(?:function\s+|const\s+|let\s+|var\s+)([a-zA-Z_$][a-zA-Z0-9_$]*)/.exec(
+          match
         );
 
-        if (!nameMatch || !nameMatch[1]) {
-          return;
-        }
+      if (!nameMatch?.[1]) {
+        return;
+      }
 
-        const functionName = nameMatch[1];
+      const functionName = nameMatch[1];
 
-        // Skip React components (PascalCase) and hooks (start with 'use')
-        if (/^[A-Z]/.test(functionName) || functionName.startsWith('use')) {
-          return;
-        }
+      // Skip React components (PascalCase) and hooks (start with 'use')
+      if (/^[A-Z]/.test(functionName) || functionName.startsWith('use')) {
+        return;
+      }
 
-        // Function should follow camelCase
-        if (!/^[a-z][a-zA-Z0-9]*$/.test(functionName)) {
-          errors.push({
-            rule: 'Function naming',
-            message:
-              'Functions must follow camelCase convention (e.g., getProvinces)',
-            filePath: filePath,
-            line: idx + 1,
-            severity: 'error',
-            category: 'naming',
-          });
-        }
-      });
-    }
+      // Function should follow camelCase
+      if (!/^[a-z][a-zA-Z0-9]*$/.test(functionName)) {
+        errors.push({
+          rule: 'Function naming',
+          message:
+            'Functions must follow camelCase convention (e.g., getProvinces)',
+          filePath: filePath,
+          line: idx + 1,
+          severity: 'error',
+          category: 'naming',
+        });
+      }
+    });
   });
 
   return errors;
@@ -783,10 +680,9 @@ export function checkInterfaceNaming(
     );
     if (interfaceMatch) {
       interfaceMatch.forEach((match) => {
-        const nameMatch = match.match(
-          /export\s+interface\s+([a-zA-Z_$][a-zA-Z0-9_$]*)/
-        );
-        if (!nameMatch || !nameMatch[1]) {
+        const nameMatch =
+          /export\s+interface\s+([a-zA-Z_$][a-zA-Z0-9_$]*)/.exec(match);
+        if (!nameMatch?.[1]) {
           return;
         }
         const interfaceName = nameMatch[1];
@@ -835,10 +731,10 @@ export function checkStyleConventions(
     }
 
     // Check for style object exports
-    const exportMatch = line.match(
-      /export\s+const\s+([a-zA-Z_$][a-zA-Z0-9_$]*)\s*=/
+    const exportMatch = /export\s+const\s+([a-zA-Z_$][a-zA-Z0-9_$]*)\s*=/.exec(
+      line
     );
-    if (exportMatch && exportMatch[1]) {
+    if (exportMatch?.[1]) {
       const styleName = exportMatch[1];
 
       // Style names should be in camelCase and end with 'Styles'
@@ -1294,87 +1190,24 @@ export function checkComponentFunctionNameMatch(
   content: string,
   filePath: string
 ): IValidationError | null {
-  // Solo aplicar a archivos index.tsx en carpetas de componentes
-  const fileName = path.basename(filePath);
-  if (fileName !== 'index.tsx' || !filePath.includes('/components/')) {
+  if (!shouldProcessFile(filePath)) {
     return null;
   }
 
-  // Obtener el nombre de la carpeta contenedora
   const dirName = path.basename(path.dirname(filePath));
-
-  // Verificar si la carpeta sigue el formato PascalCase
   const isPascalCase = /^[A-Z][a-zA-Z0-9]*$/.test(dirName);
 
-  // Buscar la declaración de la función principal
-  const functionPatterns = [
-    // Función nombrada: export default function StoriesList() { ... }
-    new RegExp(`export\\s+default\\s+function\\s+([A-Za-z0-9_]+)\\s*\\(`, 'g'),
-    // Exportación directa con const: export const StoriesList = () => { ... }
-    new RegExp(
-      `export\\s+const\\s+([A-ZaZ0-9_]+)\\s*=\\s*\\(?.*\\)?\\s*=>\\s*\\{`,
-      'g'
-    ),
-    // Función anónima asignada: const StoriesList = () => { ... }; export default StoriesList;
-    new RegExp(`const\\s+([A-Za-z0-9_]+)\\s*=\\s*\\(?.*\\)?\\s*=>\\s*\\{`, 'g'),
-    // Declaración de función: function StoriesList() { ... }; export default StoriesList;
-    new RegExp(`function\\s+([A-Za-z0-9_]+)\\s*\\(`, 'g'),
-    // React.FC con nombre: const StoriesList: React.FC = () => { ... }
-    new RegExp(`const\\s+([A-Za-z0-9_]+)\\s*:\\s*React\\.?FC[<]?`, 'g'),
-    // TypeScript FC: const StoriesList: FC<Props> = () => { ... }
-    new RegExp(`const\\s+([A-Za-z0-9_]+)\\s*:\\s*FC[<]?`, 'g'),
-  ];
-
-  // Buscar un patrón de función que coincida
-  for (const pattern of functionPatterns) {
-    let match;
-    while ((match = pattern.exec(content)) !== null) {
-      const functionName = match[1];
-
-      if (!functionName) continue;
-
-      // Calcular número de línea
-      const lineNumber = content.substring(0, match.index).split('\n').length;
-
-      // Si la carpeta no es PascalCase, esta es una falla doble
-      if (!isPascalCase) {
-        // Verificar si la función tiene el mismo nombre que la carpeta (ignorando el formato)
-        if (functionName.toLowerCase() !== dirName.toLowerCase()) {
-          return {
-            rule: 'Component function name match',
-            message: `La función principal '${functionName}' (línea ${lineNumber}) debe tener el mismo nombre que su carpeta contenedora '${dirName}'. La carpeta debe seguir PascalCase y la función debe tener exactamente el mismo nombre.`,
-            filePath: filePath,
-            line: lineNumber,
-            severity: 'error',
-            category: 'naming',
-          };
-        }
-      } else {
-        // Si la carpeta es PascalCase, el nombre de la función debe coincidir exactamente
-        if (functionName !== dirName) {
-          return {
-            rule: 'Component function name match',
-            message: `La función principal '${functionName}' (línea ${lineNumber}) debe tener el mismo nombre que su carpeta contenedora '${dirName}'. Encontrado: función='${functionName}', carpeta='${dirName}'.`,
-            filePath: filePath,
-            line: lineNumber,
-            severity: 'error',
-            category: 'naming',
-          };
-        }
-      }
-
-      // Si llegamos aquí, los nombres coinciden correctamente
-      return null;
-    }
+  const functionMatch = findFunctionMatch(content);
+  if (!functionMatch) {
+    return createNoFunctionError(dirName, filePath);
   }
 
-  // Si no se encontró una función exportada con nombre, es un error
-  return {
-    rule: 'Component function name match',
-    message: `No se encontró función principal exportada en index.tsx. La carpeta '${dirName}' debe contener una función con el mismo nombre.`,
-    filePath: filePath,
-    line: 1,
-    severity: 'error',
-    category: 'naming',
-  };
+  const { functionName, lineNumber } = functionMatch;
+  return validateFunctionName(
+    functionName,
+    dirName,
+    isPascalCase,
+    filePath,
+    lineNumber
+  );
 }
