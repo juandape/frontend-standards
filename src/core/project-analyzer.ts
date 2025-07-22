@@ -404,77 +404,119 @@ export class ProjectAnalyzer implements IProjectAnalyzer {
     _zoneName: string
   ): Promise<IValidationError[]> {
     const errors: IValidationError[] = [];
+    const additionalValidators = await this.loadAdditionalValidators();
+
+    if (!additionalValidators) {
+      this.logger.warn(
+        'Additional validators not available, skipping extended validation'
+      );
+      return errors;
+    }
 
     try {
-      // Import validation functions - temporary import until additional-validators migration
-      const additionalValidators = await this.loadAdditionalValidators();
-      if (!additionalValidators) {
-        this.logger.warn(
-          'Additional validators not available, skipping extended validation'
-        );
-        return errors;
-      }
-
-      const {
-        checkNamingConventions,
-        checkDirectoryNaming,
-        checkComponentStructure,
-        checkComponentFunctionNameMatch,
-      } = additionalValidators;
-
-      // Validate file naming conventions
-      for (const filePath of files) {
-        const namingError = checkNamingConventions(filePath);
-        if (namingError) {
-          errors.push(namingError);
-        }
-
-        // Validate component function name matching for index.tsx files
-        if (
-          filePath.endsWith('index.tsx') &&
-          filePath.includes('/components/')
-        ) {
-          try {
-            const fs = require('fs');
-            const content = fs.readFileSync(filePath, 'utf-8');
-            const functionNameError = checkComponentFunctionNameMatch(
-              content,
-              filePath
-            );
-            if (functionNameError) {
-              errors.push(functionNameError);
-            }
-          } catch (error) {
-            this.logger.warn(
-              `Could not read file for function name validation: ${filePath}`
-            );
-          }
-        }
-      }
-
-      // Validate directory naming and component structure
-      for (const dirPath of directories) {
-        // Directory naming validation
-        const dirErrors = checkDirectoryNaming(dirPath);
-        errors.push(...dirErrors);
-
-        // Component structure validation
-        if (
-          dirPath.includes('/components/') ||
-          dirPath.includes('\\components\\')
-        ) {
-          const componentErrors = checkComponentStructure(dirPath);
-          errors.push(...componentErrors);
-        }
-      }
+      errors.push(...(await this.validateFiles(files, additionalValidators)));
+      errors.push(
+        ...this.validateDirectories(directories, additionalValidators)
+      );
     } catch (error) {
-      this.logger.warn(
-        'Failed to load additional validators:',
-        (error as Error).message
+      this.logger.warn('Validation error:', (error as Error).message);
+    }
+
+    return errors;
+  }
+
+  private async validateFiles(
+    files: string[],
+    validators: any
+  ): Promise<IValidationError[]> {
+    const errors: IValidationError[] = [];
+    const { checkNamingConventions, checkComponentFunctionNameMatch } =
+      validators;
+
+    for (const filePath of files) {
+      errors.push(
+        ...this.validateSingleFile(
+          filePath,
+          checkNamingConventions,
+          checkComponentFunctionNameMatch
+        )
       );
     }
 
     return errors;
+  }
+
+  private validateSingleFile(
+    filePath: string,
+    namingValidator: (path: string) => IValidationError | undefined,
+    functionNameValidator: (
+      content: string,
+      path: string
+    ) => IValidationError | undefined
+  ): IValidationError[] {
+    const errors: IValidationError[] = [];
+    const namingError = namingValidator(filePath);
+
+    if (namingError) {
+      errors.push(namingError);
+    }
+
+    if (this.isComponentIndexFile(filePath)) {
+      this.validateComponentFunctionName(
+        filePath,
+        functionNameValidator,
+        errors
+      );
+    }
+
+    return errors;
+  }
+
+  private isComponentIndexFile(filePath: string): boolean {
+    return filePath.endsWith('index.tsx') && filePath.includes('/components/');
+  }
+
+  private validateComponentFunctionName(
+    filePath: string,
+    validator: (content: string, path: string) => IValidationError | undefined,
+    errors: IValidationError[]
+  ): void {
+    try {
+      const content = fs.readFileSync(filePath, 'utf-8');
+      const functionNameError = validator(content, filePath);
+      if (functionNameError) {
+        errors.push(functionNameError);
+      }
+    } catch (error) {
+      this.logger.warn(
+        `Could not read file for function name validation: ${filePath}. Error: ${(error as Error).message}`
+      );
+      throw error;
+    }
+  }
+
+  private validateDirectories(
+    directories: string[],
+    validators: any
+  ): IValidationError[] {
+    const errors: IValidationError[] = [];
+    const { checkDirectoryNaming, checkComponentStructure } = validators;
+
+    for (const dirPath of directories) {
+      errors.push(...checkDirectoryNaming(dirPath));
+
+      if (this.isComponentDirectory(dirPath)) {
+        errors.push(...checkComponentStructure(dirPath));
+      }
+    }
+
+    return errors;
+  }
+
+  private isComponentDirectory(dirPath: string): boolean {
+    return (
+      dirPath.includes('/components/') || dirPath.includes('\\components\\')
+    );
   }
 
   /**
