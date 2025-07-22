@@ -3,12 +3,12 @@ import path from 'path';
 import type {
   IConfigLoader,
   ILogger,
-  StandardsConfiguration,
-  ConfigurationExport,
-  DefaultRulesStructure,
-  ValidationRule,
-  RulesObjectFormat,
-} from '../types.js';
+  IStandardsConfiguration,
+  IConfigurationExport,
+  IDefaultRulesStructure,
+  IValidationRule,
+  IRulesObjectFormat,
+} from '../types';
 import { isReactNativeProject } from '../utils/file-scanner.js';
 import { checkInlineStyles } from './additional-validators.js';
 
@@ -34,7 +34,7 @@ export class ConfigLoader implements IConfigLoader {
    */
   async load(
     customConfigPath: string | null = null
-  ): Promise<StandardsConfiguration> {
+  ): Promise<IStandardsConfiguration> {
     // Siempre resolver el path absoluto del config
     let configPath =
       customConfigPath ?? path.join(this.rootDir, this.configFileName);
@@ -45,7 +45,7 @@ export class ConfigLoader implements IConfigLoader {
     try {
       if (fs.existsSync(configPath)) {
         this.logger.info(`📋 Loading configuration from: ${configPath}`);
-        let customConfig: ConfigurationExport | undefined;
+        let customConfig: IConfigurationExport | undefined;
         let importError: any = null;
         // Try ESM dynamic import first
         try {
@@ -95,7 +95,9 @@ export class ConfigLoader implements IConfigLoader {
    * @param customConfig Custom configuration
    * @returns Merged configuration
    */
-  mergeWithDefaults(customConfig: ConfigurationExport): StandardsConfiguration {
+  mergeWithDefaults(
+    customConfig: IConfigurationExport
+  ): IStandardsConfiguration {
     const defaultConfig = this.getDefaultConfig();
     const defaultRules = this.getDefaultRules();
 
@@ -139,7 +141,7 @@ export class ConfigLoader implements IConfigLoader {
     }
 
     if (customConfig && typeof customConfig === 'object') {
-      let finalRules: ValidationRule[];
+      let finalRules: IValidationRule[];
 
       if (customConfig.rules && !Array.isArray(customConfig.rules)) {
         // Convert object format to array format
@@ -196,7 +198,7 @@ export class ConfigLoader implements IConfigLoader {
    * Get default configuration
    * @returns Default configuration
    */
-  getDefaultConfig(): StandardsConfiguration {
+  getDefaultConfig(): IStandardsConfiguration {
     const defaultRules = this.getDefaultRules();
 
     return {
@@ -230,7 +232,7 @@ export class ConfigLoader implements IConfigLoader {
    * Get default rules organized by category
    * @returns Default rules structure
    */
-  getDefaultRules(): DefaultRulesStructure {
+  getDefaultRules(): IDefaultRulesStructure {
     return {
       structure: this.getStructureRules(),
       naming: this.getNamingRules(),
@@ -249,7 +251,7 @@ export class ConfigLoader implements IConfigLoader {
    * Get structure validation rules
    * @returns Structure rules
    */
-  private getStructureRules(): ValidationRule[] {
+  private getStructureRules(): IValidationRule[] {
     return [
       {
         name: 'Folder structure',
@@ -503,7 +505,7 @@ export class ConfigLoader implements IConfigLoader {
    * Get naming validation rules
    * @returns Naming rules
    */
-  private getNamingRules(): ValidationRule[] {
+  private getNamingRules(): IValidationRule[] {
     return [
       {
         name: 'Component naming',
@@ -876,7 +878,7 @@ export class ConfigLoader implements IConfigLoader {
    * Get content validation rules
    * @returns Content rules
    */
-  private getContentRules(): ValidationRule[] {
+  private getContentRules(): IValidationRule[] {
     // Robust circular dependency detection using a dependency graph (in-memory, per run)
     // This is a simplified version, not as powerful as madge, but avoids false positives and detects real cycles
     // Use a module-level cache to avoid rebuilding the graph for every file
@@ -1386,11 +1388,11 @@ export class ConfigLoader implements IConfigLoader {
    * Convert object format rules to ValidationRule array
    */
   private convertObjectRulesToArray(
-    rulesObject: RulesObjectFormat,
-    defaultRules: DefaultRulesStructure
-  ): ValidationRule[] {
+    rulesObject: IRulesObjectFormat,
+    defaultRules: IDefaultRulesStructure
+  ): IValidationRule[] {
     const allDefaultRules = Object.values(defaultRules).flat();
-    const validationRules: ValidationRule[] = [];
+    const validationRules: IValidationRule[] = [];
 
     for (const [ruleName, ruleValue] of Object.entries(rulesObject)) {
       const defaultRule = allDefaultRules.find(
@@ -1423,7 +1425,7 @@ export class ConfigLoader implements IConfigLoader {
    * Get style validation rules
    * @returns Style rules
    */
-  private getStyleRules(): ValidationRule[] {
+  private getStyleRules(): IValidationRule[] {
     return [
       {
         name: 'Style naming',
@@ -1446,7 +1448,7 @@ export class ConfigLoader implements IConfigLoader {
    * Get documentation validation rules
    * @returns Documentation rules
    */
-  private getDocumentationRules(): ValidationRule[] {
+  private getDocumentationRules(): IValidationRule[] {
     return [
       {
         name: 'Missing comment in complex function',
@@ -1736,7 +1738,7 @@ export class ConfigLoader implements IConfigLoader {
   /**
    * Get TypeScript specific rules
    */
-  private getTypeScriptRules(): ValidationRule[] {
+  private getTypeScriptRules(): IValidationRule[] {
     return [
       {
         name: 'Prefer type over interface for unions',
@@ -1836,7 +1838,7 @@ export class ConfigLoader implements IConfigLoader {
   /**
    * Get React specific rules
    */
-  private getReactRules(): ValidationRule[] {
+  private getReactRules(): IValidationRule[] {
     return [
       {
         name: 'Client component directive',
@@ -2058,7 +2060,7 @@ export class ConfigLoader implements IConfigLoader {
   /**
    * Get import rules
    */
-  private getImportRules(): ValidationRule[] {
+  private getImportRules(): IValidationRule[] {
     return [
       {
         name: 'Direct imports for sibling files',
@@ -2307,7 +2309,7 @@ export class ConfigLoader implements IConfigLoader {
   /**
    * Get performance rules
    */
-  private getPerformanceRules(): ValidationRule[] {
+  private getPerformanceRules(): IValidationRule[] {
     return [
       {
         name: 'Avoid inline functions in JSX',
@@ -2382,7 +2384,7 @@ export class ConfigLoader implements IConfigLoader {
   /**
    * Get accessibility rules
    */
-  private getAccessibilityRules(): ValidationRule[] {
+  private getAccessibilityRules(): IValidationRule[] {
     return [
       {
         name: 'Button missing accessible name',

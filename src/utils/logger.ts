@@ -1,4 +1,4 @@
-import type { ILogger, LogLevel } from '../types.js';
+import type { ILogger, LogLevel } from '../types';
 
 /**
  * Logger utility for consistent logging across the application
