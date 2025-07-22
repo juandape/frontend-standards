@@ -4,13 +4,13 @@ import { execSync } from 'child_process';
 import type {
   IReporter,
   ILogger,
-  ValidationError,
-  ProjectAnalysisResult,
-  StandardsConfiguration,
-  ProcessedReportData,
-  SummaryItem,
-  ReportGenerationResult,
-} from '../types.js';
+  IValidationError,
+  IProjectAnalysisResult,
+  IStandardsConfiguration,
+  IProcessedReportData,
+  ISummaryItem,
+  IReportGenerationResult,
+} from '../types';
 
 /**
  * Reporter for generating detailed validation reports
@@ -20,7 +20,7 @@ export class Reporter implements IReporter {
   public outputPath: string;
   public logDir: string;
   public readonly logger: ILogger;
-  private _originalZoneErrors: Record<string, ValidationError[]> = {};
+  private _originalZoneErrors: Record<string, IValidationError[]> = {};
 
   private getFileMeta(filePath: string): {
     modDate: string;
@@ -73,10 +73,10 @@ export class Reporter implements IReporter {
    * Generate and save validation report
    */
   async generate(
-    zoneErrors: Record<string, ValidationError[]>,
-    projectInfo: ProjectAnalysisResult,
-    config: StandardsConfiguration
-  ): Promise<ReportGenerationResult> {
+    zoneErrors: Record<string, IValidationError[]>,
+    projectInfo: IProjectAnalysisResult,
+    config: IStandardsConfiguration
+  ): Promise<IReportGenerationResult> {
     // Store original errors for detailed reporting
     this.setOriginalZoneErrors(zoneErrors);
 
@@ -102,8 +102,8 @@ export class Reporter implements IReporter {
    * Process errors and generate statistics
    */
   processErrors(
-    zoneErrors: Record<string, ValidationError[]>
-  ): ProcessedReportData {
+    zoneErrors: Record<string, IValidationError[]>
+  ): IProcessedReportData {
     const errorsByRule: Record<string, number> = {};
     const warningsByRule: Record<string, number> = {};
     const infosByRule: Record<string, number> = {};
@@ -170,7 +170,7 @@ export class Reporter implements IReporter {
   generateSummary(
     errorsByRule: Record<string, number>,
     totalErrors: number
-  ): SummaryItem[] {
+  ): ISummaryItem[] {
     if (totalErrors === 0) {
       return [];
     }
@@ -189,9 +189,9 @@ export class Reporter implements IReporter {
    * Format the complete report
    */
   formatReport(
-    reportData: ProcessedReportData,
-    projectInfo: ProjectAnalysisResult,
-    _config: StandardsConfiguration
+    reportData: IProcessedReportData,
+    projectInfo: IProjectAnalysisResult,
+    _config: IStandardsConfiguration
   ): string {
     const lines: string[] = [];
 
@@ -220,7 +220,7 @@ export class Reporter implements IReporter {
   /**
    * Add report header section
    */
-  addReportHeader(lines: string[], projectInfo: ProjectAnalysisResult): void {
+  addReportHeader(lines: string[], projectInfo: IProjectAnalysisResult): void {
     lines.push('='.repeat(80));
     lines.push('FRONTEND STANDARDS VALIDATION REPORT');
     lines.push('='.repeat(80));
@@ -248,7 +248,7 @@ export class Reporter implements IReporter {
   /**
    * Add summary section
    */
-  addSummarySection(lines: string[], reportData: ProcessedReportData): void {
+  addSummarySection(lines: string[], reportData: IProcessedReportData): void {
     lines.push(
       `SUMMARY: ${reportData.totalErrors} violations found across ${
         Object.keys(reportData.errorsByZone).length
@@ -275,7 +275,7 @@ export class Reporter implements IReporter {
    */
   addZoneResultsSection(
     lines: string[],
-    reportData: ProcessedReportData
+    reportData: IProcessedReportData
   ): void {
     lines.push('-'.repeat(16));
     lines.push('RESULTS BY ZONE:');
@@ -409,7 +409,7 @@ export class Reporter implements IReporter {
   /**
    * Add statistics section
    */
-  addStatisticsSection(lines: string[], reportData: ProcessedReportData): void {
+  addStatisticsSection(lines: string[], reportData: IProcessedReportData): void {
     if (reportData.summary.length > 0) {
       lines.push('\n');
       lines.push('-'.repeat(17));
@@ -551,21 +551,21 @@ export class Reporter implements IReporter {
   /**
    * Get original zone errors
    */
-  getOriginalZoneErrors(): Record<string, ValidationError[]> {
+  getOriginalZoneErrors(): Record<string, IValidationError[]> {
     return this._originalZoneErrors;
   }
 
   /**
    * Set original zone errors for detailed reporting
    */
-  setOriginalZoneErrors(zoneErrors: Record<string, ValidationError[]>): void {
+  setOriginalZoneErrors(zoneErrors: Record<string, IValidationError[]>): void {
     this._originalZoneErrors = zoneErrors;
   }
 
   /**
    * Generate a quick summary for console output
    */
-  generateQuickSummary(reportData: ProcessedReportData): string {
+  generateQuickSummary(reportData: IProcessedReportData): string {
     if (reportData.totalErrors === 0) {
       return '✅ All validations passed!';
     }
@@ -582,7 +582,7 @@ export class Reporter implements IReporter {
    * Export report in JSON format
    */
   async exportJson(
-    reportData: ProcessedReportData,
+    reportData: IProcessedReportData,
     outputPath: string | null = null
   ): Promise<string> {
     const jsonPath = outputPath ?? this.outputPath.replace('.log', '.json');

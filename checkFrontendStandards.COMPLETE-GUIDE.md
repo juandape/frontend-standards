@@ -1,10 +1,10 @@
-# CheckFrontendStandards v4.10.0 - Guía Completa de Configuración
+# Frontend Standards Checker Guía Completa de Configuración
 
-Esta guía contiene todos los ejemplos posibles para configurar reglas personalizadas en **Frontend Standards Checker v4.10.0**.
+Esta guía contiene todos los ejemplos posibles para configurar reglas personalizadas en **Frontend Standards Checker**.
 
-> **⚠️ Importante**: Esta versión 4.10.0 incluye validadores avanzados, mensajes de error enriquecidos y mejoras de precisión. Si tienes una versión anterior, actualiza usando el script de instalación automático.
+> **⚠️ Importante**: Esta versión incluye validadores avanzados, mensajes de error enriquecidos y mejoras de precisión. Si tienes una versión anterior, actualiza usando la instalación recomendada.
 
-## 🆕 Novedades en v4.10.0
+## 🆕 Novedades
 
 - Validadores avanzados con mensajes enriquecidos (línea, carpeta, función)
 - Mejoras en la precisión de reglas de componentes y hooks
@@ -13,9 +13,18 @@ Esta guía contiene todos los ejemplos posibles para configurar reglas personali
 - Documentación y ejemplos actualizados
 - Carpeta de reportes `logs-standards-validations` para almacenar los reportes generados con fecha y hora y último colaborador que modificó el archivo
 - Visor HTML para reportes de validación
+- Validación selectiva: opción `onlyZone` para validar solo módulos específicos
+- Validación eficiente: por defecto solo valida archivos en staging para commit (`onlyChangedFiles: true`)
+- TypeScript nativo: tipos estrictos, autocompletado y mejor experiencia de desarrollo
+- Instalación inteligente: detecta React Native y adapta la instalación automáticamente
+- Mejoras de compatibilidad: instalación robusta para proyectos con dependencias complejas (React Native, monorepos con dependencias privadas)
+- Mejoras en la documentación: ejemplos y guías actualizadas para facilitar la integración
+- Nuevas reglas de validación: reglas adicionales para mejorar la calidad del código
+- Exportación a CSV: posibilidad de exportar los reportes a formato CSV para análisis externo
 
 ---
-### 🔎 Ejemplo de mensaje de error enriquecido (v4.9.5)
+
+### 🔎 Ejemplo de mensaje de error enriquecido
 
 ```log
 📄 /src/components/Calendar/index.tsx:23
@@ -29,22 +38,14 @@ Ahora los mensajes incluyen número de línea, nombre de carpeta y función, fac
 
 ## 📋 Tabla de Contenidos
 
-- [CheckFrontendStandards v4.10.0 - Guía Completa de Configuración](#checkfrontendstandards-v4100---guía-completa-de-configuración)
-  - [🆕 Novedades en v4.10.0](#-novedades-en-v4100)
-    - [🔎 Ejemplo de mensaje de error enriquecido (v4.9.5)](#-ejemplo-de-mensaje-de-error-enriquecido-v495)
+- [Frontend Standards Checker Guía Completa de Configuración](#frontend-standards-checker-guía-completa-de-configuración)
+  - [🆕 Novedades](#-novedades)
+    - [🔎 Ejemplo de mensaje de error enriquecido](#-ejemplo-de-mensaje-de-error-enriquecido)
   - [📋 Tabla de Contenidos](#-tabla-de-contenidos)
-  - [🆕 Novedades en v4.9.1](#-novedades-en-v491)
-    - [� Correcciones Críticas de Instalación](#-correcciones-críticas-de-instalación)
-      - [✅ Scripts de Package.json Corregidos](#-scripts-de-packagejson-corregidos)
-      - [🔧 Instalación de Dependencias Arreglada](#-instalación-de-dependencias-arreglada)
-      - [🎯 Instalación Inteligente Mejorada](#-instalación-inteligente-mejorada)
-      - [📋 Comandos Actualizados](#-comandos-actualizados)
-      - [📦 Configuración por Defecto Corregida](#-configuración-por-defecto-corregida)
-  - [🚀 Instrucciones de Instalación](#-instrucciones-de-instalación)
-    - [Método 1: Script Automático (Recomendado)](#método-1-script-automático-recomendado)
-    - [Método 2: Instalación Manual Estándar](#método-2-instalación-manual-estándar)
-    - [Método 3: Instalación Manual React Native](#método-3-instalación-manual-react-native)
-  - [📋 Tabla de Contenidos](#-tabla-de-contenidos-1)
+  - [� Instalación Rápida](#-instalación-rápida)
+    - [Instalación estándar (Recomendado)](#instalación-estándar-recomendado)
+    - [Scripts en package.json](#scripts-en-packagejson)
+    - [Copiar guía de instalación y archivo de configuración](#copiar-guía-de-instalación-y-archivo-de-configuración)
   - [🚀 Instrucciones de Uso](#-instrucciones-de-uso)
   - [📁 Configuración de Zonas](#-configuración-de-zonas)
     - [Incluir zonas packages/](#incluir-zonas-packages)
@@ -75,224 +76,51 @@ Ahora los mensajes incluyen número de línea, nombre de carpeta y función, fac
   - [Resumen de Estadísticas Actuales](#resumen-de-estadísticas-actuales)
   - [Estructura de Directorio Estándar](#estructura-de-directorio-estándar)
 
-## 🆕 Novedades en v4.9.1
+## � Instalación Rápida
 
-### � Correcciones Críticas de Instalación
-
-La versión 4.9.1 corrige problemas críticos en la instalación y funcionamiento en diferentes tipos de proyectos:
-
-#### ✅ Scripts de Package.json Corregidos
-
-- **Para Monorepos (BluAdmin)**: Usa `frontend-standards-checker` (funciona correctamente)
-- **Para React Native (BluPersonas)**: Usa `node dist/bin/cli.js` con configuración externa
-- **Scripts nuevos**: `standards:init`, `standards:all`, `standards:zones`, `standards:verbose`
-
-#### 🔧 Instalación de Dependencias Arreglada
-
-- **React Native**: Instala dependencias completas y compila el proyecto automáticamente
-- **Configuración externa**: Scripts leen correctamente desde la raíz con `--config ../checkFrontendStandards.config.js`
-- **onlyChangedFiles**: Por defecto `true` en todos los proyectos (se puede cambiar manualmente)
-
-#### 🎯 Instalación Inteligente Mejorada
-
-- **Detección automática**: Reconoce React Native vs proyectos estándar sin intervención manual
-- **Instalación estándar**: Para monorepos usando `frontend-standards-checker` como dependencia
-- **Instalación local**: Para React Native copia completa en `frontend-standards-full/`
-
-#### 📋 Comandos Actualizados
-
-**Con npm:**
-
-```bash
-npm run standards              # ✅ Funciona correctamente
-npm run standards:zones        # ✅ Zonas específicas
-npm run standards:verbose      # ✅ Modo detallado
-npm run standards:all          # ✅ Todos los archivos
-npm run standards:init         # ✅ Copiar configuraciones
-```
-
-**Con yarn:**
-
-```bash
-yarn standards                 # ✅ Ahora funciona correctamente
-yarn standards:zones           # ✅ Lee desde la raíz del proyecto
-yarn standards:verbose         # ✅ Con configuración externa
-yarn standards:all             # ✅ Todos los archivos
-yarn standards:init            # ✅ Copiar configuraciones
-```
-
-#### 📦 Configuración por Defecto Corregida
-
-```javascript
-// checkFrontendStandards.config.js - React Native
-module.exports = {
-  zones: {
-    includePackages: false,
-    customZones: ['src'] // Solo validar directorio src
-  },
-  extensions: ['.js', '.ts', '.jsx', '.tsx'],
-  ignorePatterns: [
-    'android/**', 'ios/**', 'build/**', 'dist/**',
-    'node_modules/**', '*.config.js',
-    'frontend-standards-full/**' // ✅ Excluir carpeta local
-  ],
-  onlyChangedFiles: true, // ✅ Por defecto true - cambiar si se necesita
-  rules: [
-    // Reglas personalizadas específicas para React Native
-  ]
-};
-```
-
-```javascript
-// checkFrontendStandards.config.js - Optimizado para React Native
-module.exports = {
-  zones: {
-    includePackages: false,
-    customZones: ['src'] // Solo validar directorio src
-  },
-  extensions: ['.js', '.ts', '.jsx', '.tsx'],
-  ignorePatterns: [
-    'android/**', 'ios/**', 'build/**', 'dist/**',
-    'node_modules/**', '*.config.js',
-    'frontend-standards-full/**' // ✅ Excluir carpeta local
-  ],
-  onlyChangedFiles: true, // ✅ Por defecto true - cambiar si se necesita
-  rules: [
-    // Reglas personalizadas específicas para React Native
-    {
-      name: 'React Native - No console.log in production',
-      check: (content, filePath) => {
-        if (filePath.includes('debug') || filePath.includes('dev')) {
-          return false; // Permitir en archivos de desarrollo
-        }
-        return content.includes('console.log');
-      },
-      message: 'Use proper logging solution for React Native production.',
-      level: 'ERROR'
-    }
-  ]
-};
-```
-
-## 🚀 Instrucciones de Instalación
-
-### Método 1: Script Automático (Recomendado)
-
-```bash
-curl -sSL https://raw.githubusercontent.com/juandape/frontend-standards/main/install.sh | bash
-```
-
-**El script detecta automáticamente:**
-
-- ✅ **Monorepos y proyectos web**: Instala como dependencia `frontend-standards-checker`
-- ✅ **React Native**: Copia el proyecto completo para evitar conflictos de dependencias
-
-**¿Qué hace el script v4.9.1?**
-
-- Detecta automáticamente yarn/npm y tipo de proyecto
-- Instala la herramienta usando el método correcto para cada tipo
-- Agrega scripts al package.json automáticamente
-- Crea archivo de configuración optimizado
-- Compila dependencias para React Native
-- Configura rutas y comandos correctamente
-
-### Método 2: Instalación Manual Estándar
-
-**Para proyectos estándar (monorepos, Next.js, Vite, etc.):**
+### Instalación estándar (Recomendado)
 
 ```bash
 # Con Yarn
-yarn add --dev frontend-standards-checker@https://github.com/juandape/frontend-standards.git
+yarn add --dev frontend-standards-checker@latest
 
 # Con NPM
-npm install --save-dev frontend-standards-checker@https://github.com/juandape/frontend-standards.git
+npm install --save-dev frontend-standards-checker@latest
+```
 
-# Agregar scripts manualmente al package.json:
+### Scripts en package.json
+
+```json
 {
   "scripts": {
     "standards": "frontend-standards-checker",
     "standards:zones": "frontend-standards-checker --zones",
     "standards:verbose": "frontend-standards-checker --verbose",
     "standards:all": "frontend-standards-checker --all",
-    "standards:init": "frontend-standards-init"
+    "standards:init": "frontend-standards-checker --init"
   }
 }
 ```
 
-### Método 3: Instalación Manual React Native
+**Nota importante:**
 
-**Para proyectos React Native:**
+- Instala siempre desde npm usando los comandos anteriores.
+- No uses tarballs locales ni referencias workspace para evitar errores de instalación.
+- El paquete incluye todos los archivos necesarios y es compatible con monorepos, Next.js, Vite y React Native.
+
+### Copiar guía de instalación y archivo de configuración
 
 ```bash
-# 1. Clonar y compilar
-git clone https://github.com/juandape/frontend-standards.git frontend-standards-full
-cd frontend-standards-full
-npm install && npm run build
-cd ..
-
-# 2. Agregar scripts al package.json:
-{
-  "scripts": {
-    "standards": "cd frontend-standards-full && node dist/bin/cli.js --config ../checkFrontendStandards.config.js && cd ..",
-    "standards:zones": "cd frontend-standards-full && node dist/bin/cli.js --zones --config ../checkFrontendStandards.config.js && cd ..",
-    "standards:verbose": "cd frontend-standards-full && node dist/bin/cli.js --verbose --config ../checkFrontendStandards.config.js && cd ..",
-    "standards:all": "cd frontend-standards-full && node dist/bin/cli.js --all --config ../checkFrontendStandards.config.js && cd ..",
-    "standards:init": "cd frontend-standards-full && node bin/copy-frontend-standards-files.cjs && cd .."
-  }
-}
+npx frontend-standards-init
 ```
 
-## 📋 Tabla de Contenidos
+Esto copiará la guía completa y el archivo `checkFrontendStandards.config.js` en la raíz de tu proyecto.
 
-- [CheckFrontendStandards v4.10.0 - Guía Completa de Configuración](#checkfrontendstandards-v4100---guía-completa-de-configuración)
-  - [🆕 Novedades en v4.10.0](#-novedades-en-v4100)
-    - [🔎 Ejemplo de mensaje de error enriquecido (v4.9.5)](#-ejemplo-de-mensaje-de-error-enriquecido-v495)
-  - [📋 Tabla de Contenidos](#-tabla-de-contenidos)
-  - [🆕 Novedades en v4.9.1](#-novedades-en-v491)
-    - [� Correcciones Críticas de Instalación](#-correcciones-críticas-de-instalación)
-      - [✅ Scripts de Package.json Corregidos](#-scripts-de-packagejson-corregidos)
-      - [🔧 Instalación de Dependencias Arreglada](#-instalación-de-dependencias-arreglada)
-      - [🎯 Instalación Inteligente Mejorada](#-instalación-inteligente-mejorada)
-      - [📋 Comandos Actualizados](#-comandos-actualizados)
-      - [📦 Configuración por Defecto Corregida](#-configuración-por-defecto-corregida)
-  - [🚀 Instrucciones de Instalación](#-instrucciones-de-instalación)
-    - [Método 1: Script Automático (Recomendado)](#método-1-script-automático-recomendado)
-    - [Método 2: Instalación Manual Estándar](#método-2-instalación-manual-estándar)
-    - [Método 3: Instalación Manual React Native](#método-3-instalación-manual-react-native)
-  - [📋 Tabla de Contenidos](#-tabla-de-contenidos-1)
-  - [🚀 Instrucciones de Uso](#-instrucciones-de-uso)
-  - [📁 Configuración de Zonas](#-configuración-de-zonas)
-    - [Incluir zonas packages/](#incluir-zonas-packages)
-    - [Agregar zonas personalizadas](#agregar-zonas-personalizadas)
-    - [Configuración completa de zonas](#configuración-completa-de-zonas)
-  - [Sección 1: Agregar Reglas Simples](#sección-1-agregar-reglas-simples)
-  - [Sección 2: Modificar Reglas Existentes](#sección-2-modificar-reglas-existentes)
-  - [Sección 3: Reemplazar Completamente las Reglas](#sección-3-reemplazar-completamente-las-reglas)
-  - [Sección 4: Reglas Condicionales Avanzadas](#sección-4-reglas-condicionales-avanzadas)
-  - [Sección 5: Zonas Personalizadas](#sección-5-zonas-personalizadas)
-    - [📋 Zonas Personalizadas Disponibles](#-zonas-personalizadas-disponibles)
-  - [Sección 6: Reglas por Tipo de Archivo](#sección-6-reglas-por-tipo-de-archivo)
-  - [Sección 7: Arquitectura y Mejores Prácticas](#sección-7-arquitectura-y-mejores-prácticas)
-  - [📋 Comandos Útiles](#-comandos-útiles)
-    - [Comandos Principales (Post-instalación)](#comandos-principales-post-instalación)
-    - [Opciones de CLI Avanzadas](#opciones-de-cli-avanzadas)
-  - [🎯 Ejemplo Activo para Probar](#-ejemplo-activo-para-probar)
-  - [💡 Consejos](#-consejos)
-  - [📋 Lista Completa de Verificaciones](#-lista-completa-de-verificaciones)
-    - [🔍 Reglas de Código Base](#-reglas-de-código-base)
-    - [📁 Reglas de Estructura de Archivos](#-reglas-de-estructura-de-archivos)
-    - [🏗️ Reglas de Arquitectura](#️-reglas-de-arquitectura)
-    - [📝 Reglas de Nomenclatura](#-reglas-de-nomenclatura)
-    - [🔧 Reglas de Componentes React](#-reglas-de-componentes-react)
-    - [🎨 Reglas de Estilos](#-reglas-de-estilos)
-    - [📚 Reglas de Documentación](#-reglas-de-documentación)
-    - [⚙️ Reglas de Configuración](#️-reglas-de-configuración)
-  - [Resumen de Estadísticas Actuales](#resumen-de-estadísticas-actuales)
-  - [Estructura de Directorio Estándar](#estructura-de-directorio-estándar)
 
 ## 🚀 Instrucciones de Uso
 
-1. Crea un archivo llamado `checkFrontendStandards.config.js`
+1. Usa el comando `npx frontend-standards-init`
+   - Este comando creará el archivo de configuración y copiará la guía completa de instalación.
 2. Copia el código de la sección que necesites (solo una a la vez)
 3. Modifica las reglas según tus necesidades
 4. Ejecuta el script normalmente

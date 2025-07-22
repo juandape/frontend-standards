@@ -128,42 +128,52 @@
             window.addEventListener('DOMContentLoaded', () => {
 
         document.getElementById('exportCsvBtn').addEventListener('click', exportLogToCSV);
-              fetch('frontend-standards.log')
-                .then(response => {
-                  if (!response.ok) throw new Error('No se encontró el archivo de log.')
-                  return response.text()
-                })
-                .then(text => {
-                  logData = text
+        // Escaping function to prevent XSS
+        function escapeHTML(str) {
+          if (!str) return '';
+          return String(str)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;');
+        }
 
-                  const matchDate = logData.match(/^Generated:\s*(.+)$/m)
-                  sidebarDate.textContent = matchDate ? `Generated: ${matchDate[1]}` : ''
+        fetch('frontend-standards.log')
+          .then(response => {
+            if (!response.ok) throw new Error('No se encontró el archivo de log.')
+            return response.text()
+          })
+          .then(text => {
+            logData = text
 
+            const matchDate = logData.match(/^Generated:\s*(.+)$/m)
+            sidebarDate.textContent = matchDate ? `Generated: ${matchDate[1]}` : ''
 
-                  const matchProject = logData.match(/^Project:\s*(.+)$/m)
-                  const matchType = logData.match(/^Project Type:\s*(.+)$/m)
-                  const matchMonorepo = logData.match(/^Monorepo:\s*(.+)$/m)
+            const matchProject = logData.match(/^Project:\s*(.+)$/m)
+            const matchType = logData.match(/^Project Type:\s*(.+)$/m)
+            const matchMonorepo = logData.match(/^Monorepo:\s*(.+)$/m)
 
-                  sidebarProjectInfo.innerHTML = `
-                    <div><span class="font-semibold text-gray-700">Project:</span> ${matchProject ? matchProject[1] : '-'}</div>
-                    <div><span class="font-semibold text-gray-700">Project Type:</span> ${matchType ? matchType[1] : '-'}</div>
-                    <div><span class="font-semibold text-gray-700">Monorepo:</span> ${matchMonorepo ? matchMonorepo[1] : '-'}</div>
-                  `
-                  if (!logData.trim()) {
-                    summarySection.classList.remove('hidden')
-                    summaryInfo.innerHTML = '<div class="text-red-600">No se encontró información en el log.</div>'
-                    return
-                  }
-                  parseGroupedData()
-                  renderSidebarRules()
-                  renderSummary()
-                })
-                .catch(err => {
-                  sidebarDate.textContent = ''
-                  summarySection.classList.remove('hidden')
-                  summaryInfo.innerHTML = `<div class="text-red-600">No se pudo cargar el log: ${err.message}</div>`
-                  console.warn('Log loading error:', err.message)
-                })
+            sidebarProjectInfo.innerHTML = `
+              <div><span class="font-semibold text-gray-700">Project:</span> ${escapeHTML(matchProject ? matchProject[1] : '-')}</div>
+              <div><span class="font-semibold text-gray-700">Project Type:</span> ${escapeHTML(matchType ? matchType[1] : '-')}</div>
+              <div><span class="font-semibold text-gray-700">Monorepo:</span> ${escapeHTML(matchMonorepo ? matchMonorepo[1] : '-')}</div>
+            `
+            if (!logData.trim()) {
+              summarySection.classList.remove('hidden')
+              summaryInfo.innerHTML = '<div class="text-red-600">No se encontró información en el log.</div>'
+              return
+            }
+            parseGroupedData()
+            renderSidebarRules()
+            renderSummary()
+          })
+          .catch(err => {
+            sidebarDate.textContent = ''
+            summarySection.classList.remove('hidden')
+            summaryInfo.innerHTML = `<div class="text-red-600">No se pudo cargar el log: ${escapeHTML(err.message)}</div>`
+            console.warn('Log loading error:', err.message)
+          })
             })
 
             function parseGroupedData() {

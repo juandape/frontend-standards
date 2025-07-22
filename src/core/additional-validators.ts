@@ -1,9 +1,3 @@
-// Helper: Check if file is a TypeScript declaration file
-
-// Helper: Check if file is a config/constants file
-function isConfigOrConstantsFile(filePath: string): boolean {
-  return /config|constants/i.test(filePath) && filePath.endsWith('.ts');
-}
 /**
  * Additional validation functions for frontend standards
  * Migrated to TypeScript with strict type safety and zero 'any' usage
@@ -13,23 +7,12 @@ import fs from 'fs';
 import path from 'path';
 import * as acorn from 'acorn';
 import * as acornWalk from 'acorn-walk';
-import { ValidationError } from '../types.js';
 import { isReactNativeProject } from '../utils/file-scanner.js';
-
-// Types for internal use
-interface DeclaredVariable {
-  node: acorn.Node;
-  exported: boolean;
-}
-
-interface NamingRule {
-  dir: string;
-  regex: RegExp;
-  desc: string;
-}
+import { isConfigOrConstantsFile } from '../helpers/index.js';
+import { IDeclaredVariable, INamingRule, IValidationError } from '../types/';
 
 // Naming conventions by file type
-const NAMING_RULES: NamingRule[] = [
+const NAMING_RULES: INamingRule[] = [
   {
     dir: 'components',
     regex: /^[A-Z][A-ZaZ0-9]+\.tsx$/,
@@ -86,9 +69,9 @@ const flaggedDirectories = new Set<string>();
 export function checkInlineStyles(
   content: string,
   filePath: string
-): ValidationError[] {
+): IValidationError[] {
   const lines = content.split('\n');
-  const errors: ValidationError[] = [];
+  const errors: IValidationError[] = [];
 
   // Detect if this is a React Native project
   const isRNProject = isReactNativeProject(filePath);
@@ -131,9 +114,9 @@ export function checkInlineStyles(
 export function checkCommentedCode(
   content: string,
   filePath: string
-): ValidationError[] {
+): IValidationError[] {
   const lines = content.split('\n');
-  const errors: ValidationError[] = [];
+  const errors: IValidationError[] = [];
   let inJSDoc = false;
   let inMultiLineComment = false;
 
@@ -239,9 +222,9 @@ export function checkCommentedCode(
 export function checkHardcodedData(
   content: string,
   filePath: string
-): ValidationError[] {
+): IValidationError[] {
   const lines = content.split('\n');
-  const errors: ValidationError[] = [];
+  const errors: IValidationError[] = [];
 
   // Skip configuration, setup, helper, config, and constants files entirely
   if (isConfigOrConstantsFile(filePath)) {
@@ -404,9 +387,9 @@ export function checkHardcodedData(
 export function checkFunctionComments(
   content: string,
   filePath: string
-): ValidationError[] {
+): IValidationError[] {
   const lines = content.split('\n');
-  const errors: ValidationError[] = [];
+  const errors: IValidationError[] = [];
 
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
@@ -578,8 +561,8 @@ export function checkFunctionComments(
 export function checkUnusedVariables(
   content: string,
   filePath: string
-): ValidationError[] {
-  const errors: ValidationError[] = [];
+): IValidationError[] {
+  const errors: IValidationError[] = [];
   try {
     // Enable location tracking to get line numbers
     const ast = acorn.parse(content, {
@@ -588,7 +571,7 @@ export function checkUnusedVariables(
       locations: true, // Important for line numbers
     });
 
-    const declared = new Map<string, DeclaredVariable>(); // name -> { node, exported: false }
+    const declared = new Map<string, IDeclaredVariable>(); // name -> { node, exported: false }
     const used = new Set<string>();
     const exportedViaSpecifier = new Set<string>();
 
@@ -737,8 +720,8 @@ export function checkUnusedVariables(
 export function checkFunctionNaming(
   content: string,
   filePath: string
-): ValidationError[] {
-  const errors: ValidationError[] = [];
+): IValidationError[] {
+  const errors: IValidationError[] = [];
   const lines = content.split('\n');
 
   lines.forEach((line, idx) => {
@@ -789,8 +772,8 @@ export function checkFunctionNaming(
 export function checkInterfaceNaming(
   content: string,
   filePath: string
-): ValidationError[] {
-  const errors: ValidationError[] = [];
+): IValidationError[] {
+  const errors: IValidationError[] = [];
   const lines = content.split('\n');
 
   const seen = new Set<string>();
@@ -834,8 +817,8 @@ export function checkInterfaceNaming(
 export function checkStyleConventions(
   content: string,
   filePath: string
-): ValidationError[] {
-  const errors: ValidationError[] = [];
+): IValidationError[] {
+  const errors: IValidationError[] = [];
 
   // Only check .style.ts files
   if (!filePath.endsWith('.style.ts')) {
@@ -880,7 +863,7 @@ export function checkStyleConventions(
  */
 export function checkEnumsOutsideTypes(
   filePath: string
-): ValidationError | null {
+): IValidationError | null {
   // Check if enum files are incorrectly placed inside types directory
   if (filePath.includes('types') && filePath.endsWith('.enum.ts')) {
     return {
@@ -900,7 +883,7 @@ export function checkEnumsOutsideTypes(
  */
 export function checkHookFileExtension(
   filePath: string
-): ValidationError | null {
+): IValidationError | null {
   // Only check for hooks (use*.hook.ts[x]?)
   const fileName = path.basename(filePath);
   const dirName = path.dirname(filePath);
@@ -943,7 +926,7 @@ export function checkHookFileExtension(
 /**
  * Check for asset naming conventions
  */
-export function checkAssetNaming(filePath: string): ValidationError | null {
+export function checkAssetNaming(filePath: string): IValidationError | null {
   const fileName = path.basename(filePath);
   const fileExt = path.extname(fileName);
   const baseName = fileName.replace(fileExt, '');
@@ -994,7 +977,7 @@ export function checkAssetNaming(filePath: string): ValidationError | null {
  */
 export function checkNamingConventions(
   filePath: string
-): ValidationError | null {
+): IValidationError | null {
   const rel = filePath.split(path.sep);
   const fname = rel[rel.length - 1];
   const parentDir = rel[rel.length - 2]; // Get immediate parent directory
@@ -1028,8 +1011,8 @@ export function checkNamingConventions(
 /**
  * Check directory naming conventions
  */
-export function checkDirectoryNaming(dirPath: string): ValidationError[] {
-  const errors: ValidationError[] = [];
+export function checkDirectoryNaming(dirPath: string): IValidationError[] {
+  const errors: IValidationError[] = [];
   const currentDirName = path.basename(dirPath);
 
   // Skip excluded directories and files
@@ -1127,8 +1110,8 @@ function checkIndexFileRequirements(
   componentDir: string,
   componentName: string,
   isUtilityDir: boolean
-): ValidationError[] {
-  const errors: ValidationError[] = [];
+): IValidationError[] {
+  const errors: IValidationError[] = [];
   const indexTsxFile = path.join(componentDir, 'index.tsx');
   const indexTsFile = path.join(componentDir, 'index.ts');
 
@@ -1161,8 +1144,8 @@ function checkIndexFileRequirements(
 /**
  * Helper function to check hooks directory structure
  */
-function checkHooksDirectory(componentDir: string): ValidationError[] {
-  const errors: ValidationError[] = [];
+function checkHooksDirectory(componentDir: string): IValidationError[] {
+  const errors: IValidationError[] = [];
   const hooksDir = path.join(componentDir, 'hooks');
 
   if (fs.existsSync(hooksDir)) {
@@ -1194,8 +1177,8 @@ function checkHooksDirectory(componentDir: string): ValidationError[] {
 /**
  * Helper function to check type file naming in types directory
  */
-function checkTypesDirectory(componentDir: string): ValidationError[] {
-  const errors: ValidationError[] = [];
+function checkTypesDirectory(componentDir: string): IValidationError[] {
+  const errors: IValidationError[] = [];
   const typesDir = path.join(componentDir, 'types');
 
   if (fs.existsSync(typesDir)) {
@@ -1233,8 +1216,8 @@ function checkTypesDirectory(componentDir: string): ValidationError[] {
 /**
  * Helper function to check style file naming in styles directory
  */
-function checkStylesDirectory(componentDir: string): ValidationError[] {
-  const errors: ValidationError[] = [];
+function checkStylesDirectory(componentDir: string): IValidationError[] {
+  const errors: IValidationError[] = [];
   const stylesDir = path.join(componentDir, 'styles');
 
   if (fs.existsSync(stylesDir)) {
@@ -1273,8 +1256,8 @@ function checkStylesDirectory(componentDir: string): ValidationError[] {
  */
 export function checkComponentStructure(
   componentDir: string
-): ValidationError[] {
-  const errors: ValidationError[] = [];
+): IValidationError[] {
+  const errors: IValidationError[] = [];
   const componentName = path.basename(componentDir);
 
   // Skip validation for generic 'components' directories that are just containers
@@ -1310,7 +1293,7 @@ export function checkComponentStructure(
 export function checkComponentFunctionNameMatch(
   content: string,
   filePath: string
-): ValidationError | null {
+): IValidationError | null {
   // Solo aplicar a archivos index.tsx en carpetas de componentes
   const fileName = path.basename(filePath);
   if (fileName !== 'index.tsx' || !filePath.includes('/components/')) {
