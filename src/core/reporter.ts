@@ -334,13 +334,10 @@ export class Reporter implements IReporter {
         lines.push(`📂 Zone: ${zone}`);
         for (const error of actualErrors) {
           const relPath = path.relative(this.rootDir, error.filePath);
+          // Formato cliqueable: ruta:linea
           const fileLocation = error.line
             ? `${relPath}:${error.line}`
             : relPath;
-          const absPath = path.resolve(this.rootDir, error.filePath);
-          const fileLink = error.line
-            ? `file://${absPath}#L${error.line}`
-            : `file://${absPath}`;
           const meta = this.getFileMeta(error.filePath);
           let codeLine: string | undefined = undefined;
           if (error.line && error.filePath) {
@@ -350,7 +347,7 @@ export class Reporter implements IReporter {
               codeLine = fileLines[error.line - 1]?.trim();
             } catch {}
           }
-          lines.push(`\n  📄 [${fileLocation}](${fileLink})`);
+          lines.push(`\n📄 ${fileLocation}`);
           if (codeLine !== undefined) {
             lines.push(`     > ${codeLine}`);
           }
@@ -363,6 +360,7 @@ export class Reporter implements IReporter {
       }
     }
   }
+
   /**
    * Add detailed warnings section
    */
@@ -387,15 +385,12 @@ export class Reporter implements IReporter {
 
         for (const warning of actualWarnings) {
           const relPath = path.relative(this.rootDir, warning.filePath);
+          // Formato cliqueable: ruta:linea
           const fileLocation = warning.line
             ? `${relPath}:${warning.line}`
             : relPath;
-          const absPath = path.resolve(this.rootDir, warning.filePath);
-          const fileLink = warning.line
-            ? `file://${absPath}#L${warning.line}`
-            : `file://${absPath}`;
           const meta = this.getFileMeta(warning.filePath);
-          lines.push(`\n  📄 [${fileLocation}](${fileLink})`);
+          lines.push(`\n📄 ${fileLocation}`);
           lines.push(`     Rule: ${warning.rule}`);
           lines.push(`     Issue: ${warning.message}`);
           lines.push(`     Last modification: ${meta.modDate}`);
@@ -430,13 +425,10 @@ export class Reporter implements IReporter {
 
         for (const info of actualInfos) {
           const relPath = path.relative(this.rootDir, info.filePath);
+          // Formato cliqueable: ruta:linea
           const fileLocation = info.line ? `${relPath}:${info.line}` : relPath;
-          const absPath = path.resolve(this.rootDir, info.filePath);
-          const fileLink = info.line
-            ? `file://${absPath}#L${info.line}`
-            : `file://${absPath}`;
           const meta = this.getFileMeta(info.filePath);
-          lines.push(`\n  📄 [${fileLocation}](${fileLink})`);
+          lines.push(`\n📄 ${fileLocation}`);
           lines.push(`     Rule: ${info.rule}`);
           lines.push(`     Suggestion: ${info.message}`);
           lines.push(`     Last modification: ${meta.modDate}`);
