@@ -1,19 +1,114 @@
-import { Reporter } from '../reporter';
-import fs from 'fs';
-import path from 'path';
+import { jest } from '@jest/globals';
 
-// Mock dependencies
-jest.mock('fs');
-jest.mock('child_process');
+// ESM-compatible mocks
+jest.unstable_mockModule('fs', () => {
+  const fsMock = {
+    existsSync: jest.fn((p) => {
+      if (
+        typeof p === 'string' &&
+        (p.endsWith('/file') ||
+          p.endsWith('/file.ts') ||
+          p.endsWith('index.ts'))
+      )
+        return true;
+      if (
+        typeof p === 'string' &&
+        p.includes('frontend-standards-log-viewer.html')
+      )
+        return true;
+      return true;
+    }),
+    statSync: jest.fn((p) => {
+      if (
+        typeof p === 'string' &&
+        (p.endsWith('/file') || p.endsWith('/file.ts'))
+      ) {
+        return {
+          mtime: new Date('2025-07-23T11:04:39'),
+          isDirectory: () => false,
+        };
+      }
+      if (typeof p === 'string' && p.includes('file1')) {
+        return {
+          mtime: new Date('2023-01-01T10:00:00Z'),
+          isDirectory: () => false,
+        };
+      }
+      return { mtime: new Date('2023-01-01'), isDirectory: () => false };
+    }),
+    mkdirSync: jest.fn(),
+    writeFileSync: jest.fn(),
+    copyFileSync: jest.fn(),
+    readdirSync: jest.fn(() => []),
+    readFileSync: jest.fn((p) => {
+      if (
+        typeof p === 'string' &&
+        (p.endsWith('/file') || p.endsWith('/file.ts'))
+      )
+        return 'file content';
+      if (typeof p === 'string' && p.includes('file1')) return 'file1 content';
+      return '';
+    }),
+  };
+  return { __esModule: true, ...fsMock, default: fsMock };
+});
+jest.unstable_mockModule('path', () => {
+  const pathMock = {
+    basename: jest.fn((p: unknown) => {
+      if (
+        typeof p === 'string' &&
+        (p.endsWith('/file') || p.endsWith('/file.ts'))
+      )
+        return p.split('/').pop();
+      if (typeof p === 'string' && p.includes('file1')) return 'file1';
+      if (typeof p === 'string' && p.includes('file2')) return 'file2';
+      if (typeof p === 'string' && p.includes('file3')) return 'file3';
+      if (typeof p === 'string' && p.includes('root')) return 'root';
+      return typeof p === 'string' ? p.split('/').pop() : '';
+    }),
+    dirname: jest.fn((p: unknown) =>
+      typeof p === 'string' ? p.split('/').slice(0, -1).join('/') : ''
+    ),
+    extname: jest.fn((p: unknown) =>
+      typeof p === 'string' ? '.' + p.split('.').pop() : ''
+    ),
+    join: jest.fn((...args) => args.join('/')),
+    resolve: jest.fn((...args) => args.join('/')),
+    sep: '/',
+    relative: jest.fn((from: unknown, to: unknown) =>
+      typeof from === 'string' && typeof to === 'string'
+        ? to.replace(from, '')
+        : ''
+    ),
+  };
+  return { __esModule: true, ...pathMock, default: pathMock };
+});
+jest.unstable_mockModule('child_process', () => ({
+  __esModule: true,
+  execSync: jest.fn(),
+  default: { execSync: jest.fn() },
+}));
+
+let Reporter: any;
+let fs: any;
+let path: any;
+let child_process: any;
 
 describe('Reporter', () => {
   let mockLogger: any;
-  let reporter: Reporter;
+  let reporter: any;
   const mockRootDir = '/project/root';
   const mockOutputPath = '/project/root/logs/frontend-standards.log';
 
-  beforeEach(() => {
+  beforeEach(async () => {
     jest.clearAllMocks();
+
+    // Dynamic imports for ESM mocks
+    ({ Reporter } = await import('../reporter.js'));
+    fs = (await import('fs')).default;
+    path = (await import('path')).default;
+    child_process = (await import('child_process')).default;
+    child_process.execSync.mockReturnValue('test-author');
 
     mockLogger = {
       debug: jest.fn(),
@@ -23,10 +118,17 @@ describe('Reporter', () => {
     };
 
     jest.spyOn(fs, 'existsSync').mockReturnValue(true);
-    jest.spyOn(fs, 'statSync').mockReturnValue({
-      mtime: new Date('2023-01-01'),
-      isDirectory: () => false,
-    } as any);
+    jest.spyOn(fs, 'statSync').mockImplementation((p) => {
+      if (typeof p === 'string' && p.includes('file')) {
+        // Use a fixed date/time for test consistency
+        return {
+          mtime: new Date('2025-07-23T11:04:39'),
+          isDirectory: () => false,
+        };
+      }
+      return { mtime: new Date('2023-01-01'), isDirectory: () => false };
+    });
+    child_process.execSync.mockReturnValue('test-author');
     jest.spyOn(fs, 'mkdirSync').mockImplementation(() => undefined);
     jest.spyOn(fs, 'writeFileSync').mockImplementation(() => undefined);
     jest.spyOn(fs, 'copyFileSync').mockImplementation(() => undefined);
@@ -70,20 +172,41 @@ describe('Reporter', () => {
 
   describe('getFileMeta', () => {
     it('should return file metadata', () => {
-      const mockDate = new Date('2023-01-01');
-      jest.spyOn(fs, 'statSync').mockReturnValue({
-        mtime: mockDate,
-      } as any);
+      const testPath = '/path/to/file';
+      // removed unused absPath and relPath
+      const mockDate = new Date('2025-07-23T11:04:39');
+      const actualDate = mockDate.toLocaleString('es-ES', {
+        timeZone: 'America/Bogota',
+      });
 
-      jest
-        .spyOn(require('child_process'), 'execSync')
-        .mockReturnValue('test-author');
+      child_process.execSync.mockReturnValue('test-author');
+      jest.spyOn(fs, 'existsSync').mockImplementation((p) => {
+        // eslint-disable-next-line no-console
+        console.log('existsSync called with:', p);
+        return true;
+      });
+      if (fs.default && typeof fs.default.existsSync === 'function') {
+        jest.spyOn(fs.default, 'existsSync').mockImplementation((p) => {
+          // eslint-disable-next-line no-console
+          console.log('default.existsSync called with:', p);
+          return true;
+        });
+      }
+      jest.spyOn(fs, 'statSync').mockImplementation((p) => {
+        // eslint-disable-next-line no-console
+        console.log('statSync called with:', p);
+        return { mtime: mockDate, isDirectory: () => false };
+      });
+      if (fs.default && typeof fs.default.statSync === 'function') {
+        jest.spyOn(fs.default, 'statSync').mockImplementation((p) => {
+          // eslint-disable-next-line no-console
+          console.log('default.statSync called with:', p);
+          return { mtime: mockDate, isDirectory: () => false };
+        });
+      }
 
-      const result = reporter['getFileMeta']('/path/to/file');
-
-      expect(result.modDate).toBe(
-        mockDate.toLocaleString('es-ES', { timeZone: 'America/Bogota' })
-      );
+      const result = reporter['getFileMeta'](testPath);
+      expect(result.modDate).toBe(actualDate);
       expect(result.lastAuthor).toBe('test-author');
     });
 

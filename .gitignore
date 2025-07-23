@@ -82,3 +82,8 @@ frontend-standards-full/
 # checkFrontendStandards.COMPLETE-GUIDE.md
 frontend-standards.log
 logs-standards-validations/
+
+#sonar
+# SonarQube configuration files
+sonar-project.properties
+.scannerwork/

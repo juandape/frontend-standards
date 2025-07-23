@@ -1,6 +1,5 @@
 import fs from 'fs';
 import path from 'path';
-import { execSync } from 'child_process';
 import type {
   IReporter,
   ILogger,
@@ -11,6 +10,7 @@ import type {
   ISummaryItem,
   IReportGenerationResult,
 } from '../types';
+import { getGitLastAuthor } from '../helpers/index.js';
 
 /**
  * Reporter for generating detailed validation reports
@@ -28,25 +28,23 @@ export class Reporter implements IReporter {
   } {
     let modDate = 'No date';
     let lastAuthor = 'Unknown';
+
     try {
       const absPath = path.isAbsolute(filePath)
         ? filePath
         : path.resolve(this.rootDir, filePath);
+
       if (fs.existsSync(absPath)) {
         const stats = fs.statSync(absPath);
         modDate = stats.mtime
           ? stats.mtime.toLocaleString('es-ES', { timeZone: 'America/Bogota' })
           : modDate;
-        // Get last author using git log
-        try {
-          const gitAuthor = execSync(
-            `git log -1 --pretty=format:'%an' -- "${absPath}"`,
-            { cwd: this.rootDir, encoding: 'utf8' }
-          ).trim();
-          if (gitAuthor) lastAuthor = gitAuthor;
-        } catch {}
+
+        // Now using safe helper
+        lastAuthor = getGitLastAuthor(absPath, this.rootDir);
       }
     } catch {}
+
     return { modDate, lastAuthor };
   }
 
@@ -409,7 +407,10 @@ export class Reporter implements IReporter {
   /**
    * Add statistics section
    */
-  addStatisticsSection(lines: string[], reportData: IProcessedReportData): void {
+  addStatisticsSection(
+    lines: string[],
+    reportData: IProcessedReportData
+  ): void {
     if (reportData.summary.length > 0) {
       lines.push('\n');
       lines.push('-'.repeat(17));

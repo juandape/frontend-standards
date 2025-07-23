@@ -18,5 +18,5 @@ export interface IValidationError {
   line?: number;
   column?: number;
   severity: 'error' | 'warning' | 'info';
-  category: string;
+  category?: string;
 }

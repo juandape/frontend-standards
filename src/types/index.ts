@@ -1,4 +1,4 @@
-export * from './additionaValidators.type';
+export * from './additionalValidators.type';
 export * from './projectAnalizer.type';
 export * from './reporter.type';
 export * from './ruleEngine.type';

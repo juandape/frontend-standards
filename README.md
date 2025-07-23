@@ -58,6 +58,13 @@ npm install --save-dev frontend-standards-checker@latest
 
 - Instala siempre desde npm usando los comandos anteriores.
 - No uses tarballs locales ni referencias workspace para evitar errores de instalación.
+
+⚠️ **Importante:**
+
+Importa únicamente desde el punto de entrada principal (`frontend-standards-checker`) o desde los módulos explícitamente exportados en la sección `exports` de `package.json`.
+No importes nunca desde directorios internos como `src/helpers` o `dist/src/helpers`, ya que esto causará errores de importación de directorios no soportados en Node.js ES Modules.
+Si necesitas ampliar la funcionalidad, solicita la exportación explícita del módulo requerido.
+
 - El paquete incluye todos los archivos necesarios y es compatible con monorepos, Next.js, Vite y React Native.
 
 ### Copiar guía de instalación y archivo de configuración
@@ -106,7 +113,6 @@ La guía completa incluye:
 - 🆕 Configuración de `onlyChangedFiles` y `onlyZone`
 - 🆕 Interacción entre diferentes opciones de configuración
 - 🆕 Niveles de severidad actualizados (ERROR/WARNING/INFO)
-
 
 #### Configuración simplificada archivo checkFrontendStandards.config.js
 
@@ -322,7 +328,6 @@ module.exports = {
   ]
 };
 ```
-
 
 ## 🏗️ Arquitectura
 
