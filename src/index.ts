@@ -1,12 +1,20 @@
-import path from 'path';
 import type {
   ICliOptions,
   IValidationResult,
   IProjectInfo,
   IStandardsConfiguration,
-  IValidationError,
   IZoneResult,
-} from './types';
+} from './types/index.js';
+import {
+  loadAndLogConfig,
+  analyzeProject,
+  getChangedFiles,
+  returnEarly,
+  createSummary,
+  generateReport,
+  logSummary,
+  processZone,
+} from './helpers/index.js';
 
 import { Logger } from './utils/logger.js';
 import { ConfigLoader } from './core/config-loader.js';
@@ -66,43 +74,33 @@ export class FrontendStandardsChecker {
   async run(): Promise<IValidationResult> {
     try {
       const startTime = Date.now();
-
       this.logger.info('🔍 Starting Frontend Standards validation...');
 
-      // Load configuration
-      const config = await this.configLoader.load(this.options.config);
-      if (this.options.debug) {
-        this.logger.debug(
-          'Configuration loaded:',
-          JSON.stringify(config, null, 2)
-        );
-      }
-
-      // Analyze project
-      const projectInfo = await this.projectAnalyzer.analyze(config.zones);
-      this.logger.info(`📁 Project type: ${projectInfo.projectType}`);
-      this.logger.info(`🏗️ Monorepo: ${projectInfo.isMonorepo ? 'Yes' : 'No'}`);
-
-      if (this.options.debug) {
-        this.logger.debug('Project analysis result:', projectInfo);
-      }
+      const config = await loadAndLogConfig(
+        this.configLoader,
+        this.options,
+        this.logger
+      );
+      const projectInfo = await analyzeProject(
+        this.projectAnalyzer,
+        config,
+        this.logger,
+        this.options
+      );
       const zonesToValidate = this.determineZones(projectInfo, config);
       this.logger.info(`🎯 Zones to validate: ${zonesToValidate.join(', ')}`);
 
-      // Initialize rule engine with configuration
       this.ruleEngine.initialize(config, {
         skipStructure: this.options.skipStructure ?? false,
         skipNaming: this.options.skipNaming ?? false,
         skipContent: this.options.skipContent ?? false,
       });
 
-      // Process each zone
-      const zoneResults: IZoneResult[] = [];
       let totalFiles = 0;
       let totalErrors = 0;
       let totalWarnings = 0;
+      const zoneResults: IZoneResult[] = [];
 
-      // Si onlyChangedFiles está habilitado y no hay onlyZone configurado, solo revisar archivos modificados
       let changedFiles: string[] = [];
       const hasOnlyZone = config.zones?.onlyZone !== undefined;
 
@@ -110,26 +108,13 @@ export class FrontendStandardsChecker {
         (this.options.onlyChangedFiles || config.onlyChangedFiles) &&
         !hasOnlyZone
       ) {
-        this.logger.info('🔍 Only checking files staged for commit');
-        changedFiles = await this.fileScanner.getFilesInCommit();
+        changedFiles = await getChangedFiles(this.fileScanner, this.logger);
         if (changedFiles.length === 0) {
           this.logger.info(
             'No files staged for commit found. Nothing to check.'
           );
-          return {
-            success: true,
-            totalFiles: 0,
-            totalErrors: 0,
-            totalWarnings: 0,
-            zones: [],
-            summary: {
-              errorsByCategory: {},
-              errorsByRule: {},
-              processingTime: Date.now() - startTime,
-            },
-          };
+          return returnEarly(startTime);
         }
-        this.logger.info(`Found ${changedFiles.length} files to check`);
       } else if (hasOnlyZone) {
         this.logger.info(
           `🎯 Only checking zone: ${config.zones?.onlyZone} (onlyChangedFiles disabled)`
@@ -137,153 +122,47 @@ export class FrontendStandardsChecker {
       }
 
       for (const zone of zonesToValidate) {
-        this.logger.info(`\n📂 Processing zone: ${zone}`);
-
-        let files = await this.fileScanner.scanZone(zone, {
-          extensions: config.extensions || ['.js', '.ts', '.jsx', '.tsx'],
-          ignorePatterns: config.ignorePatterns || [],
-          zones: zonesToValidate,
-          includePackages: config.zones?.includePackages || false,
-          customZones: config.zones?.customZones || [],
-        });
-
-        // Si onlyChangedFiles está habilitado y no hay onlyZone configurado, filtrar los archivos escaneados
-        const hasOnlyZone = config.zones?.onlyZone !== undefined;
-        if (
-          (this.options.onlyChangedFiles || config.onlyChangedFiles) &&
-          !hasOnlyZone &&
-          changedFiles.length > 0
-        ) {
-          const originalCount = files.length;
-          files = files.filter((file) =>
-            changedFiles.some((changedFile) => {
-              const fileFullPath =
-                file.fullPath ?? path.join(this.options.rootDir, file.path);
-              return (
-                fileFullPath === changedFile ||
-                changedFile.endsWith(file.path) ||
-                fileFullPath.endsWith(changedFile)
-              );
-            })
-          );
-          this.logger.debug(
-            `Filtered ${originalCount} files to ${files.length} changed files in zone ${zone}`
-          );
-        }
-
-        if (this.options.debug) {
-          this.logger.debug(
-            `📁 Debug: Files found in zone "${zone}":`,
-            files.map((f: any) => f.path)
-          );
-        }
-
-        const zoneErrors: IValidationError[] = [];
-
-        // Filter out configuration files before processing
-        const validFiles = files.filter((file) => {
-          const isConfigFile = this.ruleEngine.isConfigurationFile(file.path);
-          if (isConfigFile && this.options.verbose) {
-            this.logger.debug(`Skipping configuration file: ${file.path}`);
-          }
-          return !isConfigFile;
-        });
-
-        for (const file of validFiles) {
-          if (this.options.verbose) {
-            this.logger.info(`  🔍 Validating: ${file.path}`);
-          }
-
-          const fileErrors = await this.ruleEngine.validate(
-            file.content,
-            file.path,
-            {
-              filePath: file.path,
-              content: file.content,
-              projectInfo,
-              config,
-            }
-          );
-
-          zoneErrors.push(...fileErrors);
-        }
-
-        const zoneErrorsCount = zoneErrors.filter(
-          (e) => e.severity === 'error'
-        ).length;
-        const zoneWarningsCount = zoneErrors.filter(
-          (e) => e.severity === 'warning'
-        ).length;
-
-        const zoneResult: IZoneResult = {
+        const zoneResult = await processZone({
           zone,
-          filesProcessed: validFiles.length,
-          errors: zoneErrors,
-          errorsCount: zoneErrorsCount,
-          warningsCount: zoneWarningsCount,
-        };
+          config,
+          changedFiles,
+          hasOnlyZone,
+          options: this.options,
+          rootDir: this.options.rootDir,
+          logger: this.logger,
+          fileScanner: this.fileScanner,
+          ruleEngine: this.ruleEngine,
+          projectInfo,
+        });
 
         zoneResults.push(zoneResult);
-        totalFiles += validFiles.length;
-        totalErrors += zoneErrorsCount;
-        totalWarnings += zoneWarningsCount;
-
-        this.logger.info(`  ✅ Files processed: ${files.length}`);
-        this.logger.info(`  ❌ Errors found: ${zoneErrorsCount}`);
-        this.logger.info(`  ⚠️  Warnings found: ${zoneWarningsCount}`);
+        totalFiles += zoneResult.filesProcessed;
+        totalErrors += zoneResult.errorsCount;
+        totalWarnings += zoneResult.warningsCount;
       }
 
-      const processingTime = Date.now() - startTime;
-
-      // Create summary
-      const errorsByCategory: Record<string, number> = {};
-      const errorsByRule: Record<string, number> = {};
-
-      zoneResults.forEach((zone) => {
-        zone.errors.forEach((error) => {
-          errorsByCategory[error.category] =
-            (errorsByCategory[error.category] ?? 0) + 1;
-          errorsByRule[error.rule] = (errorsByRule[error.rule] ?? 0) + 1;
-        });
-      });
-
-      const result: IValidationResult = {
-        success: totalErrors === 0,
+      const result = createSummary(
+        zoneResults,
         totalFiles,
         totalErrors,
         totalWarnings,
-        zones: zoneResults,
-        summary: {
-          errorsByCategory,
-          errorsByRule,
-          processingTime,
-        },
-      };
-
-      // Generate report - convert zoneResults to the format expected by Reporter
-      const zoneErrors: Record<string, IValidationError[]> = {};
-      zoneResults.forEach((zone) => {
-        zoneErrors[zone.zone] = zone.errors;
-        // Debug: log errors count per zone before passing to reporter
-        this.logger.debug(
-          `🐛 Zone ${zone.zone}: ${zone.errors.length} errors before reporter`
-        );
-      });
-
-      const totalErrorsToReporter = Object.values(zoneErrors).reduce(
-        (sum, errors) => sum + errors.length,
-        0
-      );
-      this.logger.debug(
-        `🐛 Total errors being passed to reporter: ${totalErrorsToReporter}`
+        startTime
       );
 
-      await this.reporter.generate(zoneErrors, projectInfo, config);
-
-      this.logger.info(`\n🎉 Validation completed in ${processingTime}ms`);
-      this.logger.info(`📊 Total files: ${totalFiles}`);
-      this.logger.info(`❌ Total errors: ${totalErrors}`);
-      this.logger.info(`⚠️  Total warnings: ${totalWarnings}`);
+      await generateReport(
+        this.reporter,
+        this.logger,
+        zoneResults,
+        projectInfo,
+        config
+      );
+      logSummary(
+        this.logger,
+        result.summary,
+        totalFiles,
+        totalErrors,
+        totalWarnings
+      );
 
       return result;
     } catch (error) {

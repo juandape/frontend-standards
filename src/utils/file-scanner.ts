@@ -7,7 +7,7 @@ import type {
   IScanOptions,
   IGitIgnorePattern,
   IFileScanResult,
-} from '../types';
+} from '../types/index.js';
 
 /**
  * File scanner utility for finding and filtering project files
@@ -374,12 +374,12 @@ export function isReactNativeProject(filePath: string): boolean {
 
     // Check for React Native dependencies
     const isRN = !!(
-      packageJson.dependencies?.['react-native'] ||
-      packageJson.devDependencies?.['react-native'] ||
-      packageJson.dependencies?.['@react-native/metro-config'] ||
-      packageJson.devDependencies?.['@react-native/metro-config'] ||
+      packageJson.dependencies?.['react-native'] ??
+      packageJson.devDependencies?.['react-native'] ??
+      packageJson.dependencies?.['@react-native/metro-config'] ??
+      packageJson.devDependencies?.['@react-native/metro-config'] ??
       // Check for Expo (which is also React Native)
-      packageJson.dependencies?.['expo'] ||
+      packageJson.dependencies?.['expo'] ??
       packageJson.devDependencies?.['expo']
     );
 

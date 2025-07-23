@@ -70,103 +70,147 @@ export class RuleEngine implements IRuleEngine {
    * Validate a file against all rules
    */
   async validateFile(filePath: string): Promise<IValidationError[]> {
-    const errors: IValidationError[] = [];
-
-    // Skip configuration files completely
     if (this.isConfigFile(filePath)) {
       this.logger.debug(`Skipping configuration file: ${filePath}`);
-      return errors;
+      return [];
     }
 
     try {
       const content = fs.readFileSync(filePath, 'utf8');
-      const fileName = filePath.split('/').pop() ?? '';
-
-      // Skip validation for index files (they are usually just exports)
-      const isIndexFile = fileName === 'index.ts' || fileName === 'index.tsx';
-
-      // Run basic rules
-      for (const rule of this.rules) {
-        // Skip "No unused variables" as it's handled separately
-        if (rule.name === 'No unused variables') {
-          continue;
-        }
-
-        try {
-          const ruleResult = await rule.check(content, filePath);
-          if (ruleResult) {
-            const errorInfo: IValidationError = {
-              rule: rule.name,
-              message: rule.message,
-              filePath,
-              severity: rule.severity || 'error',
-              category: rule.category || 'content',
-            };
-
-            // Add specific line information for variable shadowing
-            if (
-              rule.name === 'No variable shadowing' &&
-              (rule as any).shadowingDetails
-            ) {
-              const shadowingDetails = (rule as any).shadowingDetails;
-              errorInfo.line = shadowingDetails.line;
-              errorInfo.message = `Variable '${shadowingDetails.variable}' shadows a variable from an outer scope (line ${shadowingDetails.line}). ${rule.message}`;
-            }
-
-            errors.push(errorInfo);
-          }
-        } catch (error) {
-          this.logger.warn(
-            `Rule "${rule.name}" failed for ${filePath}:`,
-            (error as Error).message
-          );
-        }
-      }
-
-      // Run specialized validators for non-index files
-      if (!isIndexFile) {
-        const additionalValidators = await this.loadAdditionalValidators();
-        if (additionalValidators) {
-          this.runContentValidators(
-            additionalValidators,
-            content,
-            filePath,
-            errors
-          );
-        }
-      }
-
-      // These validations always apply regardless of file type
-      const additionalValidators = await this.loadAdditionalValidators();
-      if (additionalValidators) {
-        this.runFileValidators(additionalValidators, filePath, errors);
-      }
+      const errors = await this.validateFileContent(content, filePath);
+      return this.deduplicateErrors(errors);
     } catch (error) {
-      this.logger.error(
-        `Failed to validate file ${filePath}:`,
-        (error as Error).message
-      );
-      errors.push({
+      return this.handleValidationError(error, filePath);
+    }
+  }
+
+  private async validateFileContent(
+    content: string,
+    filePath: string
+  ): Promise<IValidationError[]> {
+    const errors: IValidationError[] = [];
+    const fileName = path.basename(filePath);
+    const isIndexFile = fileName === 'index.ts' || fileName === 'index.tsx';
+
+    await this.runBasicRules(content, filePath, errors);
+
+    if (!isIndexFile) {
+      await this.runAdditionalValidations(content, filePath, errors);
+    }
+
+    await this.runAlwaysApplicableValidations(filePath, errors);
+    return errors;
+  }
+
+  private async runBasicRules(
+    content: string,
+    filePath: string,
+    errors: IValidationError[]
+  ): Promise<void> {
+    for (const rule of this.rules) {
+      if (rule.name === 'No unused variables') continue;
+
+      try {
+        await this.applyRule(rule, content, filePath, errors);
+      } catch (error) {
+        this.logRuleError(rule.name, filePath, error);
+      }
+    }
+  }
+
+  private async applyRule(
+    rule: any,
+    content: string,
+    filePath: string,
+    errors: IValidationError[]
+  ): Promise<void> {
+    const ruleResult = await rule.check(content, filePath);
+    if (!ruleResult) return;
+
+    const errorInfo = this.createErrorInfo(rule, filePath);
+    if (rule.name === 'No variable shadowing' && rule.shadowingDetails) {
+      this.addShadowingDetails(errorInfo, rule);
+    }
+    errors.push(errorInfo);
+  }
+
+  private createErrorInfo(rule: any, filePath: string): IValidationError {
+    return {
+      rule: rule.name,
+      message: rule.message,
+      filePath,
+      severity: rule.severity ?? 'error',
+      category: rule.category ?? 'content',
+    };
+  }
+
+  private addShadowingDetails(errorInfo: IValidationError, rule: any): void {
+    const { shadowingDetails } = rule;
+    errorInfo.line = shadowingDetails.line;
+    errorInfo.message = `Variable '${shadowingDetails.variable}' shadows a variable from an outer scope (line ${shadowingDetails.line}). ${rule.message}`;
+  }
+
+  private async runAdditionalValidations(
+    content: string,
+    filePath: string,
+    errors: IValidationError[]
+  ): Promise<void> {
+    const validators = await this.loadAdditionalValidators();
+    if (validators) {
+      this.runContentValidators(validators, content, filePath, errors);
+    }
+  }
+
+  private async runAlwaysApplicableValidations(
+    filePath: string,
+    errors: IValidationError[]
+  ): Promise<void> {
+    const validators = await this.loadAdditionalValidators();
+    if (validators) {
+      this.runFileValidators(validators, filePath, errors);
+    }
+  }
+
+  private logRuleError(
+    ruleName: string,
+    filePath: string,
+    error: unknown
+  ): void {
+    this.logger.warn(
+      `Rule "${ruleName}" failed for ${filePath}:`,
+      error instanceof Error ? error.message : String(error)
+    );
+  }
+
+  private deduplicateErrors(errors: IValidationError[]): IValidationError[] {
+    const seen = new Set<string>();
+    return errors.filter((err) => {
+      const key = `${err.filePath}|${err.rule}|${err.line ?? 'no-line'}`;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+  }
+
+  private handleValidationError(
+    error: unknown,
+    filePath: string
+  ): IValidationError[] {
+    this.logger.error(
+      `Failed to validate file ${filePath}:`,
+      error instanceof Error ? error.message : String(error)
+    );
+    return [
+      {
         rule: 'File validation error',
-        message: `Could not validate file: ${(error as Error).message}`,
+        message: `Could not validate file: ${
+          error instanceof Error ? error.message : String(error)
+        }`,
         filePath,
         severity: 'error',
         category: 'content',
-      });
-    }
-
-    // Deduplicate errors by filePath, rule, and line
-    const seen = new Set<string>();
-    const dedupedErrors: IValidationError[] = [];
-    for (const err of errors) {
-      // Compose a unique key for each error
-      const key = `${err.filePath}|${err.rule}|${err.line ?? 'no-line'}`;
-      if (!seen.has(key)) {
-        seen.add(key);
-        dedupedErrors.push(err);
-      }
-    }
-    return dedupedErrors;
+      },
+    ];
   }
 
   /**
