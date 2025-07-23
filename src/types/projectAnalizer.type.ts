@@ -1,4 +1,4 @@
-import { IValidationError } from './additionaValidators.type';
+import { IValidationError } from './additionalValidators.type';
 
 export interface LogLevel {
   ERROR: 0;

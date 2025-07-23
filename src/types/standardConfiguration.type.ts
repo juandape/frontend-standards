@@ -1,4 +1,7 @@
-import { IValidationError } from './additionaValidators.type';
+import { RuleEngine } from '../core/rule-engine';
+import { FileScanner } from '../utils/file-scanner';
+import { Logger } from '../utils/logger';
+import { IValidationError } from './additionalValidators.type';
 import { LogLevel, ILogger, IProjectInfo } from './projectAnalizer.type';
 import { IValidationRule, IStandardsConfiguration } from './reporter.type';
 import {
@@ -148,7 +151,22 @@ export interface IConfigLoader {
   logger: ILogger;
   configFileName: string;
   load(customConfigPath?: string | null): Promise<IStandardsConfiguration>;
-  mergeWithDefaults(customConfig: IConfigurationExport): IStandardsConfiguration;
+  mergeWithDefaults(
+    customConfig: IConfigurationExport
+  ): IStandardsConfiguration;
   getDefaultConfig(): IStandardsConfiguration;
   getDefaultRules(): IDefaultRulesStructure;
+}
+
+export interface IProcessZoneOptions {
+  zone: string;
+  config: IStandardsConfiguration;
+  changedFiles: string[];
+  hasOnlyZone: boolean;
+  options: Partial<ICliOptions> & { rootDir: string };
+  rootDir: string;
+  logger: Logger;
+  fileScanner: FileScanner;
+  ruleEngine: RuleEngine;
+  projectInfo: IProjectInfo;
 }

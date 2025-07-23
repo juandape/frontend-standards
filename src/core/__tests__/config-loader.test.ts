@@ -1,7 +1,7 @@
 import { ConfigLoader } from '../config-loader';
 import fs from 'fs';
-import { mocked } from 'jest-mock';
 
+import { jest } from '@jest/globals';
 // Mock the filesystem and other dependencies
 jest.mock('fs');
 jest.mock('../../utils/file-scanner');
@@ -36,7 +36,7 @@ describe('ConfigLoader', () => {
 
   describe('load', () => {
     it('should return default config when no config file exists', async () => {
-      mocked(fs.existsSync).mockReturnValue(false);
+      jest.spyOn(fs, 'existsSync').mockReturnValue(false);
 
       const config = await configLoader.load();
 
@@ -54,7 +54,7 @@ describe('ConfigLoader', () => {
 
     it('should load config from file using ESM import', async () => {
       const configPath = '/project/root/checkFrontendStandards.config.js';
-      mocked(fs.existsSync).mockReturnValue(true);
+      jest.spyOn(fs, 'existsSync').mockReturnValue(true);
 
       // Mock Date.now to return a fixed value
       const dateNowSpy = jest.spyOn(Date, 'now').mockReturnValue(12345);
@@ -83,7 +83,7 @@ describe('ConfigLoader', () => {
 
     it('should accept custom config path', async () => {
       const customPath = '/custom/path/config.js';
-      mocked(fs.existsSync).mockReturnValue(true);
+      jest.spyOn(fs, 'existsSync').mockReturnValue(true);
 
       // Mock Date.now to return a fixed value
       const dateNowSpy = jest.spyOn(Date, 'now').mockReturnValue(12345);
@@ -112,7 +112,7 @@ describe('ConfigLoader', () => {
     it('should resolve relative custom config path', async () => {
       const relativePath = './config.js';
       const absolutePath = '/project/root/config.js';
-      mocked(fs.existsSync).mockReturnValue(true);
+      jest.spyOn(fs, 'existsSync').mockReturnValue(true);
 
       // Mock Date.now to return a fixed value
       const dateNowSpy = jest.spyOn(Date, 'now').mockReturnValue(12345);
