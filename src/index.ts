@@ -4,7 +4,7 @@ import type {
   IProjectInfo,
   IStandardsConfiguration,
   IZoneResult,
-} from './types';
+} from './types/index.js';
 import {
   loadAndLogConfig,
   analyzeProject,
@@ -14,14 +14,14 @@ import {
   generateReport,
   logSummary,
   processZone,
-} from './helpers/index';
+} from './helpers/index.js';
 
-import { Logger } from './utils/logger';
-import { ConfigLoader } from './core/config-loader';
-import { FileScanner } from './utils/file-scanner';
-import { ProjectAnalyzer } from './core/project-analyzer';
-import { RuleEngine } from './core/rule-engine';
-import { Reporter } from './core/reporter';
+import { Logger } from './utils/logger.js';
+import { ConfigLoader } from './core/config-loader.js';
+import { FileScanner } from './utils/file-scanner.js';
+import { ProjectAnalyzer } from './core/project-analyzer.js';
+import { RuleEngine } from './core/rule-engine.js';
+import { Reporter } from './core/reporter.js';
 
 /**
  * Main Frontend Standards Checker class
@@ -205,4 +205,4 @@ export class FrontendStandardsChecker {
 
 // Export default class and types
 export default FrontendStandardsChecker;
-export * from './types/standardConfiguration.type';
+export * from './types/standardConfiguration.type.js';

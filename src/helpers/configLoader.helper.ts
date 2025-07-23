@@ -1,6 +1,6 @@
 import fs from 'fs';
 import path from 'path';
-import type { ILogger } from '../types';
+import type { ILogger } from '../types/index.js';
 import { isReactNativeProject } from '../utils/file-scanner.js';
 
 /**
@@ -305,7 +305,10 @@ export class ConfigLoaderHelper {
     ];
 
     const namedExports: string[] = [];
-    const exportRegex = new RegExp(`export\\s+{([^}]*)}\\s+from\\s+['"]\\./${fileBase}['"]`, 'g');
+    const exportRegex = new RegExp(
+      `export\\s+{([^}]*)}\\s+from\\s+['"]\\./${fileBase}['"]`,
+      'g'
+    );
     let execResult: RegExpExecArray | null;
     while ((execResult = exportRegex.exec(indexContent)) !== null) {
       namedExports.push(execResult[0]);

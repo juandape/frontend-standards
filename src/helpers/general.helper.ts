@@ -6,7 +6,7 @@ import type {
   IStandardsConfiguration,
   IProjectInfo,
   IProcessZoneOptions,
-} from '../types';
+} from '../types/index.js';
 
 import type { Logger } from '../utils/logger';
 

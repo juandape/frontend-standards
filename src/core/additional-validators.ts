@@ -7,7 +7,7 @@ import fs from 'fs';
 import path from 'path';
 import * as acorn from 'acorn';
 import * as acornWalk from 'acorn-walk';
-import { isReactNativeProject } from '../utils/file-scanner';
+import { isReactNativeProject } from '../utils/file-scanner.js';
 // Removed duplicate type import from body
 import {
   isConfigOrConstantsFile,
@@ -22,7 +22,7 @@ import {
   analyzeFunctionComplexity,
   hasProperComments,
   createCommentError,
-} from '../helpers/index';
+} from '../helpers/index.js';
 
 // Naming conventions by file type
 const NAMING_RULES: INamingRule[] = [

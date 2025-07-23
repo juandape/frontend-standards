@@ -7,7 +7,7 @@ import type {
   IScanOptions,
   IGitIgnorePattern,
   IFileScanResult,
-} from '../types';
+} from '../types/index.js';
 
 /**
  * File scanner utility for finding and filtering project files

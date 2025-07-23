@@ -9,7 +9,7 @@ import type {
   IProjectInfo,
   IZoneInfo,
   IPackageJsonContent,
-} from '../types';
+} from '../types/index.js';
 
 /**
  * Project analyzer for detecting project type, structure, and zones
@@ -489,7 +489,9 @@ export class ProjectAnalyzer implements IProjectAnalyzer {
       }
     } catch (error) {
       this.logger.warn(
-        `Could not read file for function name validation: ${filePath}. Error: ${(error as Error).message}`
+        `Could not read file for function name validation: ${filePath}. Error: ${
+          (error as Error).message
+        }`
       );
       throw error;
     }

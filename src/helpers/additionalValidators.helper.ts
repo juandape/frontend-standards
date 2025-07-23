@@ -1,5 +1,5 @@
 import path from 'path';
-import { IValidationError } from '../types';
+import { IValidationError } from '../types/index.js';
 
 export const isConfigOrConstantsFile = (filePath: string): boolean => {
   return /config|constants/i.test(filePath) && filePath.endsWith('.ts');
@@ -105,7 +105,9 @@ export function shouldSkipLine(trimmedLine: string): boolean {
   );
 }
 
-export function detectFunctionDeclaration(trimmedLine: string): RegExpMatchArray | null {
+export function detectFunctionDeclaration(
+  trimmedLine: string
+): RegExpMatchArray | null {
   // Split the complex regex into simpler ones
   const patterns = [
     // export const/let/var/function FunctionName = (...) => { ... }
@@ -127,11 +129,16 @@ export function detectFunctionDeclaration(trimmedLine: string): RegExpMatchArray
   return null;
 }
 
-export function getFunctionName(functionMatch: RegExpMatchArray): string | null {
+export function getFunctionName(
+  functionMatch: RegExpMatchArray
+): string | null {
   return functionMatch[3] ?? functionMatch[2] ?? null;
 }
 
-export function shouldSkipFunction(trimmedLine: string, _functionName: string): boolean {
+export function shouldSkipFunction(
+  trimmedLine: string,
+  _functionName: string
+): boolean {
   if (trimmedLine.includes('interface ') || trimmedLine.includes('type ')) {
     return true;
   }
@@ -143,7 +150,11 @@ export function shouldSkipFunction(trimmedLine: string, _functionName: string): 
   );
 }
 
-export function analyzeFunctionComplexity(lines: string[], startIndex: number, content: string) {
+export function analyzeFunctionComplexity(
+  lines: string[],
+  startIndex: number,
+  content: string
+) {
   let complexityScore = 0;
   let braceCount = 0;
   let inFunction = false;
@@ -168,9 +179,10 @@ export function analyzeFunctionComplexity(lines: string[], startIndex: number, c
     }
   }
 
-  const functionContent = content.indexOf(functionStartLine) >= 0
-    ? content.substring(content.indexOf(functionStartLine))
-    : '';
+  const functionContent =
+    content.indexOf(functionStartLine) >= 0
+      ? content.substring(content.indexOf(functionStartLine))
+      : '';
 
   const isComplex = determineComplexity(
     complexityScore,
@@ -193,15 +205,25 @@ function calculateLineComplexity(line: string): number {
   if (/\b(if|else if|switch|case)\b/.test(line)) score += 1;
   if (/\b(for|while|do)\b/.test(line)) score += 2;
   if (/\b(try|catch|finally)\b/.test(line)) score += 2;
-  if (/\b(async|await|Promise\.all|Promise\.resolve|Promise\.reject|\.then|\.catch)\b/.test(line)) score += 2;
-  if (/\.(map|filter|reduce|forEach|find|some|every)\s*\(/.test(line)) score += 1;
+  if (
+    /\b(async|await|Promise\.all|Promise\.resolve|Promise\.reject|\.then|\.catch)\b/.test(
+      line
+    )
+  )
+    score += 2;
+  if (/\.(map|filter|reduce|forEach|find|some|every)\s*\(/.test(line))
+    score += 1;
   if (/\?\s*[^:]*\s*:/.test(line)) score += 1; // Ternary operators
   if (/&&|\|\|/.test(line)) score += 0.5; // Logical operators
 
   return score;
 }
 
-function determineComplexity(score: number, lines: number, functionContent: string): boolean {
+function determineComplexity(
+  score: number,
+  lines: number,
+  functionContent: string
+): boolean {
   return (
     score >= 3 ||
     lines > 8 ||
@@ -209,8 +231,16 @@ function determineComplexity(score: number, lines: number, functionContent: stri
   );
 }
 
-export function hasProperComments(lines: string[], functionLineIndex: number, _content: string): boolean {
-  for (let k = Math.max(0, functionLineIndex - 15); k < functionLineIndex; k++) {
+export function hasProperComments(
+  lines: string[],
+  functionLineIndex: number,
+  _content: string
+): boolean {
+  for (
+    let k = Math.max(0, functionLineIndex - 15);
+    k < functionLineIndex;
+    k++
+  ) {
     const commentLine = lines[k];
     if (!commentLine) continue;
 
@@ -242,7 +272,11 @@ export function createCommentError(
 ): IValidationError {
   return {
     rule: 'Missing comment in complex function',
-    message: `Complex function '${functionName}' (complexity: ${analysis.complexityScore.toFixed(1)}, lines: ${analysis.linesInFunction}) must have comments explaining its behavior.`,
+    message: `Complex function '${functionName}' (complexity: ${analysis.complexityScore.toFixed(
+      1
+    )}, lines: ${
+      analysis.linesInFunction
+    }) must have comments explaining its behavior.`,
     filePath: `${filePath}:${lineNumber + 1}`,
     line: lineNumber + 1,
     severity: 'warning',
