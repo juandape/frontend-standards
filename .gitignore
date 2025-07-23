@@ -87,3 +87,5 @@ logs-standards-validations/
 # SonarQube configuration files
 sonar-project.properties
 .scannerwork/
+
+run-tasks.js

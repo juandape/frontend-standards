@@ -5,7 +5,6 @@ import path from 'path';
  * Safely retrieves the last author of a file using git.
  * Only works if the file exists and is part of a Git repo.
  */
-//NOSONAR
 export function getGitLastAuthor(filePath: string, cwd: string): string {
   try {
     const absPath = path.resolve(filePath);
