@@ -1,5 +1,5 @@
 {
-  "name": "frontend-standards-checker",
+  "name": "@dcefront/frontend-standards-checker",
   "version": "1.0.2",
   "description": "A comprehensive frontend standards validation tool with TypeScript support",
   "type": "module",
@@ -35,6 +35,7 @@
     "build": "tsc && chmod +x dist/bin/cli.js && cp bin/frontend-standards-log-viewer.html dist/bin/ && cp checkFrontendStandards.COMPLETE-GUIDE.md dist/",
     "build:watch": "tsc --watch",
     "watch": "npm run build:watch",
+    "pub": "npm publish",
     "dev": "tsx --watch src/index.ts",
     "start": "node dist/src/index.js",
     "cli": "tsx bin/cli.ts",

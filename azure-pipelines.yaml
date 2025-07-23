@@ -1,0 +1,28 @@
+trigger:
+  branches:
+    include:
+      - 'main'
+      - 'release/'
+pr:
+  branches:
+    include:
+      - 'main'
+      - 'release/'
+
+resources:
+  repositories:
+    - repository: templates
+      type: git
+      name: cbf-itmgt-pipelines
+      ref: feature/integrations-front-validator
+      
+pool:
+  vmImage: 'ubuntu-latest'      
+
+variables:
+  - group: snyk-credentials
+  - group: security-information
+  - group: blu-front-validator
+
+stages:
+  - template: stages/stages-front-validator.yaml@templates
