@@ -8,10 +8,10 @@ import type {
   IDefaultRulesStructure,
   IValidationRule,
   IRulesObjectFormat,
-} from '../types';
-import { isReactNativeProject } from '../utils/file-scanner';
-import { checkInlineStyles } from './additional-validators';
-import { ConfigLoaderHelper } from '../helpers/configLoader.helper';
+} from '../types/index.js';
+import { isReactNativeProject } from '../utils/file-scanner.js';
+import { checkInlineStyles } from './additional-validators.js';
+import { ConfigLoaderHelper } from '../helpers/configLoader.helper.js';
 
 /**
  * Configuration loader and manager
