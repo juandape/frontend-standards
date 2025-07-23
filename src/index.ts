@@ -14,7 +14,7 @@ import {
   generateReport,
   logSummary,
   processZone,
-} from './helpers';
+} from './helpers/index.js';
 
 import { Logger } from './utils/logger.js';
 import { ConfigLoader } from './core/config-loader.js';

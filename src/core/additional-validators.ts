@@ -8,9 +8,10 @@ import path from 'path';
 import * as acorn from 'acorn';
 import * as acornWalk from 'acorn-walk';
 import { isReactNativeProject } from '../utils/file-scanner.js';
-import { isConfigOrConstantsFile } from '../helpers/index.js';
+// ...existing code...
 import { IDeclaredVariable, INamingRule, IValidationError } from '../types/';
 import {
+  isConfigOrConstantsFile,
   shouldProcessFile,
   findFunctionMatch,
   validateFunctionName,
@@ -22,7 +23,7 @@ import {
   analyzeFunctionComplexity,
   hasProperComments,
   createCommentError,
-} from '../helpers';
+} from '../helpers/index.js';
 
 // Naming conventions by file type
 const NAMING_RULES: INamingRule[] = [
