@@ -74,8 +74,8 @@ export function createSummary(
 
   zoneResults.forEach((zone) => {
     zone.errors.forEach((error) => {
-      errorsByCategory[error.category] =
-        (errorsByCategory[error.category] ?? 0) + 1;
+      const categoryKey = error.category ?? 'uncategorized';
+      errorsByCategory[categoryKey] = (errorsByCategory[categoryKey] ?? 0) + 1;
       errorsByRule[error.rule] = (errorsByRule[error.rule] ?? 0) + 1;
     });
   });

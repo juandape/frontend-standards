@@ -1,7 +1,7 @@
 import { RuleEngine } from '../core/rule-engine';
 import { FileScanner } from '../utils/file-scanner';
 import { Logger } from '../utils/logger';
-import { IValidationError } from './additionaValidators.type';
+import { IValidationError } from './additionalValidators.type';
 import { LogLevel, ILogger, IProjectInfo } from './projectAnalizer.type';
 import { IValidationRule, IStandardsConfiguration } from './reporter.type';
 import {

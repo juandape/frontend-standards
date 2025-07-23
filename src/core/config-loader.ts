@@ -9,9 +9,9 @@ import type {
   IValidationRule,
   IRulesObjectFormat,
 } from '../types';
-import { isReactNativeProject } from '../utils/file-scanner.js';
-import { checkInlineStyles } from './additional-validators.js';
-import { ConfigLoaderHelper } from '../helpers/configLoader.helper.js';
+import { isReactNativeProject } from '../utils/file-scanner';
+import { checkInlineStyles } from './additional-validators';
+import { ConfigLoaderHelper } from '../helpers/configLoader.helper';
 
 /**
  * Configuration loader and manager
@@ -896,11 +896,7 @@ export class ConfigLoader implements IConfigLoader {
           const extensions = ['.js', '.ts', '.jsx', '.tsx'];
           // Only rebuild the graph if for a new root file
           if (graphBuiltFor !== filePath) {
-            helper.buildDependencyGraph(
-              filePath,
-              extensions,
-              dependencyGraph
-            );
+            helper.buildDependencyGraph(filePath, extensions, dependencyGraph);
             graphBuiltFor = filePath;
           }
           return hasCircularDependency(filePath, filePath, new Set([filePath]));
@@ -1599,7 +1595,9 @@ export class ConfigLoader implements IConfigLoader {
             for (const word of spanishWords) {
               const pattern = wordBoundaryPattern(word);
               if (pattern.test(cleanComment)) {
-                if (!validTechTerms.some((term) => cleanComment.includes(term))) {
+                if (
+                  !validTechTerms.some((term) => cleanComment.includes(term))
+                ) {
                   return true;
                 }
               }
