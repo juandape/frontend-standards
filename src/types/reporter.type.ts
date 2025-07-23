@@ -21,7 +21,7 @@ export interface IReporter {
     reportData: IProcessedReportData,
     projectInfo: IProjectAnalysisResult,
     config: IStandardsConfiguration
-  ): string;
+  ): Promise<string>;
   saveReport(content: string): Promise<void>;
   generateQuickSummary(reportData: IProcessedReportData): string;
   exportJson(

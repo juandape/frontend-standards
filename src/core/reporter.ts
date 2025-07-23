@@ -16,6 +16,17 @@ import { getGitLastAuthor } from '../helpers/index.js';
  * Reporter for generating detailed validation reports
  */
 export class Reporter implements IReporter {
+  /**
+   * Determina si un archivo es de Jest (test/spec)
+   */
+  private isJestFile(filePath: string): boolean {
+    const lowerPath = filePath.toLowerCase();
+    return (
+      /\.(test|spec)\.[jt]sx?$/.test(lowerPath) ||
+      /__tests__/.test(lowerPath) ||
+      lowerPath.includes('jest')
+    );
+  }
   public readonly rootDir: string;
   public outputPath: string;
   public logDir: string;
@@ -79,7 +90,11 @@ export class Reporter implements IReporter {
     this.setOriginalZoneErrors(zoneErrors);
 
     const reportData = this.processErrors(zoneErrors);
-    const reportContent = this.formatReport(reportData, projectInfo, config);
+    const reportContent = await this.formatReport(
+      reportData,
+      projectInfo,
+      config
+    );
 
     await this.saveReport(reportContent);
 
@@ -122,6 +137,10 @@ export class Reporter implements IReporter {
       totalCheckedByZone[zone] = 0;
 
       for (const error of errors) {
+        // Excluir cualquier archivo jest
+        if (this.isJestFile(error.filePath)) {
+          continue;
+        }
         totalCheckedByZone[zone]++;
 
         if (error.message.startsWith('✅')) {
@@ -186,11 +205,11 @@ export class Reporter implements IReporter {
   /**
    * Format the complete report
    */
-  formatReport(
+  async formatReport(
     reportData: IProcessedReportData,
     projectInfo: IProjectAnalysisResult,
     _config: IStandardsConfiguration
-  ): string {
+  ): Promise<string> {
     const lines: string[] = [];
 
     this.addReportHeader(lines, projectInfo);
@@ -308,19 +327,30 @@ export class Reporter implements IReporter {
         (e) =>
           !e.message.startsWith('✅') &&
           e.severity === 'error' &&
-          !e.message.startsWith('Present:')
+          !e.message.startsWith('Present:') &&
+          !this.isJestFile(e.filePath)
       );
-
       if (actualErrors.length > 0) {
         lines.push(`📂 Zone: ${zone}`);
-
         for (const error of actualErrors) {
           const relPath = path.relative(this.rootDir, error.filePath);
+          // Formato cliqueable: ruta:linea
           const fileLocation = error.line
             ? `${relPath}:${error.line}`
             : relPath;
           const meta = this.getFileMeta(error.filePath);
-          lines.push(`\n  📄 ${fileLocation}`);
+          let codeLine: string | undefined = undefined;
+          if (error.line && error.filePath) {
+            try {
+              const fileContent = fs.readFileSync(error.filePath, 'utf8');
+              const fileLines = fileContent.split(/\r?\n/);
+              codeLine = fileLines[error.line - 1]?.trim();
+            } catch {}
+          }
+          lines.push(`\n📄 ${fileLocation}`);
+          if (codeLine !== undefined) {
+            lines.push(`     > ${codeLine}`);
+          }
           lines.push(`     Rule: ${error.rule}`);
           lines.push(`     Issue: ${error.message}`);
           lines.push(`     Last modification: ${meta.modDate}`);
@@ -330,6 +360,7 @@ export class Reporter implements IReporter {
       }
     }
   }
+
   /**
    * Add detailed warnings section
    */
@@ -345,7 +376,8 @@ export class Reporter implements IReporter {
         (e) =>
           !e.message.startsWith('✅') &&
           e.severity === 'warning' &&
-          !e.message.startsWith('Present:')
+          !e.message.startsWith('Present:') &&
+          !this.isJestFile(e.filePath)
       );
 
       if (actualWarnings.length > 0) {
@@ -353,11 +385,12 @@ export class Reporter implements IReporter {
 
         for (const warning of actualWarnings) {
           const relPath = path.relative(this.rootDir, warning.filePath);
+          // Formato cliqueable: ruta:linea
           const fileLocation = warning.line
             ? `${relPath}:${warning.line}`
             : relPath;
           const meta = this.getFileMeta(warning.filePath);
-          lines.push(`\n  📄 ${fileLocation}`);
+          lines.push(`\n📄 ${fileLocation}`);
           lines.push(`     Rule: ${warning.rule}`);
           lines.push(`     Issue: ${warning.message}`);
           lines.push(`     Last modification: ${meta.modDate}`);
@@ -383,7 +416,8 @@ export class Reporter implements IReporter {
         (e) =>
           !e.message.startsWith('✅') &&
           e.severity === 'info' &&
-          !e.message.startsWith('Present:')
+          !e.message.startsWith('Present:') &&
+          !this.isJestFile(e.filePath)
       );
 
       if (actualInfos.length > 0) {
@@ -391,9 +425,10 @@ export class Reporter implements IReporter {
 
         for (const info of actualInfos) {
           const relPath = path.relative(this.rootDir, info.filePath);
+          // Formato cliqueable: ruta:linea
           const fileLocation = info.line ? `${relPath}:${info.line}` : relPath;
           const meta = this.getFileMeta(info.filePath);
-          lines.push(`\n  📄 ${fileLocation}`);
+          lines.push(`\n📄 ${fileLocation}`);
           lines.push(`     Rule: ${info.rule}`);
           lines.push(`     Suggestion: ${info.message}`);
           lines.push(`     Last modification: ${meta.modDate}`);
@@ -519,6 +554,14 @@ export class Reporter implements IReporter {
         path.join(
           this.rootDir,
           'node_modules',
+          'frontend-standards-checker',
+          'bin',
+          'frontend-standards-log-viewer.html'
+        ),
+        path.join(
+          this.rootDir,
+          'node_modules',
+          '@dcefront',
           'frontend-standards-checker',
           'bin',
           'frontend-standards-log-viewer.html'

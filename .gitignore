@@ -5,6 +5,8 @@ node_modules/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+.yarnrc.yml
+yarn.lock
 
 # Runtime data
 pids
@@ -87,3 +89,12 @@ logs-standards-validations/
 # SonarQube configuration files
 sonar-project.properties
 .scannerwork/
+
+#scripts
+# Scripts for running tasks
+run-tasks.js
+
+# Node.js package manager files
+.npmrc
+.pnp.cjs
+.pnp.loader.mjs
