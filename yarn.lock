@@ -391,6 +391,31 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@dcefront/frontend-standards-checker@workspace:.":
+  version: 0.0.0-use.local
+  resolution: "@dcefront/frontend-standards-checker@workspace:."
+  dependencies:
+    "@types/jest": "npm:^30.0.0"
+    "@types/node": "npm:^24.0.14"
+    "@typescript-eslint/eslint-plugin": "npm:^6.21.0"
+    "@typescript-eslint/parser": "npm:^6.21.0"
+    acorn: "npm:^8.11.3"
+    acorn-walk: "npm:^8.3.2"
+    chalk: "npm:^5.3.0"
+    commander: "npm:^11.1.0"
+    eslint: "npm:^8.57.1"
+    frontend-standards-checker: "npm:^1.0.6"
+    jest: "npm:^30.0.4"
+    nthline: "npm:^1.0.2"
+    ts-jest: "npm:^29.4.0"
+    tsx: "npm:^4.6.0"
+    typescript: "npm:^5.3.0"
+  bin:
+    frontend-standards-checker: ./dist/bin/cli.js
+    frontend-standards-init: ./bin/copy-frontend-standards-files.cjs
+  languageName: unknown
+  linkType: soft
+
 "@emnapi/core@npm:^1.4.3":
   version: 1.4.5
   resolution: "@emnapi/core@npm:1.4.5"
@@ -2516,28 +2541,22 @@ __metadata:
   languageName: node
   linkType: hard
 
-"frontend-standards-checker@workspace:.":
-  version: 0.0.0-use.local
-  resolution: "frontend-standards-checker@workspace:."
+"frontend-standards-checker@npm:^1.0.6":
+  version: 1.0.7
+  resolution: "frontend-standards-checker@npm:1.0.7"
   dependencies:
-    "@types/jest": "npm:^30.0.0"
-    "@types/node": "npm:^24.0.14"
-    "@typescript-eslint/eslint-plugin": "npm:^6.21.0"
-    "@typescript-eslint/parser": "npm:^6.21.0"
     acorn: "npm:^8.11.3"
     acorn-walk: "npm:^8.3.2"
     chalk: "npm:^5.3.0"
     commander: "npm:^11.1.0"
-    eslint: "npm:^8.57.1"
-    jest: "npm:^30.0.4"
-    ts-jest: "npm:^29.4.0"
-    tsx: "npm:^4.6.0"
+    nthline: "npm:^1.0.2"
     typescript: "npm:^5.3.0"
   bin:
-    frontend-standards-checker: ./dist/bin/cli.js
-    frontend-standards-init: ./bin/copy-frontend-standards-files.cjs
-  languageName: unknown
-  linkType: soft
+    frontend-standards-checker: dist/bin/cli.js
+    frontend-standards-init: bin/copy-frontend-standards-files.cjs
+  checksum: 10c0/9c5e4bb9ea5d2c166e370a1c814d285b3d90adb6fee2f4bb62012221ec4c51754990151548e10135f4d8ed13d2011d7e541b581cc4588c6c1928188f790b58a1
+  languageName: node
+  linkType: hard
 
 "fs-minipass@npm:^3.0.0":
   version: 3.0.3
@@ -3853,6 +3872,13 @@ __metadata:
   dependencies:
     path-key: "npm:^3.0.0"
   checksum: 10c0/6f9353a95288f8455cf64cbeb707b28826a7f29690244c1e4bb61ec573256e021b6ad6651b394eb1ccfd00d6ec50147253aba2c5fe58a57ceb111fad62c519ac
+  languageName: node
+  linkType: hard
+
+"nthline@npm:^1.0.2":
+  version: 1.0.2
+  resolution: "nthline@npm:1.0.2"
+  checksum: 10c0/27d045f8968b6e9147724287b8a4cdaffceaf4d9ed6bd6b35e29699fa038c73a4a6e09d2f68fbe151aa057ddb6fba14ae0b0dddd698a42e1a2b693ed0d934048
   languageName: node
   linkType: hard
 

@@ -1,6 +1,6 @@
 {
   "name": "@dcefront/frontend-standards-checker",
-  "version": "1.0.2",
+  "version": "1.0.4",
   "description": "A comprehensive frontend standards validation tool with TypeScript support",
   "type": "module",
   "main": "dist/src/index.js",
@@ -46,7 +46,6 @@
     "clean": "rm -rf dist",
     "postinstall": "npm run build 2>/dev/null || yarn build 2>/dev/null || (echo 'Build step skipped - using pre-built files'; exit 0); echo '\n🎉 Frontend Standards Checker instalado correctamente!\n\n📋 Comandos disponibles:\n   npm run standards (o yarn standards)\n   npm run standards -- --zones src components\n   npm run standards -- --verbose\n\n📖 Configuración: Edita checkFrontendStandards.config.js\n💡 Documentación completa: https://github.com/juandape/frontend-standards\n'",
     "prepare": "npm run build 2>/dev/null || yarn build 2>/dev/null || echo 'Prepare failed'",
-    "prepublishOnly": "npm run clean && npm run build",
     "standards": "frontend-standards-checker"
   },
   "keywords": [
