@@ -1,15 +1,14 @@
-/**
- * Additional validation functions for frontend standards
- * Migrated to TypeScript with strict type safety and zero 'any' usage
- */
-
+import type {
+  IDeclaredVariable,
+  INamingRule,
+  IValidationError,
+} from '../types/additionalValidators.type';
 import fs from 'fs';
 import path from 'path';
 import * as acorn from 'acorn';
 import * as acornWalk from 'acorn-walk';
-import { isReactNativeProject } from '../utils/file-scanner.js';
-// ...existing code...
-import { IDeclaredVariable, INamingRule, IValidationError } from '../types/';
+import { isReactNativeProject } from '../utils/file-scanner';
+// Removed duplicate type import from body
 import {
   isConfigOrConstantsFile,
   shouldProcessFile,
@@ -23,7 +22,7 @@ import {
   analyzeFunctionComplexity,
   hasProperComments,
   createCommentError,
-} from '../helpers/index.js';
+} from '../helpers/index';
 
 // Naming conventions by file type
 const NAMING_RULES: INamingRule[] = [
@@ -147,7 +146,6 @@ export function checkCommentedCode(
       return;
     }
 
-    // Track multi-line comment state
     if (/^\s*\/\*/.test(line) && !/^\s*\/\*\*/.test(line)) {
       inMultiLineComment = true;
       return;

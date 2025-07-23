@@ -10,7 +10,7 @@ import type {
   ISummaryItem,
   IReportGenerationResult,
 } from '../types';
-import { getGitLastAuthor } from '../helpers/index.js';
+import { getGitLastAuthor } from '../helpers/index';
 
 /**
  * Reporter for generating detailed validation reports
