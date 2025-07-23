@@ -93,3 +93,8 @@ sonar-project.properties
 #scripts
 # Scripts for running tasks
 run-tasks.js
+
+# Node.js package manager files
+.npmrc
+.pnp.cjs
+.pnp.loader.mjs
