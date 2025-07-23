@@ -1,6 +1,5 @@
 import fs from 'fs';
 import path from 'path';
-import { getLineFromFile } from '../helpers/get-line.helper.js';
 import type {
   IReporter,
   ILogger,
@@ -21,8 +20,11 @@ export class Reporter implements IReporter {
    * Determina si un archivo es de Jest (test/spec)
    */
   private isJestFile(filePath: string): boolean {
+    const lowerPath = filePath.toLowerCase();
     return (
-      /\.(test|spec)\.[jt]sx?$/.test(filePath) || /__tests__/.test(filePath)
+      /\.(test|spec)\.[jt]sx?$/.test(lowerPath) ||
+      /__tests__/.test(lowerPath) ||
+      lowerPath.includes('jest')
     );
   }
   public readonly rootDir: string;
@@ -135,6 +137,10 @@ export class Reporter implements IReporter {
       totalCheckedByZone[zone] = 0;
 
       for (const error of errors) {
+        // Excluir cualquier archivo jest
+        if (this.isJestFile(error.filePath)) {
+          continue;
+        }
         totalCheckedByZone[zone]++;
 
         if (error.message.startsWith('✅')) {
@@ -219,7 +225,7 @@ export class Reporter implements IReporter {
 
     this.addSummarySection(lines, reportData);
     this.addZoneResultsSection(lines, reportData);
-    await this.addDetailedErrorsSection(lines);
+    this.addDetailedErrorsSection(lines);
     this.addDetailedWarningsSection(lines);
     this.addDetailedInfosSection(lines);
     this.addStatisticsSection(lines, reportData);
@@ -309,7 +315,7 @@ export class Reporter implements IReporter {
   /**
    * Add detailed errors section
    */
-  async addDetailedErrorsSection(lines: string[]): Promise<void> {
+  addDetailedErrorsSection(lines: string[]): void {
     lines.push('\n');
     lines.push('-'.repeat(20));
     lines.push('DETAILED VIOLATIONS:');
@@ -331,12 +337,20 @@ export class Reporter implements IReporter {
           const fileLocation = error.line
             ? `${relPath}:${error.line}`
             : relPath;
+          const absPath = path.resolve(this.rootDir, error.filePath);
+          const fileLink = error.line
+            ? `file://${absPath}#L${error.line}`
+            : `file://${absPath}`;
           const meta = this.getFileMeta(error.filePath);
           let codeLine: string | undefined = undefined;
           if (error.line && error.filePath) {
-            codeLine = await getLineFromFile(error.filePath, error.line);
+            try {
+              const fileContent = fs.readFileSync(error.filePath, 'utf8');
+              const fileLines = fileContent.split(/\r?\n/);
+              codeLine = fileLines[error.line - 1]?.trim();
+            } catch {}
           }
-          lines.push(`\n  📄 ${fileLocation}`);
+          lines.push(`\n  📄 [${fileLocation}](${fileLink})`);
           if (codeLine !== undefined) {
             lines.push(`     > ${codeLine}`);
           }
@@ -376,8 +390,12 @@ export class Reporter implements IReporter {
           const fileLocation = warning.line
             ? `${relPath}:${warning.line}`
             : relPath;
+          const absPath = path.resolve(this.rootDir, warning.filePath);
+          const fileLink = warning.line
+            ? `file://${absPath}#L${warning.line}`
+            : `file://${absPath}`;
           const meta = this.getFileMeta(warning.filePath);
-          lines.push(`\n  📄 ${fileLocation}`);
+          lines.push(`\n  📄 [${fileLocation}](${fileLink})`);
           lines.push(`     Rule: ${warning.rule}`);
           lines.push(`     Issue: ${warning.message}`);
           lines.push(`     Last modification: ${meta.modDate}`);
@@ -413,8 +431,12 @@ export class Reporter implements IReporter {
         for (const info of actualInfos) {
           const relPath = path.relative(this.rootDir, info.filePath);
           const fileLocation = info.line ? `${relPath}:${info.line}` : relPath;
+          const absPath = path.resolve(this.rootDir, info.filePath);
+          const fileLink = info.line
+            ? `file://${absPath}#L${info.line}`
+            : `file://${absPath}`;
           const meta = this.getFileMeta(info.filePath);
-          lines.push(`\n  📄 ${fileLocation}`);
+          lines.push(`\n  📄 [${fileLocation}](${fileLink})`);
           lines.push(`     Rule: ${info.rule}`);
           lines.push(`     Suggestion: ${info.message}`);
           lines.push(`     Last modification: ${meta.modDate}`);
@@ -540,6 +562,14 @@ export class Reporter implements IReporter {
         path.join(
           this.rootDir,
           'node_modules',
+          'frontend-standards-checker',
+          'bin',
+          'frontend-standards-log-viewer.html'
+        ),
+        path.join(
+          this.rootDir,
+          'node_modules',
+          '@dcefront',
           'frontend-standards-checker',
           'bin',
           'frontend-standards-log-viewer.html'

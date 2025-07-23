@@ -34,7 +34,7 @@ export interface IReporter {
     lines: string[],
     reportData: IProcessedReportData
   ): void;
-  addDetailedErrorsSection(lines: string[]): Promise<void>;
+  addDetailedErrorsSection(lines: string[]): void;
   addStatisticsSection(lines: string[], reportData: IProcessedReportData): void;
   addRecommendationsSection(lines: string[]): void;
   getOriginalZoneErrors(): Record<string, IValidationError[]>;
