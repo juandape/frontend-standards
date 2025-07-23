@@ -1,5 +1,6 @@
 import fs from 'fs';
 import path from 'path';
+import { getLineFromFile } from '../helpers/get-line.helper.js';
 import type {
   IReporter,
   ILogger,
@@ -16,6 +17,14 @@ import { getGitLastAuthor } from '../helpers/index.js';
  * Reporter for generating detailed validation reports
  */
 export class Reporter implements IReporter {
+  /**
+   * Determina si un archivo es de Jest (test/spec)
+   */
+  private isJestFile(filePath: string): boolean {
+    return (
+      /\.(test|spec)\.[jt]sx?$/.test(filePath) || /__tests__/.test(filePath)
+    );
+  }
   public readonly rootDir: string;
   public outputPath: string;
   public logDir: string;
@@ -79,7 +88,11 @@ export class Reporter implements IReporter {
     this.setOriginalZoneErrors(zoneErrors);
 
     const reportData = this.processErrors(zoneErrors);
-    const reportContent = this.formatReport(reportData, projectInfo, config);
+    const reportContent = await this.formatReport(
+      reportData,
+      projectInfo,
+      config
+    );
 
     await this.saveReport(reportContent);
 
@@ -186,11 +199,11 @@ export class Reporter implements IReporter {
   /**
    * Format the complete report
    */
-  formatReport(
+  async formatReport(
     reportData: IProcessedReportData,
     projectInfo: IProjectAnalysisResult,
     _config: IStandardsConfiguration
-  ): string {
+  ): Promise<string> {
     const lines: string[] = [];
 
     this.addReportHeader(lines, projectInfo);
@@ -206,7 +219,7 @@ export class Reporter implements IReporter {
 
     this.addSummarySection(lines, reportData);
     this.addZoneResultsSection(lines, reportData);
-    this.addDetailedErrorsSection(lines);
+    await this.addDetailedErrorsSection(lines);
     this.addDetailedWarningsSection(lines);
     this.addDetailedInfosSection(lines);
     this.addStatisticsSection(lines, reportData);
@@ -296,7 +309,7 @@ export class Reporter implements IReporter {
   /**
    * Add detailed errors section
    */
-  addDetailedErrorsSection(lines: string[]): void {
+  async addDetailedErrorsSection(lines: string[]): Promise<void> {
     lines.push('\n');
     lines.push('-'.repeat(20));
     lines.push('DETAILED VIOLATIONS:');
@@ -308,19 +321,25 @@ export class Reporter implements IReporter {
         (e) =>
           !e.message.startsWith('✅') &&
           e.severity === 'error' &&
-          !e.message.startsWith('Present:')
+          !e.message.startsWith('Present:') &&
+          !this.isJestFile(e.filePath)
       );
-
       if (actualErrors.length > 0) {
         lines.push(`📂 Zone: ${zone}`);
-
         for (const error of actualErrors) {
           const relPath = path.relative(this.rootDir, error.filePath);
           const fileLocation = error.line
             ? `${relPath}:${error.line}`
             : relPath;
           const meta = this.getFileMeta(error.filePath);
+          let codeLine: string | undefined = undefined;
+          if (error.line && error.filePath) {
+            codeLine = await getLineFromFile(error.filePath, error.line);
+          }
           lines.push(`\n  📄 ${fileLocation}`);
+          if (codeLine !== undefined) {
+            lines.push(`     > ${codeLine}`);
+          }
           lines.push(`     Rule: ${error.rule}`);
           lines.push(`     Issue: ${error.message}`);
           lines.push(`     Last modification: ${meta.modDate}`);
@@ -345,7 +364,8 @@ export class Reporter implements IReporter {
         (e) =>
           !e.message.startsWith('✅') &&
           e.severity === 'warning' &&
-          !e.message.startsWith('Present:')
+          !e.message.startsWith('Present:') &&
+          !this.isJestFile(e.filePath)
       );
 
       if (actualWarnings.length > 0) {
@@ -383,7 +403,8 @@ export class Reporter implements IReporter {
         (e) =>
           !e.message.startsWith('✅') &&
           e.severity === 'info' &&
-          !e.message.startsWith('Present:')
+          !e.message.startsWith('Present:') &&
+          !this.isJestFile(e.filePath)
       );
 
       if (actualInfos.length > 0) {
