@@ -1,6 +1,5 @@
 import fs from 'fs';
 import path from 'path';
-import { getLineFromFile } from '../helpers/get-line.helper.js';
 import type {
   IReporter,
   ILogger,
@@ -138,6 +137,10 @@ export class Reporter implements IReporter {
       totalCheckedByZone[zone] = 0;
 
       for (const error of errors) {
+        // Excluir cualquier archivo jest
+        if (this.isJestFile(error.filePath)) {
+          continue;
+        }
         totalCheckedByZone[zone]++;
 
         if (error.message.startsWith('✅')) {
@@ -222,7 +225,7 @@ export class Reporter implements IReporter {
 
     this.addSummarySection(lines, reportData);
     this.addZoneResultsSection(lines, reportData);
-    await this.addDetailedErrorsSection(lines);
+    this.addDetailedErrorsSection(lines);
     this.addDetailedWarningsSection(lines);
     this.addDetailedInfosSection(lines);
     this.addStatisticsSection(lines, reportData);
@@ -312,7 +315,7 @@ export class Reporter implements IReporter {
   /**
    * Add detailed errors section
    */
-  async addDetailedErrorsSection(lines: string[]): Promise<void> {
+  addDetailedErrorsSection(lines: string[]): void {
     lines.push('\n');
     lines.push('-'.repeat(20));
     lines.push('DETAILED VIOLATIONS:');
@@ -337,7 +340,11 @@ export class Reporter implements IReporter {
           const meta = this.getFileMeta(error.filePath);
           let codeLine: string | undefined = undefined;
           if (error.line && error.filePath) {
-            codeLine = await getLineFromFile(error.filePath, error.line);
+            try {
+              const fileContent = fs.readFileSync(error.filePath, 'utf8');
+              const fileLines = fileContent.split(/\r?\n/);
+              codeLine = fileLines[error.line - 1]?.trim();
+            } catch {}
           }
           lines.push(`\n  📄 ${fileLocation}`);
           if (codeLine !== undefined) {
