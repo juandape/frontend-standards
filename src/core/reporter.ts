@@ -21,8 +21,11 @@ export class Reporter implements IReporter {
    * Determina si un archivo es de Jest (test/spec)
    */
   private isJestFile(filePath: string): boolean {
+    const lowerPath = filePath.toLowerCase();
     return (
-      /\.(test|spec)\.[jt]sx?$/.test(filePath) || /__tests__/.test(filePath)
+      /\.(test|spec)\.[jt]sx?$/.test(lowerPath) ||
+      /__tests__/.test(lowerPath) ||
+      lowerPath.includes('jest')
     );
   }
   public readonly rootDir: string;
