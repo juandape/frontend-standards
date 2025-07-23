@@ -350,7 +350,7 @@ export class Reporter implements IReporter {
               codeLine = fileLines[error.line - 1]?.trim();
             } catch {}
           }
-          lines.push(`\n  📄 [${fileLocation}](${fileLink})`);
+          lines.push(`\n  📄 ${fileLocation}: ${fileLink}`);
           if (codeLine !== undefined) {
             lines.push(`     > ${codeLine}`);
           }
@@ -395,7 +395,7 @@ export class Reporter implements IReporter {
             ? `file://${absPath}#L${warning.line}`
             : `file://${absPath}`;
           const meta = this.getFileMeta(warning.filePath);
-          lines.push(`\n  📄 [${fileLocation}](${fileLink})`);
+          lines.push(`\n  📄 ${fileLocation}: ${fileLink}`);
           lines.push(`     Rule: ${warning.rule}`);
           lines.push(`     Issue: ${warning.message}`);
           lines.push(`     Last modification: ${meta.modDate}`);
@@ -436,7 +436,7 @@ export class Reporter implements IReporter {
             ? `file://${absPath}#L${info.line}`
             : `file://${absPath}`;
           const meta = this.getFileMeta(info.filePath);
-          lines.push(`\n  📄 [${fileLocation}](${fileLink})`);
+          lines.push(`\n  📄 ${fileLocation}: ${fileLink}`);
           lines.push(`     Rule: ${info.rule}`);
           lines.push(`     Suggestion: ${info.message}`);
           lines.push(`     Last modification: ${meta.modDate}`);
