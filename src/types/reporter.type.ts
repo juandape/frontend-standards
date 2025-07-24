@@ -89,7 +89,10 @@ export interface ISummaryItem {
 
 export interface IValidationRule {
   name: string;
-  check: (content: string, filePath: string) => boolean | Promise<boolean>;
+  check: (
+    content: string,
+    filePath: string
+  ) => boolean | number[] | Promise<boolean> | Promise<number[]>;
   message: string;
   category?:
     | 'structure'

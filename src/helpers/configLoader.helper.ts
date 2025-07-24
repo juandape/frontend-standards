@@ -77,14 +77,33 @@ export class ConfigLoaderHelper {
   }
 
   /**
-   * Check for console.log statements with proper exclusions
+   * Check for console.log statements and return their line numbers
    */
-  checkConsoleLog(content: string, filePath: string): boolean {
+  checkConsoleLogLines(content: string, filePath: string): number[] {
     if (this.shouldSkipConsoleCheck(filePath)) {
-      return false;
+      return [];
     }
+    return this.getConsoleLogLineNumbers(content);
+  }
 
-    return this.hasConsoleInCode(content);
+  /**
+   * Returns an array of line numbers (1-based) where console.log is used
+   */
+  private getConsoleLogLineNumbers(content: string): number[] {
+    const lines = content.split('\n');
+    let commentState = { inJSDoc: false, inMultiLineComment: false };
+    const violationLines: number[] = [];
+
+    lines.forEach((line, idx) => {
+      commentState = this.updateCommentState(line, commentState);
+      if (this.isInComment(line, commentState)) {
+        return;
+      }
+      if (this.hasConsoleStatement(line)) {
+        violationLines.push(idx + 1); // 1-based line number
+      }
+    });
+    return violationLines;
   }
 
   private shouldSkipConsoleCheck(filePath: string): boolean {
@@ -108,23 +127,7 @@ export class ConfigLoaderHelper {
     return false;
   }
 
-  private hasConsoleInCode(content: string): boolean {
-    const lines = content.split('\n');
-    let commentState = { inJSDoc: false, inMultiLineComment: false };
-
-    for (const line of lines) {
-      commentState = this.updateCommentState(line, commentState);
-
-      if (this.isInComment(line, commentState)) {
-        continue;
-      }
-
-      if (this.hasConsoleStatement(line)) {
-        return true;
-      }
-    }
-    return false;
-  }
+  // Removed unused hasConsoleInCode method
 
   private updateCommentState(
     line: string,
@@ -158,7 +161,8 @@ export class ConfigLoaderHelper {
   }
 
   private hasConsoleStatement(line: string): boolean {
-    return /console\.(log|warn|error|info|debug)/.test(line);
+    // Only flag console.log for the 'No console.log' rule
+    return /console\.log\s*\(/.test(line);
   }
 
   /**
