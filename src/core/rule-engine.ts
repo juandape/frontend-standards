@@ -127,6 +127,18 @@ export class RuleEngine implements IRuleEngine {
     const ruleResult = await rule.check(content, filePath);
     if (!ruleResult) return;
 
+    // If ruleResult is an array of line numbers, create an error for each
+    if (Array.isArray(ruleResult) && ruleResult.length > 0) {
+      for (const line of ruleResult) {
+        const errorInfo = this.createErrorInfo(rule, filePath);
+        errorInfo.line = line;
+        errorInfo.message = `${rule.message} (line ${line})`;
+        errors.push(errorInfo);
+      }
+      return;
+    }
+
+    // Otherwise, fallback to single error
     const errorInfo = this.createErrorInfo(rule, filePath);
     if (rule.name === 'No variable shadowing' && rule.shadowingDetails) {
       this.addShadowingDetails(errorInfo, rule);

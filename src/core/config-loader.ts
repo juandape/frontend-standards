@@ -908,8 +908,8 @@ export class ConfigLoader implements IConfigLoader {
         name: 'No console.log',
         category: 'content',
         severity: 'error',
-        check: (content: string, filePath: string): boolean => {
-          return helper.checkConsoleLog(content, filePath);
+        check: (content: string, filePath: string): number[] => {
+          return helper.checkConsoleLogLines(content, filePath);
         },
         message: 'Remove console statements before committing to production',
       },
@@ -936,35 +936,38 @@ export class ConfigLoader implements IConfigLoader {
         name: 'No any type',
         category: 'typescript',
         severity: 'error',
-        check: (content: string, filePath: string): boolean => {
+        check: (content: string, filePath: string): number[] => {
           // Skip configuration files
           if (this.isConfigFile(filePath)) {
-            return false;
+            return [];
           }
 
           // Skip type declaration files
-          if (content.includes('declare')) return false;
+          if (content.includes('declare')) return [];
 
           // Allow 'any' in props/interfaces for icon/component props (common in React Native)
           if (
             /icon\s*:\s*any|Icon\s*:\s*any|component\s*:\s*any/.test(content)
           ) {
-            return false;
+            return [];
           }
 
           // Check for explicit any usage (excluding comments)
           const lines = content.split('\n');
-          return lines.some((line) => {
+          const violationLines: number[] = [];
+          lines.forEach((line, idx) => {
             const trimmed = line.trim();
             // Skip comments
-            if (trimmed.startsWith('//') || trimmed.startsWith('*'))
-              return false;
+            if (trimmed.startsWith('//') || trimmed.startsWith('*')) return;
 
             // Check for 'any' as a type annotation
-            return /:\s*any\b|<any>|Array<any>|Promise<any>|\bas\s+any\b/.test(
-              line
-            );
+            if (
+              /:\s*any\b|<any>|Array<any>|Promise<any>|\bas\s+any\b/.test(line)
+            ) {
+              violationLines.push(idx + 1);
+            }
           });
+          return violationLines;
         },
         message:
           'Avoid using "any" type. Use specific types or unknown instead',
