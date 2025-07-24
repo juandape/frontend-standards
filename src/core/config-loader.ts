@@ -908,8 +908,8 @@ export class ConfigLoader implements IConfigLoader {
         name: 'No console.log',
         category: 'content',
         severity: 'error',
-        check: (content: string, filePath: string): boolean => {
-          return helper.checkConsoleLog(content, filePath);
+        check: (content: string, filePath: string): number[] => {
+          return helper.checkConsoleLogLines(content, filePath);
         },
         message: 'Remove console statements before committing to production',
       },
@@ -927,8 +927,15 @@ export class ConfigLoader implements IConfigLoader {
         name: 'No var',
         category: 'content',
         severity: 'error',
-        check: (content: string): boolean => {
-          return /\bvar\s+/.test(content);
+        check: (content: string): number[] => {
+          const lines = content.split('\n');
+          const violationLines: number[] = [];
+          lines.forEach((line, idx) => {
+            if (/\bvar\s+/.test(line)) {
+              violationLines.push(idx + 1);
+            }
+          });
+          return violationLines;
         },
         message: 'Use let or const instead of var',
       },
@@ -936,35 +943,38 @@ export class ConfigLoader implements IConfigLoader {
         name: 'No any type',
         category: 'typescript',
         severity: 'error',
-        check: (content: string, filePath: string): boolean => {
+        check: (content: string, filePath: string): number[] => {
           // Skip configuration files
           if (this.isConfigFile(filePath)) {
-            return false;
+            return [];
           }
 
           // Skip type declaration files
-          if (content.includes('declare')) return false;
+          if (content.includes('declare')) return [];
 
-          // Allow 'any' in props/interfaces for icon/component props (common in React Native)
+          // Allow 'any' in props/interfaces for icon/component props (common en React Native)
           if (
             /icon\s*:\s*any|Icon\s*:\s*any|component\s*:\s*any/.test(content)
           ) {
-            return false;
+            return [];
           }
 
           // Check for explicit any usage (excluding comments)
           const lines = content.split('\n');
-          return lines.some((line) => {
+          const violationLines: number[] = [];
+          lines.forEach((line, idx) => {
             const trimmed = line.trim();
             // Skip comments
-            if (trimmed.startsWith('//') || trimmed.startsWith('*'))
-              return false;
+            if (trimmed.startsWith('//') || trimmed.startsWith('*')) return;
 
             // Check for 'any' as a type annotation
-            return /:\s*any\b|<any>|Array<any>|Promise<any>|\bas\s+any\b/.test(
-              line
-            );
+            if (
+              /:\s*any\b|<any>|Array<any>|Promise<any>|\bas\s+any\b/.test(line)
+            ) {
+              violationLines.push(idx + 1);
+            }
           });
+          return violationLines;
         },
         message:
           'Avoid using "any" type. Use specific types or unknown instead',
@@ -989,18 +999,20 @@ export class ConfigLoader implements IConfigLoader {
         name: 'Image alt text',
         category: 'accessibility',
         severity: 'warning',
-        check: (content: string): boolean => {
-          const imgRegex = /<img[^>]*>/gi;
-          let match: RegExpExecArray | null;
-
-          while ((match = imgRegex.exec(content)) !== null) {
-            const imgTag = match[0];
-            if (!imgTag.includes('alt=')) {
-              return true;
+        check: (content: string): number[] => {
+          const lines = content.split('\n');
+          const violationLines: number[] = [];
+          lines.forEach((line, idx) => {
+            const imgRegex = /<img[^>]*>/gi;
+            let match: RegExpExecArray | null;
+            while ((match = imgRegex.exec(line)) !== null) {
+              const imgTag = match[0];
+              if (!imgTag.includes('alt=')) {
+                violationLines.push(idx + 1);
+              }
             }
-          }
-
-          return false;
+          });
+          return violationLines;
         },
         message: 'Images should have alt text for accessibility',
       },
@@ -1008,8 +1020,15 @@ export class ConfigLoader implements IConfigLoader {
         name: 'No alert',
         category: 'content',
         severity: 'error',
-        check: (content: string): boolean => {
-          return /\balert\s*\(/.test(content);
+        check: (content: string): number[] => {
+          const lines = content.split('\n');
+          const violationLines: number[] = [];
+          lines.forEach((line, idx) => {
+            if (/\balert\s*\(/.test(line)) {
+              violationLines.push(idx + 1);
+            }
+          });
+          return violationLines;
         },
         message:
           'The use of alert() is not allowed. Use proper notifications or toast messages instead.',
@@ -1018,10 +1037,10 @@ export class ConfigLoader implements IConfigLoader {
         name: 'No hardcoded URLs',
         category: 'content',
         severity: 'error',
-        check: (content: string, filePath: string): boolean => {
+        check: (content: string, filePath: string): number[] => {
           // Skip configuration files
           if (this.isConfigFile(filePath)) {
-            return false;
+            return [];
           }
 
           // Skip setup and test files
@@ -1030,13 +1049,13 @@ export class ConfigLoader implements IConfigLoader {
               filePath
             );
           if (isSetupFile) {
-            return false;
+            return [];
           }
 
           // Detect if this is a React Native project
           const isRNProject = isReactNativeProject(filePath);
 
-          // For React Native projects, be more permissive with SVG components
+          // For React Native projects, be more permisivo con componentes SVG
           if (isRNProject) {
             // Skip SVG components that often have legitimate xmlns URLs
             if (
@@ -1044,22 +1063,25 @@ export class ConfigLoader implements IConfigLoader {
               filePath.includes('/Svg/') ||
               filePath.includes('.svg')
             ) {
-              return false;
+              return [];
             }
           }
 
           // Check for hardcoded URLs but exclude common valid cases
-          const hasHardcodedURL = /https?:\/\/[^\s"'`]+/.test(content);
-          const isInComment = content.split('\n').some((line) => {
+          const violationLines: number[] = [];
+          const lines = content.split('\n');
+          lines.forEach((line, idx) => {
             const urlMatch = /https?:\/\/[^\s"'`]+/.exec(line);
             if (urlMatch) {
               const beforeUrl = line.substring(0, urlMatch.index);
-              return /\/\//.test(beforeUrl) || /\/\*/.test(beforeUrl);
+              const isComment =
+                /\/\//.test(beforeUrl) || /\/\*/.test(beforeUrl);
+              if (!isComment) {
+                violationLines.push(idx + 1);
+              }
             }
-            return false;
           });
-
-          return hasHardcodedURL && !isInComment;
+          return violationLines;
         },
         message:
           'No hardcoded URLs allowed. Use environment variables or constants.',
@@ -1082,8 +1104,15 @@ export class ConfigLoader implements IConfigLoader {
         name: 'No jQuery',
         category: 'content',
         severity: 'error',
-        check: (content: string): boolean => {
-          return /\$\s*\(|jQuery/.test(content);
+        check: (content: string): number[] => {
+          const lines = content.split('\n');
+          const violationLines: number[] = [];
+          lines.forEach((line, idx) => {
+            if (/\$\s*\(|jQuery/.test(line)) {
+              violationLines.push(idx + 1);
+            }
+          });
+          return violationLines;
         },
         message:
           'jQuery is not allowed. Use modern JavaScript, React, or other framework methods instead.',
@@ -1127,7 +1156,7 @@ export class ConfigLoader implements IConfigLoader {
         name: 'No merge conflicts markers',
         category: 'content',
         severity: 'error',
-        check: (content: string): boolean => {
+        check: (content: string): number[] => {
           // Check for Git merge conflict markers
           const conflictMarkers = [
             '<<<<<<< HEAD',
@@ -1135,8 +1164,14 @@ export class ConfigLoader implements IConfigLoader {
             '>>>>>>> ',
             '<<<<<<< ',
           ];
-
-          return conflictMarkers.some((marker) => content.includes(marker));
+          const lines = content.split('\n');
+          const violationLines: number[] = [];
+          lines.forEach((line, idx) => {
+            if (conflictMarkers.some((marker) => line.includes(marker))) {
+              violationLines.push(idx + 1);
+            }
+          });
+          return violationLines;
         },
         message:
           'Git merge conflict markers found. Resolve all conflicts before committing.',
@@ -1379,39 +1414,38 @@ export class ConfigLoader implements IConfigLoader {
         name: 'JSDoc for complex functions',
         category: 'documentation',
         severity: 'info',
-        check: (content: string, filePath: string): boolean => {
-          // Skip config files, test files, and setup files
+        check: (content: string, filePath: string): number[] => {
           if (
             /(config|setup|mock|__tests__|\.test\.|\.spec\.|jest\.|tailwind\.|sentry)/.test(
               filePath
             )
           ) {
-            return false;
+            return [];
           }
-
-          // Only check for VERY complex functions (500+ characters instead of 150-200)
           const complexFunctionPatterns = [
-            /function\s+[a-zA-Z_$][a-zA-Z0-9_$]*\s*\([^)]*\)\s*\{[\s\S]{500,}?\}/g, // Very substantial functions only
-            /(export\s+)?(const|function)\s+[a-zA-Z_$][a-zA-Z0-9_$]*.*=.*\([^)]*\)\s*=>\s*\{[\s\S]{400,}?\}/g, // Very substantial arrow functions
+            /function\s+[a-zA-Z_$][a-zA-Z0-9_$]*\s*\([^)]*\)\s*\{[\s\S]{500,}?\}/g,
+            /(export\s+)?(const|function)\s+[a-zA-Z_$][a-zA-Z0-9_$]*.*=.*\([^)]*\)\s*=>\s*\{[\s\S]{400,}?\}/g,
           ];
-
+          const violationLines: number[] = [];
           for (const pattern of complexFunctionPatterns) {
             const matches = Array.from(content.matchAll(pattern));
             for (const match of matches) {
               const beforeFunction = content.substring(0, match.index || 0);
               const lastLines = beforeFunction
                 .split('\n')
-                .slice(-15) // Buscar más líneas hacia atrás
+                .slice(-15)
                 .join('\n');
-
-              // Mejorar la detección de JSDoc: buscar /** seguido de */ y luego espacios/newlines
               if (!/\/\*\*[\s\S]*?\*\/\s*(\n\s*)*$/.test(lastLines)) {
-                return true;
+                // Calcular la línea de inicio de la función
+                const functionStartIdx = match.index || 0;
+                const functionStartLine = content
+                  .substring(0, functionStartIdx)
+                  .split('\n').length;
+                violationLines.push(functionStartLine);
               }
             }
           }
-
-          return false;
+          return violationLines;
         },
         message:
           'Very complex functions (500+ chars) should have JSDoc comments explaining their behavior',
@@ -1420,24 +1454,7 @@ export class ConfigLoader implements IConfigLoader {
         name: 'English-only comments',
         category: 'documentation',
         severity: 'error',
-        check: (content: string): boolean => {
-          // Extraer todos los comentarios (tanto de línea como de bloque)
-          const singleLineComments = content.match(/\/\/.*$/gm) || [];
-          const blockComments = content.match(/\/\*[\s\S]*?\*\//g) || [];
-          const jsdocComments = content.match(/\/\*\*[\s\S]*?\*\//g) || [];
-
-          // Combinar todos los comentarios
-          const allComments = [
-            ...singleLineComments,
-            ...blockComments,
-            ...jsdocComments,
-          ];
-
-          if (allComments.length === 0) {
-            return false; // No hay comentarios que revisar
-          }
-
-          // Lista de palabras comunes en español que no deberían estar en comentarios en inglés
+        check: (content: string): number[] => {
           const spanishWords = [
             'de',
             'la',
@@ -1535,8 +1552,6 @@ export class ConfigLoader implements IConfigLoader {
             'comoquiera',
             'cuandoquiera',
           ];
-
-          // Palabras técnicas que pueden parecer españolas pero son válidas en código
           const validTechTerms = [
             'constructor',
             'static',
@@ -1579,19 +1594,14 @@ export class ConfigLoader implements IConfigLoader {
             'apollo',
             'graphql',
           ];
-
-          // Regex para encontrar palabras completas (no partes de palabras)
           const wordBoundaryPattern = (word: string) =>
             new RegExp(`\\b${word}\\b`, 'i');
-
-          // Helper to check if a comment contains a Spanish word not in valid tech terms
           function containsSpanishWord(comment: string): boolean {
             const cleanComment = comment
-              .replace(/https?:\/\/[^\s)]+/g, '') // URLs
-              .replace(/import\s+.*from\s+['"][^'"]+['"]/g, '') // imports
-              .replace(/export\s+.*from\s+['"][^'"]+['"]/g, '') // exports
-              .replace(/(['"])(?:(?=(\\?))\2.)*?\1/g, ''); // strings
-
+              .replace(/https?:\/\/[^\s)]+/g, '')
+              .replace(/import\s+.*from\s+['"][^'"]+['"]/g, '')
+              .replace(/export\s+.*from\s+['"][^'"]+['"]/g, '')
+              .replace(/(['"])(?:(?=(\\?))\2.)*?\1/g, '');
             for (const word of spanishWords) {
               const pattern = wordBoundaryPattern(word);
               if (pattern.test(cleanComment)) {
@@ -1604,9 +1614,26 @@ export class ConfigLoader implements IConfigLoader {
             }
             return false;
           }
-
-          // Verificar cada comentario por palabras en español
-          return allComments.some((comment) => containsSpanishWord(comment));
+          const lines = content.split('\n');
+          const violationLines: number[] = [];
+          lines.forEach((line, idx) => {
+            // Buscar comentarios de línea y bloque en cada línea
+            const singleLineCommentMatch = line.match(/\/\/(.*)$/);
+            const blockCommentMatch = line.match(/\/\*([\s\S]*?)\*\//);
+            if (
+              singleLineCommentMatch &&
+              containsSpanishWord(singleLineCommentMatch[0])
+            ) {
+              violationLines.push(idx + 1);
+            }
+            if (
+              blockCommentMatch &&
+              containsSpanishWord(blockCommentMatch[0])
+            ) {
+              violationLines.push(idx + 1);
+            }
+          });
+          return violationLines;
         },
         message:
           'Comments and JSDoc must be written in English only. Avoid using Spanish or other non-English languages in comments.',
@@ -1785,8 +1812,15 @@ export class ConfigLoader implements IConfigLoader {
         name: 'Avoid React.FC',
         category: 'react',
         severity: 'warning',
-        check: (content: string): boolean => {
-          return /React\.FC|React\.FunctionComponent/.test(content);
+        check: (content: string): number[] => {
+          const lines = content.split('\n');
+          const violationLines: number[] = [];
+          lines.forEach((line, idx) => {
+            if (/React\.FC|React\.FunctionComponent/.test(line)) {
+              violationLines.push(idx + 1);
+            }
+          });
+          return violationLines;
         },
         message:
           'Avoid using React.FC, use regular function declaration or arrow function with explicit props typing',
@@ -1954,19 +1988,22 @@ export class ConfigLoader implements IConfigLoader {
         name: 'Import order',
         category: 'structure',
         severity: 'warning',
-        check: (content: string): boolean => {
+        check: (content: string): number[] => {
           const lines = content.split('\n');
-          const imports = lines.filter((line) =>
-            line.trim().startsWith('import')
-          );
+          const importLines: { line: string; idx: number }[] = [];
+          lines.forEach((line, idx) => {
+            if (line.trim().startsWith('import')) {
+              importLines.push({ line, idx });
+            }
+          });
 
-          if (imports.length < 2) return false;
+          if (importLines.length < 2) return [];
 
           let lastType = 0; // 0: external, 1: internal, 2: relative
+          const violationLines: number[] = [];
 
-          for (const importLine of imports) {
+          for (const { line: importLine, idx } of importLines) {
             let currentType = 0;
-
             if (
               importLine.includes("from './") ||
               importLine.includes("from '../")
@@ -1978,14 +2015,12 @@ export class ConfigLoader implements IConfigLoader {
             ) {
               currentType = 1; // internal alias
             }
-
             if (currentType < lastType) {
-              return true; // Wrong order
+              violationLines.push(idx + 1); // Línea donde el orden es incorrecto
             }
             lastType = currentType;
           }
-
-          return false;
+          return violationLines;
         },
         message:
           'Imports should be ordered: external packages, internal aliases, relative imports',

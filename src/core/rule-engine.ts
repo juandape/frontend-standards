@@ -125,8 +125,18 @@ export class RuleEngine implements IRuleEngine {
     errors: IValidationError[]
   ): Promise<void> {
     const ruleResult = await rule.check(content, filePath);
+    if (Array.isArray(ruleResult)) {
+      if (ruleResult.length === 0) return; // No violaciones, no agregar error
+      for (const line of ruleResult) {
+        const errorInfo = this.createErrorInfo(rule, filePath);
+        errorInfo.line = line;
+        errorInfo.message = `${rule.message} (line ${line})`;
+        errors.push(errorInfo);
+      }
+      return;
+    }
     if (!ruleResult) return;
-
+    // Si es booleano true, agregar error sin línea
     const errorInfo = this.createErrorInfo(rule, filePath);
     if (rule.name === 'No variable shadowing' && rule.shadowingDetails) {
       this.addShadowingDetails(errorInfo, rule);
