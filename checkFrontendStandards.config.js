@@ -79,7 +79,7 @@ export default {
   // Por defecto, revisar solo los archivos que se van a agregar al commit (default: true)
   // Si se establece en false, se revisarán todos los archivos del proyecto
   // Si no se especifican zonas o onlyZone, solo se revisarán los archivos modificados
-  onlyChangedFiles: false, // Default: true = solo archivos en commit, false = TODAS las zonas y archivos
+  onlyChangedFiles: true, // Default: true = solo archivos en commit, false = TODAS las zonas y archivos
 
   // Zone configuration
   zones: {
