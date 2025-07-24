@@ -1,6 +1,6 @@
 {
   "name": "@dcefront/frontend-standards-checker",
-  "version": "1.0.8",
+  "version": "1.0.8-solopruebapipeline1",
   "description": "A comprehensive frontend standards validation tool with TypeScript support",
   "type": "module",
   "main": "dist/src/index.js",
