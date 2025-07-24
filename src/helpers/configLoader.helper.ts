@@ -158,7 +158,8 @@ export class ConfigLoaderHelper {
   }
 
   private hasConsoleStatement(line: string): boolean {
-    return /console\.(log|warn|error|info|debug)/.test(line);
+    // Only flag console.log for the 'No console.log' rule
+    return /console\.log\s*\(/.test(line);
   }
 
   /**
