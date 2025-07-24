@@ -495,6 +495,34 @@ export class ConfigLoader implements IConfigLoader {
   private getNamingRules(): IValidationRule[] {
     return [
       {
+        name: 'Constant export naming UPPERCASE',
+        category: 'naming',
+        severity: 'error',
+        check: (content: string, filePath: string): number[] => {
+          // Solo aplicar a archivos .constant.ts
+          if (!filePath.endsWith('.constant.ts')) {
+            return [];
+          }
+          const lines = content.split('\n');
+          const violationLines: number[] = [];
+          // Buscar export const NOMBRE = ...
+          const exportConstRegex = /^\s*export\s+const\s+(\w+)\s*=/;
+          lines.forEach((line, idx) => {
+            const match = exportConstRegex.exec(line);
+            if (match && typeof match[1] === 'string') {
+              const constName = match[1];
+              // Debe ser UPPERCASE (letras, números y guiones bajos)
+              if (!/^([A-Z0-9_]+)$/.test(constName)) {
+                violationLines.push(idx + 1);
+              }
+            }
+          });
+          return violationLines;
+        },
+        message:
+          'Constant names exported in .constant.ts files must be UPPERCASE (e.g., export const DEFAULT_MIN_WAIT_TIME)',
+      },
+      {
         name: 'Component naming',
         category: 'naming',
         severity: 'error',
@@ -1623,8 +1651,10 @@ export class ConfigLoader implements IConfigLoader {
           const violationLines: number[] = [];
           lines.forEach((line, idx) => {
             // Buscar comentarios de línea y bloque en cada línea
-            const singleLineCommentMatch = line.match(/\/\/(.*)$/);
-            const blockCommentMatch = line.match(/\/\*([\s\S]*?)\*\//);
+            const singleLineCommentRegex = /\/\/(.*)$/;
+            const singleLineCommentMatch = singleLineCommentRegex.exec(line);
+            const blockCommentRegex = /\/\*([\s\S]*?)\*\//;
+            const blockCommentMatch = blockCommentRegex.exec(line);
             if (
               singleLineCommentMatch &&
               containsSpanishWord(singleLineCommentMatch[0])
