@@ -999,18 +999,20 @@ export class ConfigLoader implements IConfigLoader {
         name: 'Image alt text',
         category: 'accessibility',
         severity: 'warning',
-        check: (content: string): boolean => {
-          const imgRegex = /<img[^>]*>/gi;
-          let match: RegExpExecArray | null;
-
-          while ((match = imgRegex.exec(content)) !== null) {
-            const imgTag = match[0];
-            if (!imgTag.includes('alt=')) {
-              return true;
+        check: (content: string): number[] => {
+          const lines = content.split('\n');
+          const violationLines: number[] = [];
+          lines.forEach((line, idx) => {
+            const imgRegex = /<img[^>]*>/gi;
+            let match: RegExpExecArray | null;
+            while ((match = imgRegex.exec(line)) !== null) {
+              const imgTag = match[0];
+              if (!imgTag.includes('alt=')) {
+                violationLines.push(idx + 1);
+              }
             }
-          }
-
-          return false;
+          });
+          return violationLines;
         },
         message: 'Images should have alt text for accessibility',
       },
@@ -1412,39 +1414,38 @@ export class ConfigLoader implements IConfigLoader {
         name: 'JSDoc for complex functions',
         category: 'documentation',
         severity: 'info',
-        check: (content: string, filePath: string): boolean => {
-          // Skip config files, test files, and setup files
+        check: (content: string, filePath: string): number[] => {
           if (
             /(config|setup|mock|__tests__|\.test\.|\.spec\.|jest\.|tailwind\.|sentry)/.test(
               filePath
             )
           ) {
-            return false;
+            return [];
           }
-
-          // Only check for VERY complex functions (500+ characters instead of 150-200)
           const complexFunctionPatterns = [
-            /function\s+[a-zA-Z_$][a-zA-Z0-9_$]*\s*\([^)]*\)\s*\{[\s\S]{500,}?\}/g, // Very substantial functions only
-            /(export\s+)?(const|function)\s+[a-zA-Z_$][a-zA-Z0-9_$]*.*=.*\([^)]*\)\s*=>\s*\{[\s\S]{400,}?\}/g, // Very substantial arrow functions
+            /function\s+[a-zA-Z_$][a-zA-Z0-9_$]*\s*\([^)]*\)\s*\{[\s\S]{500,}?\}/g,
+            /(export\s+)?(const|function)\s+[a-zA-Z_$][a-zA-Z0-9_$]*.*=.*\([^)]*\)\s*=>\s*\{[\s\S]{400,}?\}/g,
           ];
-
+          const violationLines: number[] = [];
           for (const pattern of complexFunctionPatterns) {
             const matches = Array.from(content.matchAll(pattern));
             for (const match of matches) {
               const beforeFunction = content.substring(0, match.index || 0);
               const lastLines = beforeFunction
                 .split('\n')
-                .slice(-15) // Buscar más líneas hacia atrás
+                .slice(-15)
                 .join('\n');
-
-              // Mejorar la detección de JSDoc: buscar /** seguido de */ y luego espacios/newlines
               if (!/\/\*\*[\s\S]*?\*\/\s*(\n\s*)*$/.test(lastLines)) {
-                return true;
+                // Calcular la línea de inicio de la función
+                const functionStartIdx = match.index || 0;
+                const functionStartLine = content
+                  .substring(0, functionStartIdx)
+                  .split('\n').length;
+                violationLines.push(functionStartLine);
               }
             }
           }
-
-          return false;
+          return violationLines;
         },
         message:
           'Very complex functions (500+ chars) should have JSDoc comments explaining their behavior',
@@ -1811,8 +1812,15 @@ export class ConfigLoader implements IConfigLoader {
         name: 'Avoid React.FC',
         category: 'react',
         severity: 'warning',
-        check: (content: string): boolean => {
-          return /React\.FC|React\.FunctionComponent/.test(content);
+        check: (content: string): number[] => {
+          const lines = content.split('\n');
+          const violationLines: number[] = [];
+          lines.forEach((line, idx) => {
+            if (/React\.FC|React\.FunctionComponent/.test(line)) {
+              violationLines.push(idx + 1);
+            }
+          });
+          return violationLines;
         },
         message:
           'Avoid using React.FC, use regular function declaration or arrow function with explicit props typing',
@@ -1980,19 +1988,22 @@ export class ConfigLoader implements IConfigLoader {
         name: 'Import order',
         category: 'structure',
         severity: 'warning',
-        check: (content: string): boolean => {
+        check: (content: string): number[] => {
           const lines = content.split('\n');
-          const imports = lines.filter((line) =>
-            line.trim().startsWith('import')
-          );
+          const importLines: { line: string; idx: number }[] = [];
+          lines.forEach((line, idx) => {
+            if (line.trim().startsWith('import')) {
+              importLines.push({ line, idx });
+            }
+          });
 
-          if (imports.length < 2) return false;
+          if (importLines.length < 2) return [];
 
           let lastType = 0; // 0: external, 1: internal, 2: relative
+          const violationLines: number[] = [];
 
-          for (const importLine of imports) {
+          for (const { line: importLine, idx } of importLines) {
             let currentType = 0;
-
             if (
               importLine.includes("from './") ||
               importLine.includes("from '../")
@@ -2004,14 +2015,12 @@ export class ConfigLoader implements IConfigLoader {
             ) {
               currentType = 1; // internal alias
             }
-
             if (currentType < lastType) {
-              return true; // Wrong order
+              violationLines.push(idx + 1); // Línea donde el orden es incorrecto
             }
             lastType = currentType;
           }
-
-          return false;
+          return violationLines;
         },
         message:
           'Imports should be ordered: external packages, internal aliases, relative imports',
