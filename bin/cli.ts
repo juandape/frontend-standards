@@ -163,7 +163,7 @@ program
       const pkg = JSON.parse(readFileSync(pkgPath, 'utf8'));
       if (!pkg.scripts) pkg.scripts = {};
       if (!pkg.scripts['standards']) {
-        pkg.scripts['standards'] = 'frontend-standards-checker';
+        pkg.scripts['standards'] = 'frontend-standards-checker check';
         console.log(
           chalk.green('✅ Script "standards" agregado a package.json.')
         );
