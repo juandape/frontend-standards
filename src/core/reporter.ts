@@ -61,7 +61,7 @@ export class Reporter implements IReporter {
 
   constructor(rootDir: string, outputPath: string | null, logger: ILogger) {
     this.rootDir = rootDir;
-    // Siempre crear una subcarpeta nueva con fecha y hora exacta
+    // Restore logDir to dated subfolder for original behavior
     const now = new Date();
     const pad = (n: number) => n.toString().padStart(2, '0');
     const folderName = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(
@@ -334,12 +334,15 @@ export class Reporter implements IReporter {
         lines.push(`📂 Zone: ${zone}`);
 
         for (const error of actualErrors) {
-          const relPath = path.relative(this.rootDir, error.filePath);
+          // Print absolute path for VS Code link compatibility in subfolder
+          const absPath = path.isAbsolute(error.filePath)
+            ? error.filePath
+            : path.resolve(this.rootDir, error.filePath);
           const fileLocation = error.line
-            ? `${relPath}:${error.line}`
-            : relPath;
+            ? `${absPath}:${error.line}`
+            : absPath;
           const meta = this.getFileMeta(error.filePath);
-          lines.push(`\n  📄 ${fileLocation}`);
+          lines.push(`\n 📄  ${fileLocation}`);
           lines.push(`     Rule: ${error.rule}`);
           lines.push(`     Issue: ${error.message}`);
           lines.push(`     Last modification: ${meta.modDate}`);
@@ -373,12 +376,14 @@ export class Reporter implements IReporter {
         lines.push(`📂 Zone: ${zone}`);
 
         for (const warning of actualWarnings) {
-          const relPath = path.relative(this.rootDir, warning.filePath);
+          const absPath = path.isAbsolute(warning.filePath)
+            ? warning.filePath
+            : path.resolve(this.rootDir, warning.filePath);
           const fileLocation = warning.line
-            ? `${relPath}:${warning.line}`
-            : relPath;
+            ? `${absPath}:${warning.line}`
+            : absPath;
           const meta = this.getFileMeta(warning.filePath);
-          lines.push(`\n  📄 ${fileLocation}`);
+          lines.push(`\n 📄  ${fileLocation}`);
           lines.push(`     Rule: ${warning.rule}`);
           lines.push(`     Issue: ${warning.message}`);
           lines.push(`     Last modification: ${meta.modDate}`);
@@ -412,12 +417,16 @@ export class Reporter implements IReporter {
         lines.push(`📂 Zone: ${zone}`);
 
         for (const info of actualInfos) {
-          const relPath = path.relative(this.rootDir, info.filePath);
-          const fileLocation = info.line ? `${relPath}:${info.line}` : relPath;
+          const absPath = path.isAbsolute(info.filePath)
+            ? info.filePath
+            : path.resolve(this.rootDir, info.filePath);
+          const fileLocation = info.line
+            ? `${absPath}:${info.line}`
+            : absPath;
           const meta = this.getFileMeta(info.filePath);
-          lines.push(`\n  📄 ${fileLocation}`);
+          lines.push(`\n 📄  ${fileLocation}`);
           lines.push(`     Rule: ${info.rule}`);
-          lines.push(`     Suggestion: ${info.message}`);
+          lines.push(`     Issue: ${info.message}`);
           lines.push(`     Last modification: ${meta.modDate}`);
           lines.push(`     Last collaborator: ${meta.lastAuthor}`);
           lines.push('     ' + '-'.repeat(50));
