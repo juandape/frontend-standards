@@ -23,6 +23,7 @@ _Las reglas de error indican problemas críticos que pueden romper el código o 
 
 11. **No var** `(content)` - Usar let o const en lugar de var
 12. **No any type** `(typescript)` - Evitar tipo "any", usar tipos específicos
+    - ⚠️ Para proyectos React Native esta regla es WARNING, no ERROR. Se permite "any" solo en casos excepcionales (integración con librerías externas, prototipado rápido).
 13. **No alert** `(content)` - No usar alert(), usar notificaciones apropiadas
 14. **No hardcoded URLs** `(content)` - No URLs hardcodeadas, usar variables de entorno
 15. **No jQuery** `(content)` - No usar jQuery en proyectos modernos

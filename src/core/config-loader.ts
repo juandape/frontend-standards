@@ -942,8 +942,13 @@ export class ConfigLoader implements IConfigLoader {
       {
         name: 'No any type',
         category: 'typescript',
-        severity: 'error',
+        severity: 'error', // Will be dynamically set below
         check: (content: string, filePath: string): number[] => {
+          // Dynamically set severity based on project type
+          const isRNProject = isReactNativeProject(filePath);
+          // @ts-ignore: Custom property for runtime severity
+          (this as any).severity = isRNProject ? 'warning' : 'error';
+
           // Skip configuration files
           if (this.isConfigFile(filePath)) {
             return [];
