@@ -978,43 +978,32 @@ export class ConfigLoader implements IConfigLoader {
       {
         name: 'No any type',
         category: 'typescript',
-        severity: 'error', // Will be dynamically set below
+        // La severidad se determina en tiempo de ejecución en el sistema de reporte
+        severity: 'error',
         check: (content: string, filePath: string): number[] => {
-          // Dynamically set severity based on project type
+          // Detectar si es proyecto React Native
           const isRNProject = isReactNativeProject(filePath);
-          // @ts-ignore: Custom property for runtime severity
-          (this as any).severity = isRNProject ? 'warning' : 'error';
-
-          // Skip configuration files
+          // Skip configuración y type declaration files
           if (this.isConfigFile(filePath)) {
             return [];
           }
-
-          // Skip type declaration files
           if (content.includes('declare')) return [];
-
-          // Allow 'any' in props/interfaces for icon/component props (common en React Native)
-          if (
-            /icon\s*:\s*any|Icon\s*:\s*any|component\s*:\s*any/.test(content)
-          ) {
+          // Permitir 'any' en props/interfaces para icon/component en RN
+          if (/icon\s*:\s*any|Icon\s*:\s*any|component\s*:\s*any/.test(content)) {
             return [];
           }
-
-          // Check for explicit any usage (excluding comments)
+          // Buscar 'any' explícito (excluyendo comentarios)
           const lines = content.split('\n');
           const violationLines: number[] = [];
           lines.forEach((line, idx) => {
             const trimmed = line.trim();
-            // Skip comments
             if (trimmed.startsWith('//') || trimmed.startsWith('*')) return;
-
-            // Check for 'any' as a type annotation
-            if (
-              /:\s*any\b|<any>|Array<any>|Promise<any>|\bas\s+any\b/.test(line)
-            ) {
+            if (/:\s*any\b|<any>|Array<any>|Promise<any>|\bas\s+any\b/.test(line)) {
               violationLines.push(idx + 1);
             }
           });
+          // @ts-ignore: Custom property para el sistema de reporte
+          (violationLines as any).severity = isRNProject ? 'warning' : 'error';
           return violationLines;
         },
         message:
