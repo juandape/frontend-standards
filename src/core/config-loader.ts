@@ -10,7 +10,6 @@ import type {
   IRulesObjectFormat,
 } from '../types/index.js';
 import { isReactNativeProject } from '../utils/file-scanner.js';
-import { checkInlineStyles } from './additional-validators.js';
 import { ConfigLoaderHelper } from '../helpers/configLoader.helper.js';
 
 /**
@@ -989,7 +988,9 @@ export class ConfigLoader implements IConfigLoader {
           }
           if (content.includes('declare')) return [];
           // Permitir 'any' en props/interfaces para icon/component en RN
-          if (/icon\s*:\s*any|Icon\s*:\s*any|component\s*:\s*any/.test(content)) {
+          if (
+            /icon\s*:\s*any|Icon\s*:\s*any|component\s*:\s*any/.test(content)
+          ) {
             return [];
           }
           // Buscar 'any' explícito (excluyendo comentarios)
@@ -998,7 +999,9 @@ export class ConfigLoader implements IConfigLoader {
           lines.forEach((line, idx) => {
             const trimmed = line.trim();
             if (trimmed.startsWith('//') || trimmed.startsWith('*')) return;
-            if (/:\s*any\b|<any>|Array<any>|Promise<any>|\bas\s+any\b/.test(line)) {
+            if (
+              /:\s*any\b|<any>|Array<any>|Promise<any>|\bas\s+any\b/.test(line)
+            ) {
               violationLines.push(idx + 1);
             }
           });
