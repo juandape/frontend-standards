@@ -67,13 +67,16 @@ Si necesitas ampliar la funcionalidad, solicita la exportación explícita del m
 
 - El paquete incluye todos los archivos necesarios y es compatible con monorepos, Next.js, Vite y React Native.
 
-### Copiar guía de instalación y archivo de configuración
+### Completa la configuración tras instalar
 
 ```bash
-npx frontend-standards-init
+# Ejecuta este comando para agregar el script y actualizar .gitignore automáticamente
+npx frontend-standards-checker init
+# o
+yarn frontend-standards-checker init
 ```
 
-Esto copiará la guía completa y el archivo `checkFrontendStandards.config.js` en la raíz de tu proyecto.
+Esto agregará el script `standards` a tu package.json y actualizará .gitignore con los archivos relevantes.
 
 ## 🚀 Uso Rápido
 
@@ -92,8 +95,7 @@ yarn standards:verbose  # o npm run standards:verbose
 # Validar TODOS los archivos (no solo modificados)
 yarn standards:all    # o npm run standards:all
 
-# Copiar archivos de configuración adicionales
-yarn standards:init   # o npm run standards:init
+
 ```
 
 ## 📚 Documentación Completa
@@ -200,17 +202,19 @@ const results = await checker.run();
 console.log(`Found ${results.totalErrors} violations`);
 ```
 
-### Scripts npm
+### Comando CLI para configuración
 
 ```bash
-# Ejecutar validación
-npm start
+# Agregar script y actualizar .gitignore
+npx frontend-standards-checker init
+# o
+yarn frontend-standards-checker init
+```
 
-# Modo desarrollo con watch
-npm run dev
+Luego puedes usar:
 
-# Ejecutar CLI
-npm run cli
+```bash
+yarn standards        # o npm run standards
 ```
 
 ## ⚙️ Configuración

@@ -43,6 +43,8 @@ function findPackageJson(): PackageJson {
 
 const packageJson: PackageJson = findPackageJson();
 
+import { writeFileSync, existsSync, appendFileSync, copyFileSync } from 'fs';
+
 const program = new Command();
 
 program
@@ -50,14 +52,18 @@ program
   .description(
     'A comprehensive frontend standards validation tool with TypeScript support'
   )
-  .version(packageJson.version)
+  .version(packageJson.version);
+
+// Comando principal de validación
+program
+  .command('check')
+  .description('Run standards validation')
   .option(
     '-z, --zones <zones...>',
     'Specific zones to check (space-separated)',
     []
   )
   .option('-c, --config <path>', 'Path to custom configuration file')
-  // El log se gestiona automáticamente en una subcarpeta por Reporter
   .option('-v, --verbose', 'Show verbose output')
   .option('--debug', 'Show debug information about file scanning')
   .option('--skip-structure', 'Skip directory structure validation')
@@ -81,7 +87,6 @@ program
       const checkerOptions: any = {
         zones: options.zones || [],
         config: options.config || null,
-        // No pasar output, Reporter lo gestiona automáticamente
         verbose: options.verbose || false,
         debug: options.debug || false,
         skipStructure: options.skipStructure || false,
@@ -95,7 +100,6 @@ program
 
       const result = await checker.run();
 
-      // Exit with appropriate code
       const exitCode = result.success ? 0 : 1;
 
       if (result.success) {
@@ -115,6 +119,175 @@ program
       console.error(error);
       process.exit(1);
     }
+  });
+
+// Comando init para agregar scripts y actualizar .gitignore
+program
+  .command('init')
+  .description(
+    'Add standards script to package.json, update .gitignore, and copy guide/config files'
+  )
+  .action(() => {
+    const cwd = process.cwd();
+    const pkgPath = join(cwd, 'package.json');
+    const gitignorePath = join(cwd, '.gitignore');
+
+    // 1. Copiar archivos de guía y configuración si no existen
+    const filesToCopy = [
+      {
+        src: join(__dirname, '../../checkFrontendStandards.COMPLETE-GUIDE.md'),
+        dest: join(cwd, 'checkFrontendStandards.COMPLETE-GUIDE.md'),
+        label: 'Guía completa',
+      },
+      {
+        src: join(__dirname, '../../checkFrontendStandards.config.js'),
+        dest: join(cwd, 'checkFrontendStandards.config.js'),
+        label: 'Archivo de configuración',
+      },
+    ];
+    for (const file of filesToCopy) {
+      try {
+        if (!existsSync(file.dest)) {
+          copyFileSync(file.src, file.dest);
+          console.log(chalk.green(`✅ ${file.label} copiado: ${file.dest}`));
+        } else {
+          console.log(chalk.gray(`ℹ️  ${file.label} ya existe: ${file.dest}`));
+        }
+      } catch (e) {
+        console.error(chalk.red(`❌ No se pudo copiar ${file.label}:`), e);
+      }
+    }
+
+    // 2. Actualizar package.json
+    try {
+      const pkg = JSON.parse(readFileSync(pkgPath, 'utf8'));
+      if (!pkg.scripts) pkg.scripts = {};
+      if (!pkg.scripts['standards']) {
+        pkg.scripts['standards'] = 'frontend-standards-checker check';
+        console.log(
+          chalk.green('✅ Script "standards" agregado a package.json.')
+        );
+      } else {
+        console.log(
+          chalk.yellow('ℹ️  Script "standards" ya existe en package.json.')
+        );
+      }
+      writeFileSync(pkgPath, JSON.stringify(pkg, null, 2) + '\n');
+    } catch (e) {
+      console.error(chalk.red('❌ No se pudo actualizar package.json:'), e);
+    }
+
+    // 3. Actualizar .gitignore
+    const ignoreList = [
+      'frontend-standards-full/',
+      'checkFrontendStandards.COMPLETE-GUIDE.md',
+      'checkFrontendStandards.config.js',
+      'logs-standards-validations/',
+    ];
+    try {
+      let gitignoreContent = '';
+      if (existsSync(gitignorePath)) {
+        gitignoreContent = readFileSync(gitignorePath, 'utf8');
+      }
+      let added = false;
+      for (const item of ignoreList) {
+        if (!gitignoreContent.split('\n').includes(item)) {
+          appendFileSync(
+            gitignorePath,
+            (gitignoreContent && !gitignoreContent.endsWith('\n') ? '\n' : '') +
+              item +
+              '\n'
+          );
+          added = true;
+          console.log(chalk.green(`✅ Añadido a .gitignore: ${item}`));
+        } else {
+          console.log(chalk.gray(`ℹ️  Ya existe en .gitignore: ${item}`));
+        }
+      }
+      if (!added) {
+        console.log(
+          chalk.yellow('ℹ️  Todos los elementos ya estaban en .gitignore.')
+        );
+      }
+    } catch (e) {
+      console.error(chalk.red('❌ No se pudo actualizar .gitignore:'), e);
+    }
+
+    // 4. Agregar hook pre-commit de Husky (solo si el entorno está inicializado)
+    const huskyDir = join(cwd, '.husky');
+    const huskyPreCommit = join(huskyDir, 'pre-commit');
+    const huskySh = join(huskyDir, '_', 'husky.sh');
+    try {
+      if (existsSync(huskySh)) {
+        let preCommitContent = '';
+        if (existsSync(huskyPreCommit)) {
+          preCommitContent = readFileSync(huskyPreCommit, 'utf8');
+          const usesYarn = existsSync(join(cwd, 'yarn.lock'));
+          const cmd = usesYarn ? 'yarn standards' : 'npm run standards';
+          if (!preCommitContent.includes(cmd)) {
+            const marker = 'echo "Pre-commit hooks completed"';
+            if (preCommitContent.includes(marker)) {
+              // Insertar antes del marker
+              const lines = preCommitContent.split('\n');
+              const idx = lines.findIndex((line) => line.trim() === marker);
+              if (idx !== -1) {
+                lines.splice(idx, 0, cmd);
+                writeFileSync(huskyPreCommit, lines.join('\n'), {
+                  mode: 0o755,
+                });
+                console.log(
+                  chalk.green(
+                    `✅ Insertado '${cmd}' antes de '${marker}' en .husky/pre-commit`
+                  )
+                );
+              } else {
+                appendFileSync(huskyPreCommit, `\n${cmd}\n`);
+                console.log(
+                  chalk.green(
+                    `✅ Añadido '${cmd}' al final de .husky/pre-commit`
+                  )
+                );
+              }
+            } else {
+              appendFileSync(huskyPreCommit, `\n${cmd}\n`);
+              console.log(
+                chalk.green(`✅ Añadido '${cmd}' al final de .husky/pre-commit`)
+              );
+            }
+          } else {
+            console.log(
+              chalk.gray(
+                'ℹ️  El hook pre-commit de Husky ya contiene el comando de estándares.'
+              )
+            );
+          }
+        } else {
+          const usesYarn = existsSync(join(cwd, 'yarn.lock'));
+          const cmd = usesYarn ? 'yarn standards' : 'npm run standards';
+          const script = `#!/bin/sh\n. "$(dirname \"$0\")/_/husky.sh"\n${cmd}\n`;
+          writeFileSync(huskyPreCommit, script, { mode: 0o755 });
+          console.log(chalk.green(`✅ Creado .husky/pre-commit con '${cmd}'`));
+        }
+      } else {
+        console.log(
+          chalk.yellow(
+            '⚠️  Husky no está inicializado en este proyecto. Si deseas usar hooks, ejecuta "npx husky install" primero.'
+          )
+        );
+      }
+    } catch (e) {
+      console.error(
+        chalk.red('❌ No se pudo crear o actualizar el pre-commit de Husky:'),
+        e
+      );
+    }
+
+    // Mensaje final
+    console.log(
+      chalk.blue(
+        '\n🎉 Configuración completada. Puedes usar "yarn standards" o "npm run standards" para validar tu proyecto.'
+      )
+    );
   });
 
 // Handle unknown commands
