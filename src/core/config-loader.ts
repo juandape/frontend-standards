@@ -863,25 +863,25 @@ export class ConfigLoader implements IConfigLoader {
         name: 'Interface naming with I prefix',
         category: 'naming',
         severity: 'error',
-        check: (content: string): boolean => {
+        check: (content: string): number[] => {
           // Check for interface declarations that don't start with I
-          const interfaceRegex = /interface\s+([A-Z][a-zA-Z0-9]*)/g;
-          let match;
-
-          while ((match = interfaceRegex.exec(content)) !== null) {
-            const interfaceName = match[1];
-            if (!interfaceName) continue;
-
-            // Interface must start with "I" followed by PascalCase
-            if (
-              !interfaceName.startsWith('I') ||
-              !/^I[A-Z][a-zA-Z0-9]*$/.test(interfaceName)
-            ) {
-              return true;
+          const lines = content.split('\n');
+          const violationLines: number[] = [];
+          const interfaceRegex = /^\s*interface\s+([A-Z][a-zA-Z0-9]*)/;
+          lines.forEach((line, idx) => {
+            const match = interfaceRegex.exec(line);
+            if (match && typeof match[1] === 'string') {
+              const interfaceName = match[1];
+              // Interface must start with "I" followed by PascalCase
+              if (
+                !interfaceName.startsWith('I') ||
+                !/^I[A-Z][a-zA-Z0-9]*$/.test(interfaceName)
+              ) {
+                violationLines.push(idx + 1);
+              }
             }
-          }
-
-          return false;
+          });
+          return violationLines;
         },
         message:
           'Interfaces must be prefixed with "I" followed by PascalCase (e.g., IGlobalStateHashProviderProps)',
@@ -945,9 +945,17 @@ export class ConfigLoader implements IConfigLoader {
         name: 'No inline styles',
         category: 'content',
         severity: 'error',
-        check: (content: string, filePath: string): boolean => {
-          const errors = checkInlineStyles(content, filePath);
-          return errors.length > 0;
+        check: (content: string, filePath: string): number[] => {
+          // Detecta estilos en línea en JSX/TSX
+          const lines = content.split('\n');
+          const violationLines: number[] = [];
+          const inlineStyleRegex = /style\s*=\s*\{{1}/;
+          lines.forEach((line, idx) => {
+            if (inlineStyleRegex.test(line)) {
+              violationLines.push(idx + 1);
+            }
+          });
+          return violationLines;
         },
         message: 'Avoid inline styles, use CSS classes or styled components',
       },
