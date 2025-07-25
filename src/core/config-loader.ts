@@ -944,11 +944,11 @@ export class ConfigLoader implements IConfigLoader {
         name: 'No inline styles',
         category: 'content',
         severity: 'error',
-        check: (content: string, filePath: string): number[] => {
+        check: (content: string, _filePath: string): number[] => {
           // Detecta estilos en línea en JSX/TSX
           const lines = content.split('\n');
           const violationLines: number[] = [];
-          const inlineStyleRegex = /style\s*=\s*\{{1}/;
+          const inlineStyleRegex = /style\s*=\s*\{/;
           lines.forEach((line, idx) => {
             if (inlineStyleRegex.test(line)) {
               violationLines.push(idx + 1);
