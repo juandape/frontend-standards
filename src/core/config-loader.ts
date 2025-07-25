@@ -10,7 +10,6 @@ import type {
   IRulesObjectFormat,
 } from '../types/index.js';
 import { isReactNativeProject } from '../utils/file-scanner.js';
-import { checkInlineStyles } from './additional-validators.js';
 import { ConfigLoaderHelper } from '../helpers/configLoader.helper.js';
 
 /**
@@ -495,6 +494,34 @@ export class ConfigLoader implements IConfigLoader {
   private getNamingRules(): IValidationRule[] {
     return [
       {
+        name: 'Constant export naming UPPERCASE',
+        category: 'naming',
+        severity: 'error',
+        check: (content: string, filePath: string): number[] => {
+          // Solo aplicar a archivos .constant.ts
+          if (!filePath.endsWith('.constant.ts')) {
+            return [];
+          }
+          const lines = content.split('\n');
+          const violationLines: number[] = [];
+          // Buscar export const NOMBRE = ...
+          const exportConstRegex = /^\s*export\s+const\s+(\w+)\s*=/;
+          lines.forEach((line, idx) => {
+            const match = exportConstRegex.exec(line);
+            if (match && typeof match[1] === 'string') {
+              const constName = match[1];
+              // Debe ser UPPERCASE (letras, números y guiones bajos)
+              if (!/^([A-Z0-9_]+)$/.test(constName)) {
+                violationLines.push(idx + 1);
+              }
+            }
+          });
+          return violationLines;
+        },
+        message:
+          'Constant names exported in .constant.ts files must be UPPERCASE (e.g., export const DEFAULT_MIN_WAIT_TIME)',
+      },
+      {
         name: 'Component naming',
         category: 'naming',
         severity: 'error',
@@ -835,25 +862,25 @@ export class ConfigLoader implements IConfigLoader {
         name: 'Interface naming with I prefix',
         category: 'naming',
         severity: 'error',
-        check: (content: string): boolean => {
+        check: (content: string): number[] => {
           // Check for interface declarations that don't start with I
-          const interfaceRegex = /interface\s+([A-Z][a-zA-Z0-9]*)/g;
-          let match;
-
-          while ((match = interfaceRegex.exec(content)) !== null) {
-            const interfaceName = match[1];
-            if (!interfaceName) continue;
-
-            // Interface must start with "I" followed by PascalCase
-            if (
-              !interfaceName.startsWith('I') ||
-              !/^I[A-Z][a-zA-Z0-9]*$/.test(interfaceName)
-            ) {
-              return true;
+          const lines = content.split('\n');
+          const violationLines: number[] = [];
+          const interfaceRegex = /^\s*interface\s+([A-Z][a-zA-Z0-9]*)/;
+          lines.forEach((line, idx) => {
+            const match = interfaceRegex.exec(line);
+            if (match && typeof match[1] === 'string') {
+              const interfaceName = match[1];
+              // Interface must start with "I" followed by PascalCase
+              if (
+                !interfaceName.startsWith('I') ||
+                !/^I[A-Z][a-zA-Z0-9]*$/.test(interfaceName)
+              ) {
+                violationLines.push(idx + 1);
+              }
             }
-          }
-
-          return false;
+          });
+          return violationLines;
         },
         message:
           'Interfaces must be prefixed with "I" followed by PascalCase (e.g., IGlobalStateHashProviderProps)',
@@ -917,9 +944,17 @@ export class ConfigLoader implements IConfigLoader {
         name: 'No inline styles',
         category: 'content',
         severity: 'error',
-        check: (content: string, filePath: string): boolean => {
-          const errors = checkInlineStyles(content, filePath);
-          return errors.length > 0;
+        check: (content: string, _filePath: string): number[] => {
+          // Detecta estilos en línea en JSX/TSX
+          const lines = content.split('\n');
+          const violationLines: number[] = [];
+          const inlineStyleRegex = /style\s*=\s*\{/;
+          lines.forEach((line, idx) => {
+            if (inlineStyleRegex.test(line)) {
+              violationLines.push(idx + 1);
+            }
+          });
+          return violationLines;
         },
         message: 'Avoid inline styles, use CSS classes or styled components',
       },
@@ -942,38 +977,36 @@ export class ConfigLoader implements IConfigLoader {
       {
         name: 'No any type',
         category: 'typescript',
+        // La severidad se determina en tiempo de ejecución en el sistema de reporte
         severity: 'error',
         check: (content: string, filePath: string): number[] => {
-          // Skip configuration files
+          // Detectar si es proyecto React Native
+          const isRNProject = isReactNativeProject(filePath);
+          // Skip configuración y type declaration files
           if (this.isConfigFile(filePath)) {
             return [];
           }
-
-          // Skip type declaration files
           if (content.includes('declare')) return [];
-
-          // Allow 'any' in props/interfaces for icon/component props (common en React Native)
+          // Permitir 'any' en props/interfaces para icon/component en RN
           if (
             /icon\s*:\s*any|Icon\s*:\s*any|component\s*:\s*any/.test(content)
           ) {
             return [];
           }
-
-          // Check for explicit any usage (excluding comments)
+          // Buscar 'any' explícito (excluyendo comentarios)
           const lines = content.split('\n');
           const violationLines: number[] = [];
           lines.forEach((line, idx) => {
             const trimmed = line.trim();
-            // Skip comments
             if (trimmed.startsWith('//') || trimmed.startsWith('*')) return;
-
-            // Check for 'any' as a type annotation
             if (
               /:\s*any\b|<any>|Array<any>|Promise<any>|\bas\s+any\b/.test(line)
             ) {
               violationLines.push(idx + 1);
             }
           });
+          // @ts-ignore: Custom property para el sistema de reporte
+          (violationLines as any).severity = isRNProject ? 'warning' : 'error';
           return violationLines;
         },
         message:
@@ -1618,8 +1651,10 @@ export class ConfigLoader implements IConfigLoader {
           const violationLines: number[] = [];
           lines.forEach((line, idx) => {
             // Buscar comentarios de línea y bloque en cada línea
-            const singleLineCommentMatch = line.match(/\/\/(.*)$/);
-            const blockCommentMatch = line.match(/\/\*([\s\S]*?)\*\//);
+            const singleLineCommentRegex = /\/\/(.*)$/;
+            const singleLineCommentMatch = singleLineCommentRegex.exec(line);
+            const blockCommentRegex = /\/\*([\s\S]*?)\*\//;
+            const blockCommentMatch = blockCommentRegex.exec(line);
             if (
               singleLineCommentMatch &&
               containsSpanishWord(singleLineCommentMatch[0])
