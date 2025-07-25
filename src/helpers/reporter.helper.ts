@@ -1,4 +1,3 @@
-import { execSync } from 'child_process';
 import path from 'path';
 
 /**
@@ -8,11 +7,20 @@ import path from 'path';
 export function getGitLastAuthor(filePath: string, cwd: string): string {
   try {
     const absPath = path.resolve(filePath);
-    const output = execSync(
-      `git log -1 --pretty=format:'%an' -- "${absPath}"`,
-      { cwd, encoding: 'utf8' }
-    );
-    return output.trim();
+    const args = ['log', '-1', '--pretty=format:%an', '--', absPath];
+    const env: Record<string, string> = { PATH: process.env.PATH ?? '' };
+    if (process.env.HOME) env.HOME = process.env.HOME;
+    if (process.env.USER) env.USER = process.env.USER;
+    const result = require('child_process').spawnSync('git', args, {
+      cwd,
+      encoding: 'utf8',
+      shell: false,
+      env,
+    });
+    if (result.error || result.status !== 0) {
+      return 'Unknown';
+    }
+    return result.stdout.trim();
   } catch {
     return 'Unknown';
   }

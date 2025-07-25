@@ -33,29 +33,28 @@ export class Reporter implements IReporter {
   public readonly logger: ILogger;
   private _originalZoneErrors: Record<string, IValidationError[]> = {};
 
-  private getFileMeta(filePath: string): {
-    modDate: string;
-    lastAuthor: string;
-  } {
+  async getFileMeta(
+    filePath: string
+  ): Promise<{ modDate: string; lastAuthor: string }> {
     let modDate = 'No date';
     let lastAuthor = 'Unknown';
-
     try {
       const absPath = path.isAbsolute(filePath)
         ? filePath
         : path.resolve(this.rootDir, filePath);
-
-      if (fs.existsSync(absPath)) {
-        const stats = fs.statSync(absPath);
+      if (
+        await fs.promises.stat(absPath).then(
+          () => true,
+          () => false
+        )
+      ) {
+        const stats = await fs.promises.stat(absPath);
         modDate = stats.mtime
           ? stats.mtime.toLocaleString('es-ES', { timeZone: 'America/Bogota' })
           : modDate;
-
-        // Now using safe helper
         lastAuthor = getGitLastAuthor(absPath, this.rootDir);
       }
     } catch {}
-
     return { modDate, lastAuthor };
   }
 
@@ -225,9 +224,9 @@ export class Reporter implements IReporter {
 
     this.addSummarySection(lines, reportData);
     this.addZoneResultsSection(lines, reportData);
-    this.addDetailedErrorsSection(lines);
-    this.addDetailedWarningsSection(lines);
-    this.addDetailedInfosSection(lines);
+    await this.addDetailedErrorsSection(lines);
+    await this.addDetailedWarningsSection(lines);
+    await this.addDetailedInfosSection(lines);
     this.addStatisticsSection(lines, reportData);
     this.addRecommendationsSection(lines);
 
@@ -315,7 +314,7 @@ export class Reporter implements IReporter {
   /**
    * Add detailed errors section
    */
-  addDetailedErrorsSection(lines: string[]): void {
+  async addDetailedErrorsSection(lines: string[]): Promise<void> {
     lines.push('\n');
     lines.push('-'.repeat(20));
     lines.push('DETAILED VIOLATIONS:');
@@ -341,7 +340,7 @@ export class Reporter implements IReporter {
           const fileLocation = error.line
             ? `${absPath}:${error.line}`
             : absPath;
-          const meta = this.getFileMeta(error.filePath);
+          const meta = await this.getFileMeta(error.filePath);
           lines.push(`\n 📄  ${fileLocation}`);
           lines.push(`     Rule: ${error.rule}`);
           lines.push(`     Issue: ${error.message}`);
@@ -356,7 +355,7 @@ export class Reporter implements IReporter {
   /**
    * Add detailed warnings section
    */
-  addDetailedWarningsSection(lines: string[]): void {
+  async addDetailedWarningsSection(lines: string[]): Promise<void> {
     lines.push('\n');
     lines.push('-'.repeat(18));
     lines.push('DETAILED WARNINGS:');
@@ -382,7 +381,7 @@ export class Reporter implements IReporter {
           const fileLocation = warning.line
             ? `${absPath}:${warning.line}`
             : absPath;
-          const meta = this.getFileMeta(warning.filePath);
+          const meta = await this.getFileMeta(warning.filePath);
           lines.push(`\n 📄  ${fileLocation}`);
           lines.push(`     Rule: ${warning.rule}`);
           lines.push(`     Issue: ${warning.message}`);
@@ -397,7 +396,7 @@ export class Reporter implements IReporter {
   /**
    * Add detailed info suggestions section
    */
-  addDetailedInfosSection(lines: string[]): void {
+  async addDetailedInfosSection(lines: string[]): Promise<void> {
     lines.push('\n');
     lines.push('-'.repeat(26));
     lines.push('DETAILED INFO SUGGESTIONS:');
@@ -420,10 +419,8 @@ export class Reporter implements IReporter {
           const absPath = path.isAbsolute(info.filePath)
             ? info.filePath
             : path.resolve(this.rootDir, info.filePath);
-          const fileLocation = info.line
-            ? `${absPath}:${info.line}`
-            : absPath;
-          const meta = this.getFileMeta(info.filePath);
+          const fileLocation = info.line ? `${absPath}:${info.line}` : absPath;
+          const meta = await this.getFileMeta(info.filePath);
           lines.push(`\n 📄  ${fileLocation}`);
           lines.push(`     Rule: ${info.rule}`);
           lines.push(`     Issue: ${info.message}`);
@@ -447,43 +444,35 @@ export class Reporter implements IReporter {
       lines.push('-'.repeat(17));
       lines.push('ERROR STATISTICS:');
       lines.push('-'.repeat(17));
-
       for (const stat of reportData.summary) {
         lines.push(
           `• ${stat.rule}: ${stat.count} occurrences (${stat.percentage}%)`
         );
       }
-
       lines.push(`\nTotal violations: ${reportData.totalErrors}`);
     }
-
     if (reportData.warningSummary.length > 0) {
       lines.push('\n');
       lines.push('-'.repeat(19));
       lines.push('WARNING STATISTICS:');
       lines.push('-'.repeat(19));
-
       for (const stat of reportData.warningSummary) {
         lines.push(
           `• ${stat.rule}: ${stat.count} occurrences (${stat.percentage}%)`
         );
       }
-
       lines.push(`\nTotal warnings: ${reportData.totalWarnings}`);
     }
-
     if (reportData.infoSummary.length > 0) {
       lines.push('\n');
       lines.push('-'.repeat(28));
       lines.push('INFO SUGGESTIONS STATISTICS:');
       lines.push('-'.repeat(28));
-
       for (const stat of reportData.infoSummary) {
         lines.push(
           `• ${stat.rule}: ${stat.count} occurrences (${stat.percentage}%)`
         );
       }
-
       lines.push(`\nTotal info suggestions: ${reportData.totalInfos}`);
     }
   }
@@ -515,9 +504,8 @@ export class Reporter implements IReporter {
       if (!fs.existsSync(this.logDir)) {
         fs.mkdirSync(this.logDir, { recursive: true });
       }
-      // Get last modification date and last collaborator (if possible)
+      // Get last modification date
       let modDate = 'No date';
-      // Removed lastAuthor logic
       try {
         if (fs.existsSync(this.outputPath)) {
           const stats = fs.statSync(this.outputPath);
@@ -527,11 +515,7 @@ export class Reporter implements IReporter {
               })
             : modDate;
         }
-        // Try to get last author using git
-        // Removed execSync import as collaborator logic is gone
-        // Removed the gitLog assignment as collaborator logic is gone
       } catch {}
-
       // Add info to log content (at the end)
       const logWithMeta = `${content}\n\n---\nLast modification: ${modDate}`;
       fs.writeFileSync(this.outputPath, logWithMeta, 'utf8');
@@ -630,7 +614,6 @@ export class Reporter implements IReporter {
     try {
       const jsonContent = JSON.stringify(reportData, null, 2);
       fs.writeFileSync(jsonPath, jsonContent, 'utf8');
-      this.logger.debug(`JSON report exported to: ${jsonPath}`);
       return jsonPath;
     } catch (error) {
       this.logger.error(
