@@ -8,7 +8,7 @@ import path from 'path';
 export function getGitLastAuthor(filePath: string, cwd: string): string {
   try {
     const absPath = path.resolve(filePath);
-    const output = execSync(
+        const output = execSync(
       `git log -1 --pretty=format:'%an' -- "${absPath}"`,
       { cwd, encoding: 'utf8' }
     );

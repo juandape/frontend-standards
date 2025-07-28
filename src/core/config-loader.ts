@@ -893,7 +893,7 @@ export class ConfigLoader implements IConfigLoader {
    * @returns Content rules
    */
   private getContentRules(): IValidationRule[] {
-    // Robust circular dependency detection using a dependency graph (in-memory, per run)
+    // Variables y funciones para la regla de dependencias circulares
     const helper = this.helper;
     let dependencyGraph: Record<string, Set<string>> = {};
     let graphBuiltFor: string | null = null;
@@ -916,9 +916,48 @@ export class ConfigLoader implements IConfigLoader {
 
     return [
       {
-        name: 'No circular dependencies',
+        name: 'No console.log',
         category: 'content',
         severity: 'error',
+        check: (content: string): number[] => {
+          const lines = content.split('\n');
+          const violationLines: number[] = [];
+          let inJSDoc = false;
+          let inMultiLineComment = false;
+          lines.forEach((line, idx) => {
+            const trimmed = line.trim();
+            // Detect start/end of JSDoc
+            if (trimmed.startsWith('/**')) inJSDoc = true;
+            if (inJSDoc && trimmed.includes('*/')) {
+              inJSDoc = false;
+              return;
+            }
+            // Detect start/end of multiline comment (not JSDoc)
+            if (trimmed.startsWith('/*') && !trimmed.startsWith('/**'))
+              inMultiLineComment = true;
+            if (inMultiLineComment && trimmed.includes('*/')) {
+              inMultiLineComment = false;
+              return;
+            }
+            // Skip if inside any comment block
+            if (inJSDoc || inMultiLineComment) return;
+            // Skip single line comments
+            if (trimmed.startsWith('//')) return;
+            // Only flag true console.log outside comments
+            if (/console\.log\s*\(/.test(line)) {
+              violationLines.push(idx + 1);
+            }
+          });
+          return violationLines;
+        },
+        message:
+          'The use of console.log is not allowed. Remove debug statements from production code.',
+      },
+      // ...rest of reglas...
+      {
+        name: 'No circular dependencies',
+        category: 'content',
+        severity: 'warning',
         check: (_content: string, filePath: string): boolean => {
           const extensions = ['.js', '.ts', '.jsx', '.tsx'];
           // Only rebuild the graph if for a new root file
@@ -932,24 +971,39 @@ export class ConfigLoader implements IConfigLoader {
           'Potential circular dependency detected. Refactor to avoid circular imports (direct or indirect).',
       },
       {
-        name: 'No console.log',
-        category: 'content',
-        severity: 'error',
-        check: (content: string, filePath: string): number[] => {
-          return helper.checkConsoleLogLines(content, filePath);
-        },
-        message: 'Remove console statements before committing to production',
-      },
-      {
         name: 'No inline styles',
         category: 'content',
-        severity: 'error',
-        check: (content: string, _filePath: string): number[] => {
+        check: (content: string, filePath: string): number[] => {
+          // Skip files inside Svg folders for React Native projects
+          const isRNProject = isReactNativeProject(filePath);
+          if (isRNProject && /\/Svg\//.test(filePath)) {
+            return [];
+          }
           // Detecta estilos en línea en JSX/TSX
           const lines = content.split('\n');
           const violationLines: number[] = [];
-          const inlineStyleRegex = /style\s*=\s*\{/;
+          // Solo marcar style={{ ... }} y nunca style={variable}
+          const inlineStyleRegex = /style\s*=\s*\{\{[^}]*\}\}/;
+          let inJSDoc = false;
+          let inMultiLineComment = false;
           lines.forEach((line, idx) => {
+            const trimmed = line.trim();
+            // Detect start/end of JSDoc
+            if (trimmed.startsWith('/**')) inJSDoc = true;
+            if (inJSDoc && trimmed.includes('*/')) {
+              inJSDoc = false;
+              return;
+            }
+            // Detect start/end of multiline comment (not JSDoc)
+            if (trimmed.startsWith('/*') && !trimmed.startsWith('/**'))
+              inMultiLineComment = true;
+            if (inMultiLineComment && trimmed.includes('*/')) {
+              inMultiLineComment = false;
+              return;
+            }
+            // Skip if inside any comment block
+            if (inJSDoc || inMultiLineComment) return;
+            // Only flag true inline style objects outside comments
             if (inlineStyleRegex.test(line)) {
               violationLines.push(idx + 1);
             }
@@ -978,7 +1032,7 @@ export class ConfigLoader implements IConfigLoader {
         name: 'No any type',
         category: 'typescript',
         // La severidad se determina en tiempo de ejecución en el sistema de reporte
-        severity: 'error',
+        severity: 'warning',
         check: (content: string, filePath: string): number[] => {
           // Detectar si es proyecto React Native
           const isRNProject = isReactNativeProject(filePath);

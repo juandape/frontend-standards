@@ -31,6 +31,7 @@ export class Reporter implements IReporter {
   public outputPath: string;
   public logDir: string;
   public readonly logger: ILogger;
+  public includeCollaborators: boolean = true;
   private _originalZoneErrors: Record<string, IValidationError[]> = {};
 
   private getFileMeta(filePath: string): {
@@ -39,7 +40,6 @@ export class Reporter implements IReporter {
   } {
     let modDate = 'No date';
     let lastAuthor = 'Unknown';
-
     try {
       const absPath = path.isAbsolute(filePath)
         ? filePath
@@ -50,12 +50,13 @@ export class Reporter implements IReporter {
         modDate = stats.mtime
           ? stats.mtime.toLocaleString('es-ES', { timeZone: 'America/Bogota' })
           : modDate;
-
-        // Now using safe helper
-        lastAuthor = getGitLastAuthor(absPath, this.rootDir);
+        if (this.includeCollaborators) {
+          lastAuthor = getGitLastAuthor(absPath, this.rootDir);
+        } else {
+          lastAuthor = 'Deactivated by user';
+        }
       }
     } catch {}
-
     return { modDate, lastAuthor };
   }
 
@@ -398,7 +399,6 @@ export class Reporter implements IReporter {
    * Add detailed info suggestions section
    */
   addDetailedInfosSection(lines: string[]): void {
-    lines.push('\n');
     lines.push('-'.repeat(26));
     lines.push('DETAILED INFO SUGGESTIONS:');
     lines.push('-'.repeat(26));
@@ -420,9 +420,7 @@ export class Reporter implements IReporter {
           const absPath = path.isAbsolute(info.filePath)
             ? info.filePath
             : path.resolve(this.rootDir, info.filePath);
-          const fileLocation = info.line
-            ? `${absPath}:${info.line}`
-            : absPath;
+          const fileLocation = info.line ? `${absPath}:${info.line}` : absPath;
           const meta = this.getFileMeta(info.filePath);
           lines.push(`\n 📄  ${fileLocation}`);
           lines.push(`     Rule: ${info.rule}`);
@@ -447,43 +445,35 @@ export class Reporter implements IReporter {
       lines.push('-'.repeat(17));
       lines.push('ERROR STATISTICS:');
       lines.push('-'.repeat(17));
-
       for (const stat of reportData.summary) {
         lines.push(
           `• ${stat.rule}: ${stat.count} occurrences (${stat.percentage}%)`
         );
       }
-
       lines.push(`\nTotal violations: ${reportData.totalErrors}`);
     }
-
     if (reportData.warningSummary.length > 0) {
       lines.push('\n');
       lines.push('-'.repeat(19));
       lines.push('WARNING STATISTICS:');
       lines.push('-'.repeat(19));
-
       for (const stat of reportData.warningSummary) {
         lines.push(
           `• ${stat.rule}: ${stat.count} occurrences (${stat.percentage}%)`
         );
       }
-
       lines.push(`\nTotal warnings: ${reportData.totalWarnings}`);
     }
-
     if (reportData.infoSummary.length > 0) {
       lines.push('\n');
       lines.push('-'.repeat(28));
       lines.push('INFO SUGGESTIONS STATISTICS:');
       lines.push('-'.repeat(28));
-
       for (const stat of reportData.infoSummary) {
         lines.push(
           `• ${stat.rule}: ${stat.count} occurrences (${stat.percentage}%)`
         );
       }
-
       lines.push(`\nTotal info suggestions: ${reportData.totalInfos}`);
     }
   }
@@ -515,9 +505,8 @@ export class Reporter implements IReporter {
       if (!fs.existsSync(this.logDir)) {
         fs.mkdirSync(this.logDir, { recursive: true });
       }
-      // Get last modification date and last collaborator (if possible)
+      // Get last modification date
       let modDate = 'No date';
-      // Removed lastAuthor logic
       try {
         if (fs.existsSync(this.outputPath)) {
           const stats = fs.statSync(this.outputPath);
@@ -527,11 +516,7 @@ export class Reporter implements IReporter {
               })
             : modDate;
         }
-        // Try to get last author using git
-        // Removed execSync import as collaborator logic is gone
-        // Removed the gitLog assignment as collaborator logic is gone
       } catch {}
-
       // Add info to log content (at the end)
       const logWithMeta = `${content}\n\n---\nLast modification: ${modDate}`;
       fs.writeFileSync(this.outputPath, logWithMeta, 'utf8');
