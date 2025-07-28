@@ -98,3 +98,5 @@ run-tasks.js
 .npmrc
 .pnp.cjs
 .pnp.loader.mjs
+
+.gz

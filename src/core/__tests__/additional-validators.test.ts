@@ -2,10 +2,14 @@
 
 import { jest } from '@jest/globals';
 
+// Mocks globales para poder modificar en los tests
+const existsSyncMock = jest.fn(() => true);
+const readFileSyncMock = jest.fn(() => '');
+
 jest.unstable_mockModule('fs', () => {
   const fsMock = {
-    existsSync: jest.fn(() => true),
-    readFileSync: jest.fn(() => ''),
+    existsSync: existsSyncMock,
+    readFileSync: readFileSyncMock,
     readdirSync: jest.fn(() => []),
     statSync: jest.fn(() => ({ mtime: new Date(), isDirectory: () => false })),
     mkdirSync: jest.fn(),
@@ -41,13 +45,11 @@ jest.unstable_mockModule('../../utils/file-scanner.js', () => ({
 }));
 
 let validators: any;
-let fs: any;
 let isConfigOrConstantsFile: any;
 let isReactNativeProject: jest.Mock;
 
 beforeAll(async () => {
   validators = await import('../additional-validators.js');
-  fs = await import('fs');
   ({ isConfigOrConstantsFile } = await import('../../helpers/index.js'));
   isReactNativeProject = jest.fn();
 });
@@ -85,7 +87,9 @@ describe('additional-validators', () => {
         '/path/to/component.tsx'
       );
       expect(errors).toHaveLength(1);
-      expect(errors[0]?.message).toContain('Inline styles are not allowed');
+      expect(errors[0]?.message).toContain(
+        'Avoid inline styles, use CSS classes or styled components'
+      );
     });
 
     it('should skip React Native SVG files', () => {
@@ -97,7 +101,9 @@ describe('additional-validators', () => {
         '/path/to/assets/Svg/test.svg'
       );
       expect(errors).toHaveLength(1);
-      expect(errors[0]?.message).toContain('Inline styles are not allowed');
+      expect(errors[0]?.message).toContain(
+        'Avoid inline styles, use CSS classes or styled components'
+      );
     });
 
     it('should return empty array when no inline styles', () => {
@@ -385,13 +391,20 @@ describe('additional-validators', () => {
     });
   });
   describe('checkHookFileExtension', () => {
+    let validators: typeof import('../additional-validators');
+    let fs: typeof import('fs');
+
     beforeEach(() => {
-      jest.spyOn(fs, 'existsSync').mockReturnValue(false);
-      jest.spyOn(fs, 'readFileSync').mockReturnValue('');
+      jest.resetModules();
+      jest.mock('fs');
+      fs = require('fs');
+      (fs.existsSync as jest.Mock).mockReturnValue(false);
+      (fs.readFileSync as jest.Mock).mockReturnValue('');
+      validators = require('../additional-validators');
     });
 
     it('should require .tsx for hooks with JSX', () => {
-      jest.spyOn(fs, 'readFileSync').mockReturnValue('return <div>Test</div>');
+      (fs.readFileSync as jest.Mock).mockReturnValue('return <div>Test</div>');
       const error = validators.checkHookFileExtension(
         '/path/to/hooks/useTest.hook.ts'
       );
@@ -400,7 +413,7 @@ describe('additional-validators', () => {
     });
 
     it('should require .ts for hooks without JSX', () => {
-      jest.spyOn(fs, 'readFileSync').mockReturnValue('return true;');
+      (fs.readFileSync as jest.Mock).mockReturnValue('return true;');
       const error = validators.checkHookFileExtension(
         '/path/to/hooks/useTest.hook.tsx'
       );
@@ -409,12 +422,10 @@ describe('additional-validators', () => {
     });
 
     it('should skip if index.ts exists', () => {
-      jest
-        .spyOn(fs, 'existsSync')
-        .mockImplementation(
-          (path: unknown) =>
-            typeof path === 'string' && path.endsWith('index.ts')
-        );
+      (fs.existsSync as jest.Mock).mockImplementation((...args: any[]) => {
+        const path = args[0];
+        return typeof path === 'string' && path.endsWith('index.ts');
+      });
       const error = validators.checkHookFileExtension(
         '/path/to/hooks/useTest.hook.ts'
       );

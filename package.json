@@ -62,6 +62,7 @@
     "acorn-walk": "^8.3.2",
     "chalk": "^5.3.0",
     "commander": "^11.1.0",
+    "inquirer": "^12.8.2",
     "nthline": "^1.0.2",
     "typescript": "^5.3.0"
   },
