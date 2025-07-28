@@ -932,7 +932,7 @@ export class ConfigLoader implements IConfigLoader {
           'Potential circular dependency detected. Refactor to avoid circular imports (direct or indirect).',
       },
       {
-        name: 'No console.log',
+        name: 'No inline styles',
         category: 'content',
         check: (content: string, filePath: string): number[] => {
           // Skip files inside Svg folders for React Native projects
