@@ -619,10 +619,9 @@ add_to_gitignore() {
     fi
     # List of paths to ignore
     IGNORE_LIST=(
-        "frontend-standards-full/"
         "checkFrontendStandards.COMPLETE-GUIDE.md"
         "checkFrontendStandards.config.js"
-        "logs-standards-validations/"
+        "./logs-standards-validations/"
 
     )
     for ITEM in "${IGNORE_LIST[@]}"; do
