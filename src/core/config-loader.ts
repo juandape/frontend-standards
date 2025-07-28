@@ -934,17 +934,12 @@ export class ConfigLoader implements IConfigLoader {
       {
         name: 'No console.log',
         category: 'content',
-        severity: 'error',
         check: (content: string, filePath: string): number[] => {
-          return helper.checkConsoleLogLines(content, filePath);
-        },
-        message: 'Remove console statements before committing to production',
-      },
-      {
-        name: 'No inline styles',
-        category: 'content',
-        severity: 'error',
-        check: (content: string, _filePath: string): number[] => {
+          // Skip files inside Svg folders for React Native projects
+          const isRNProject = isReactNativeProject(filePath);
+          if (isRNProject && /\/Svg\//.test(filePath)) {
+            return [];
+          }
           // Detecta estilos en línea en JSX/TSX
           const lines = content.split('\n');
           const violationLines: number[] = [];
