@@ -62,6 +62,7 @@ temp/
 # Build artifacts
 *.tgz
 *.tar.gz
+*.gz
 
 # Test artifacts
 .jest-cache/
@@ -99,4 +100,3 @@ run-tasks.js
 .pnp.cjs
 .pnp.loader.mjs
 
-.gz
