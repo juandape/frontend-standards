@@ -943,7 +943,8 @@ export class ConfigLoader implements IConfigLoader {
           // Detecta estilos en línea en JSX/TSX
           const lines = content.split('\n');
           const violationLines: number[] = [];
-          const inlineStyleRegex = /style\s*=\s*\{/;
+          // Solo marcar style={{ ... }} y nunca style={variable}
+          const inlineStyleRegex = /style\s*=\s*\{\{[^}]*\}\}/;
           lines.forEach((line, idx) => {
             if (inlineStyleRegex.test(line)) {
               violationLines.push(idx + 1);

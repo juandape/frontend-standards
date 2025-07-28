@@ -101,21 +101,20 @@ export function checkInlineStyles(
     }
   }
 
-  let warned = false;
   lines.forEach((line, idx) => {
-    if (/style\s*=\s*\{\{/.test(line)) {
-      if (!warned) {
-        errors.push({
-          rule: 'Inline styles',
-          message:
-            'Inline styles are not allowed. Use .style.ts files or reference external stylesheets',
-          filePath: filePath,
-          line: idx + 1,
-          severity: 'error',
-          category: 'style',
-        });
-        warned = true;
-      }
+    // Only flag true inline style objects: style={{ ... }}
+    // Do NOT flag style={someVar} or style={alert.alertBox}
+    // Regex: style={{ ... }} but not style={...}
+    // This matches style={{ ... }} but not style={...}
+    if (/style\s*=\s*\{\{[^}]*\}\}/.test(line)) {
+      errors.push({
+        rule: 'No inline styles',
+        message: 'Avoid inline styles, use CSS classes or styled components',
+        filePath: filePath,
+        line: idx + 1,
+        severity: 'error',
+        category: 'style',
+      });
     }
   });
   return errors;
