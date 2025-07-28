@@ -918,7 +918,7 @@ export class ConfigLoader implements IConfigLoader {
       {
         name: 'No circular dependencies',
         category: 'content',
-        severity: 'error',
+        severity: 'warning',
         check: (_content: string, filePath: string): boolean => {
           const extensions = ['.js', '.ts', '.jsx', '.tsx'];
           // Only rebuild the graph if for a new root file
@@ -945,7 +945,26 @@ export class ConfigLoader implements IConfigLoader {
           const violationLines: number[] = [];
           // Solo marcar style={{ ... }} y nunca style={variable}
           const inlineStyleRegex = /style\s*=\s*\{\{[^}]*\}\}/;
+          let inJSDoc = false;
+          let inMultiLineComment = false;
           lines.forEach((line, idx) => {
+            const trimmed = line.trim();
+            // Detect start/end of JSDoc
+            if (/^\/\*\*/.test(trimmed)) inJSDoc = true;
+            if (inJSDoc && /\*\//.test(trimmed)) {
+              inJSDoc = false;
+              return;
+            }
+            // Detect start/end of multiline comment (not JSDoc)
+            if (/^\/\*/.test(trimmed) && !/^\/\*\*/.test(trimmed))
+              inMultiLineComment = true;
+            if (inMultiLineComment && /\*\//.test(trimmed)) {
+              inMultiLineComment = false;
+              return;
+            }
+            // Skip if inside any comment block
+            if (inJSDoc || inMultiLineComment) return;
+            // Only flag true inline style objects outside comments
             if (inlineStyleRegex.test(line)) {
               violationLines.push(idx + 1);
             }
@@ -974,7 +993,7 @@ export class ConfigLoader implements IConfigLoader {
         name: 'No any type',
         category: 'typescript',
         // La severidad se determina en tiempo de ejecución en el sistema de reporte
-        severity: 'error',
+        severity: 'warning',
         check: (content: string, filePath: string): number[] => {
           // Detectar si es proyecto React Native
           const isRNProject = isReactNativeProject(filePath);
