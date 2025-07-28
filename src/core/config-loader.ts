@@ -893,7 +893,7 @@ export class ConfigLoader implements IConfigLoader {
    * @returns Content rules
    */
   private getContentRules(): IValidationRule[] {
-    // Robust circular dependency detection using a dependency graph (in-memory, per run)
+    // Variables y funciones para la regla de dependencias circulares
     const helper = this.helper;
     let dependencyGraph: Record<string, Set<string>> = {};
     let graphBuiltFor: string | null = null;
@@ -915,6 +915,45 @@ export class ConfigLoader implements IConfigLoader {
     }
 
     return [
+      {
+        name: 'No console.log',
+        category: 'content',
+        severity: 'error',
+        check: (content: string): number[] => {
+          const lines = content.split('\n');
+          const violationLines: number[] = [];
+          let inJSDoc = false;
+          let inMultiLineComment = false;
+          lines.forEach((line, idx) => {
+            const trimmed = line.trim();
+            // Detect start/end of JSDoc
+            if (trimmed.startsWith('/**')) inJSDoc = true;
+            if (inJSDoc && trimmed.includes('*/')) {
+              inJSDoc = false;
+              return;
+            }
+            // Detect start/end of multiline comment (not JSDoc)
+            if (trimmed.startsWith('/*') && !trimmed.startsWith('/**'))
+              inMultiLineComment = true;
+            if (inMultiLineComment && trimmed.includes('*/')) {
+              inMultiLineComment = false;
+              return;
+            }
+            // Skip if inside any comment block
+            if (inJSDoc || inMultiLineComment) return;
+            // Skip single line comments
+            if (trimmed.startsWith('//')) return;
+            // Only flag true console.log outside comments
+            if (/console\.log\s*\(/.test(line)) {
+              violationLines.push(idx + 1);
+            }
+          });
+          return violationLines;
+        },
+        message:
+          'The use of console.log is not allowed. Remove debug statements from production code.',
+      },
+      // ...rest of reglas...
       {
         name: 'No circular dependencies',
         category: 'content',
@@ -950,15 +989,15 @@ export class ConfigLoader implements IConfigLoader {
           lines.forEach((line, idx) => {
             const trimmed = line.trim();
             // Detect start/end of JSDoc
-            if (/^\/\*\*/.test(trimmed)) inJSDoc = true;
-            if (inJSDoc && /\*\//.test(trimmed)) {
+            if (trimmed.startsWith('/**')) inJSDoc = true;
+            if (inJSDoc && trimmed.includes('*/')) {
               inJSDoc = false;
               return;
             }
             // Detect start/end of multiline comment (not JSDoc)
-            if (/^\/\*/.test(trimmed) && !/^\/\*\*/.test(trimmed))
+            if (trimmed.startsWith('/*') && !trimmed.startsWith('/**'))
               inMultiLineComment = true;
-            if (inMultiLineComment && /\*\//.test(trimmed)) {
+            if (inMultiLineComment && trimmed.includes('*/')) {
               inMultiLineComment = false;
               return;
             }
