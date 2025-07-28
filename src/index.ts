@@ -76,6 +76,27 @@ export class FrontendStandardsChecker {
       const startTime = Date.now();
       this.logger.info('🔍 Starting Frontend Standards validation...');
 
+      // Prompt interactivo para incluir colaboradores en el log
+      let includeCollaborators = true;
+      try {
+        // Solo mostrar el prompt si está en modo interactivo
+        if (process.stdout.isTTY) {
+          const inquirer = await import('inquirer');
+          const answer = await inquirer.default.prompt([
+            {
+              type: 'confirm',
+              name: 'includeCollaborators',
+              message:
+                '¿Do you want to include the latest collaborators in the log? (This may take longer)',
+              default: false,
+            },
+          ]);
+          includeCollaborators = answer.includeCollaborators;
+        }
+      } catch (e) {
+        includeCollaborators = true;
+      }
+
       const config = await loadAndLogConfig(
         this.configLoader,
         this.options,
@@ -149,6 +170,8 @@ export class FrontendStandardsChecker {
         startTime
       );
 
+      // Pasar la opción al reporter
+      this.reporter.includeCollaborators = includeCollaborators;
       await generateReport(
         this.reporter,
         this.logger,

@@ -31,6 +31,7 @@ export class Reporter implements IReporter {
   public outputPath: string;
   public logDir: string;
   public readonly logger: ILogger;
+  public includeCollaborators: boolean = true;
   private _originalZoneErrors: Record<string, IValidationError[]> = {};
 
   private getFileMeta(filePath: string): {
@@ -49,7 +50,11 @@ export class Reporter implements IReporter {
         modDate = stats.mtime
           ? stats.mtime.toLocaleString('es-ES', { timeZone: 'America/Bogota' })
           : modDate;
-        lastAuthor = getGitLastAuthor(absPath, this.rootDir);
+        if (this.includeCollaborators) {
+          lastAuthor = getGitLastAuthor(absPath, this.rootDir);
+        } else {
+          lastAuthor = 'Deactivated by user';
+        }
       }
     } catch {}
     return { modDate, lastAuthor };
