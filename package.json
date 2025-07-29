@@ -45,7 +45,7 @@
     "test": "jest --coverage",
     "clean": "rm -rf dist",
     "postinstall": "npm run build 2>/dev/null || yarn build 2>/dev/null || (echo 'Build step skipped - using pre-built files'; exit 0); echo '\n🎉 Frontend Standards Checker instalado correctamente!\n\n📋 Comandos disponibles:\n   npm run standards (o yarn standards)\n   npm run standards -- --zones src components\n   npm run standards -- --verbose\n\n📖 Configuración: Edita checkFrontendStandards.config.js\n💡 Documentación completa: https://github.com/juandape/frontend-standards\n'",
-    "prepare": "npm run build 2>/dev/null || yarn build 2>/dev/null || echo 'Prepare failed'"
+    "prepare": "husky"
   },
   "keywords": [
     "frontend",
@@ -62,6 +62,7 @@
     "acorn-walk": "^8.3.2",
     "chalk": "^5.3.0",
     "commander": "^11.1.0",
+    "inquirer": "^12.8.2",
     "nthline": "^1.0.2",
     "typescript": "^5.3.0"
   },
@@ -71,6 +72,7 @@
     "@typescript-eslint/eslint-plugin": "^6.21.0",
     "@typescript-eslint/parser": "^6.21.0",
     "eslint": "^8.57.1",
+    "husky": "^9.1.7",
     "jest": "^30.0.4",
     "ts-jest": "^29.4.0",
     "tsx": "^4.6.0"

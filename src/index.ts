@@ -94,6 +94,7 @@ export class FrontendStandardsChecker {
           includeCollaborators = answer.includeCollaborators;
         }
       } catch (e) {
+        this.logger.warn('Could not prompt for collaborators, defaulting to includeCollaborators=true', e);
         includeCollaborators = true;
       }
 

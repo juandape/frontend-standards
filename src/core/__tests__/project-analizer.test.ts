@@ -1,18 +1,5 @@
 beforeEach(() => {
   jest.clearAllMocks();
-  jest
-    .spyOn(fs, 'readdirSync')
-    .mockImplementation((_unused: any, options?: any) => {
-      // If withFileTypes is true, return Dirent-like objects
-      if (options && options.withFileTypes) {
-        return [
-          { name: 'subdir1', isDirectory: () => true },
-          { name: 'subdir2', isDirectory: () => true },
-        ] as any;
-      }
-      // Otherwise, return string[]
-      return ['subdir1', 'subdir2'] as any;
-    });
 });
 // project-analyzer.test.ts
 import fs from 'fs';
@@ -21,9 +8,6 @@ import { ProjectAnalyzer } from '../project-analyzer';
 import type { ILogger, IMonorepoZoneConfig } from '../../types';
 
 import { jest } from '@jest/globals';
-// Mock the file system and path modules
-jest.mock('fs');
-jest.mock('path');
 
 // Mock logger
 const mockLogger: ILogger = {
@@ -175,7 +159,10 @@ describe('ProjectAnalyzer', () => {
           throw new Error('Parse error');
         return '{}';
       });
-      expect(analyzer.isMonorepo()).toBe(false);
+      mockLogger.debug = jest.fn();
+      // Create analyzer after mocks are set up
+      const analyzerAfterMock = new ProjectAnalyzer(mockRootDir, mockLogger);
+      expect(analyzerAfterMock.isMonorepo()).toBe(false);
       expect(mockLogger.debug).toHaveBeenCalledWith(
         expect.stringContaining(
           'Failed to parse package.json for monorepo detection:'
@@ -290,6 +277,17 @@ describe('ProjectAnalyzer', () => {
       (fs.statSync as jest.Mock).mockImplementation((p) => ({
         isDirectory: () => typeof p === 'string',
       }));
+      jest
+        .spyOn(fs, 'readdirSync')
+        .mockImplementation((_unused: any, options?: any) => {
+          if (options && options.withFileTypes) {
+            return [
+              { name: 'subdir1', isDirectory: () => true },
+              { name: 'subdir2', isDirectory: () => true },
+            ] as any;
+          }
+          return ['subdir1', 'subdir2'] as any;
+        });
 
       const zones = await analyzer.detectMonorepoZones(config);
       expect(zones).toContainEqual(
@@ -312,6 +310,17 @@ describe('ProjectAnalyzer', () => {
       (fs.statSync as jest.Mock).mockImplementation((p) => ({
         isDirectory: () => typeof p === 'string',
       }));
+      jest
+        .spyOn(fs, 'readdirSync')
+        .mockImplementation((_unused: any, options?: any) => {
+          if (options && options.withFileTypes) {
+            return [
+              { name: 'subdir1', isDirectory: () => true },
+              { name: 'subdir2', isDirectory: () => true },
+            ] as any;
+          }
+          return ['subdir1', 'subdir2'] as any;
+        });
 
       const zones = await analyzer.detectMonorepoZones(config);
       expect(zones).toContainEqual(

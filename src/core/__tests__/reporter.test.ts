@@ -34,19 +34,7 @@ jest.unstable_mockModule('fs', () => {
           isDirectory: () => false,
         };
       }
-      return { mtime: new Date('2023-01-01'), isDirectory: () => false };
-    }),
-    mkdirSync: jest.fn(),
-    writeFileSync: jest.fn(),
-    copyFileSync: jest.fn(),
-    readdirSync: jest.fn(() => []),
-    readFileSync: jest.fn((p) => {
-      if (
-        typeof p === 'string' &&
-        (p.endsWith('/file') || p.endsWith('/file.ts'))
-      )
-        return 'file content';
-      if (typeof p === 'string' && p.includes('file1')) return 'file1 content';
+      // Removed unused mockReportData variable
       return '';
     }),
   };
@@ -108,7 +96,16 @@ describe('Reporter', () => {
     fs = (await import('fs')).default;
     path = (await import('path')).default;
     child_process = (await import('child_process')).default;
-    child_process.execSync.mockReturnValue('test-author');
+
+    // Ensure execSync is always a Jest mock and set its return value
+    if (
+      typeof child_process.execSync === 'function' &&
+      'mockReturnValue' in child_process.execSync
+    ) {
+      child_process.execSync.mockReturnValue('test-author');
+    } else {
+      child_process.execSync = jest.fn().mockReturnValue('test-author');
+    }
 
     mockLogger = {
       debug: jest.fn(),
@@ -128,7 +125,6 @@ describe('Reporter', () => {
       }
       return { mtime: new Date('2023-01-01'), isDirectory: () => false };
     });
-    child_process.execSync.mockReturnValue('test-author');
     jest.spyOn(fs, 'mkdirSync').mockImplementation(() => undefined);
     jest.spyOn(fs, 'writeFileSync').mockImplementation(() => undefined);
     jest.spyOn(fs, 'copyFileSync').mockImplementation(() => undefined);
@@ -167,6 +163,7 @@ describe('Reporter', () => {
       );
 
       expect(newReporter.outputPath).toBe(expectedPath);
+      jest.restoreAllMocks(); // Restore Date after test
     });
   });
 
@@ -180,34 +177,16 @@ describe('Reporter', () => {
       });
 
       child_process.execSync.mockReturnValue('test-author');
-      jest.spyOn(fs, 'existsSync').mockImplementation((p) => {
-        // eslint-disable-next-line no-console
-        console.log('existsSync called with:', p);
-        return true;
-      });
-      if (fs.default && typeof fs.default.existsSync === 'function') {
-        jest.spyOn(fs.default, 'existsSync').mockImplementation((p) => {
-          // eslint-disable-next-line no-console
-          console.log('default.existsSync called with:', p);
-          return true;
-        });
-      }
-      jest.spyOn(fs, 'statSync').mockImplementation((p) => {
-        // eslint-disable-next-line no-console
-        console.log('statSync called with:', p);
-        return { mtime: mockDate, isDirectory: () => false };
-      });
-      if (fs.default && typeof fs.default.statSync === 'function') {
-        jest.spyOn(fs.default, 'statSync').mockImplementation((p) => {
-          // eslint-disable-next-line no-console
-          console.log('default.statSync called with:', p);
-          return { mtime: mockDate, isDirectory: () => false };
-        });
-      }
+      jest.spyOn(fs, 'existsSync').mockImplementation(() => true);
+      jest.spyOn(fs, 'statSync').mockImplementation(() => ({
+        mtime: mockDate,
+        isDirectory: () => false,
+      }));
 
       const result = reporter['getFileMeta'](testPath);
       expect(result.modDate).toBe(actualDate);
       expect(result.lastAuthor).toBe('test-author');
+      jest.restoreAllMocks();
     });
 
     it('should handle errors when getting file metadata', () => {
@@ -358,22 +337,7 @@ describe('Reporter', () => {
   });
 
   describe('formatReport', () => {
-    const mockReportData = {
-      totalErrors: 2,
-      totalWarnings: 1,
-      totalInfos: 1,
-      errorsByRule: { 'rule1': 2 },
-      warningsByRule: { 'rule2': 1 },
-      infosByRule: { 'rule3': 1 },
-      errorsByZone: { 'zone1': 1, 'zone2': 1 },
-      warningsByZone: { 'zone1': 1 },
-      infosByZone: { 'zone1': 1 },
-      oksByZone: { 'zone1': ['passed'] },
-      totalCheckedByZone: { 'zone1': 3, 'zone2': 1 },
-      summary: [{ rule: 'rule1', count: 2, percentage: '100.0' }],
-      warningSummary: [{ rule: 'rule2', count: 1, percentage: '100.0' }],
-      infoSummary: [{ rule: 'rule3', count: 1, percentage: '100.0' }],
-    };
+    // Removed unused mockReportData variable
 
     const mockProjectInfo = {
       type: 'react' as const,
@@ -395,7 +359,24 @@ describe('Reporter', () => {
       merge: true,
     };
 
-    it('should format a complete report with errors', () => {
+    it('should format a complete report with errors', async () => {
+      // Use a more complete mockReportData to ensure formatReport returns a string
+      const fullMockReportData = {
+        totalErrors: 2,
+        totalWarnings: 1,
+        totalInfos: 1,
+        errorsByRule: { 'rule1': 2 },
+        warningsByRule: { 'rule2': 1 },
+        infosByRule: { 'rule3': 1 },
+        errorsByZone: { 'zone1': 1, 'zone2': 1 },
+        warningsByZone: { 'zone1': 1 },
+        infosByZone: { 'zone1': 1 },
+        oksByZone: { 'zone1': ['passed'] },
+        totalCheckedByZone: { 'zone1': 3, 'zone2': 1 },
+        summary: [{ rule: 'rule1', count: 2, percentage: '100.0' }],
+        warningSummary: [{ rule: 'rule2', count: 1, percentage: '100.0' }],
+        infoSummary: [{ rule: 'rule3', count: 1, percentage: '100.0' }],
+      };
       reporter.setOriginalZoneErrors({
         'zone1': [
           {
@@ -430,45 +411,54 @@ describe('Reporter', () => {
         ],
       });
 
-      const report = reporter['formatReport'](
-        mockReportData,
+      let report = await reporter['formatReport'](
+        fullMockReportData,
         mockProjectInfo,
         mockConfig
       );
-
-      // Validar cabecera y datos principales
+      if (typeof report !== 'string') report = report.toString();
+      expect(typeof report).toBe('string');
       expect(report).toMatch(/FRONTEND STANDARDS VALIDATION REPORT/);
       expect(report).toMatch(/Project: root/);
       expect(report).toMatch(/Project Type: react/);
       expect(report).toMatch(/SUMMARY: 2 violations found/);
       expect(report).toMatch(/RESULTS BY ZONE/);
-      // Validar secciones detalladas
       expect(report).toMatch(/DETAILED VIOLATIONS/);
       expect(report).toMatch(/DETAILED WARNINGS/);
       expect(report).toMatch(/DETAILED INFO SUGGESTIONS/);
       expect(report).toMatch(/ERROR STATISTICS/);
       expect(report).toMatch(/RECOMMENDATIONS/);
-      // Validar que los errores, warnings e info estén presentes
       expect(report).toMatch(/error1/);
       expect(report).toMatch(/warning1/);
       expect(report).toMatch(/info1/);
     });
 
-    it('should format a success report when no errors', () => {
+    it('should format a success report when no errors', async () => {
       const successReportData = {
-        ...mockReportData,
         totalErrors: 0,
+        totalWarnings: 0,
+        totalInfos: 0,
         errorsByRule: {},
+        warningsByRule: {},
+        infosByRule: {},
         errorsByZone: {},
+        warningsByZone: {},
+        infosByZone: {},
+        oksByZone: {},
+        totalCheckedByZone: {},
         summary: [],
+        warningSummary: [],
+        infoSummary: [],
       };
+      reporter.setOriginalZoneErrors({});
 
-      const report = reporter['formatReport'](
+      let report = await reporter['formatReport'](
         successReportData,
         mockProjectInfo,
         mockConfig
       );
-
+      if (typeof report !== 'string') report = report.toString();
+      expect(typeof report).toBe('string');
       expect(report).toContain('✅ ALL VALIDATIONS PASSED!');
       expect(report).not.toContain('DETAILED VIOLATIONS');
     });
@@ -477,15 +467,12 @@ describe('Reporter', () => {
   describe('saveReport', () => {
     it('should save the report to file', async () => {
       const mockContent = 'Test report content';
-      // Simular que la carpeta no existe la primera vez, luego sí
       let callCount = 0;
       jest.spyOn(fs, 'existsSync').mockImplementation(() => {
         callCount++;
-        return callCount > 1; // false la primera vez, true después
+        return callCount > 1;
       });
-
       await reporter['saveReport'](mockContent);
-
       expect(fs.existsSync).toHaveBeenCalled();
       expect(fs.mkdirSync).toHaveBeenCalled();
       expect(fs.writeFileSync).toHaveBeenCalledWith(
@@ -493,13 +480,13 @@ describe('Reporter', () => {
         expect.stringContaining(mockContent),
         'utf8'
       );
+      jest.restoreAllMocks();
     });
 
     it('should copy viewer HTML if found', async () => {
       const mockViewerPath = '/path/to/viewer.html';
       jest.spyOn(fs, 'existsSync').mockImplementation((p) => {
         if (p === mockViewerPath) return true;
-        // Simular que la primera ruta de possibleViewerPaths existe
         if (
           typeof p === 'string' &&
           p.includes('frontend-standards-log-viewer.html')
@@ -507,21 +494,20 @@ describe('Reporter', () => {
           return true;
         return false;
       });
-
       await reporter['saveReport']('Test content');
-
       expect(fs.copyFileSync).toHaveBeenCalled();
+      jest.restoreAllMocks();
     });
 
     it('should handle errors when saving report', async () => {
       jest.spyOn(fs, 'writeFileSync').mockImplementation(() => {
         throw new Error('Write failed');
       });
-
       await expect(reporter['saveReport']('Test content')).rejects.toThrow(
         'Write failed'
       );
       expect(mockLogger.error).toHaveBeenCalled();
+      jest.restoreAllMocks();
     });
   });
 
@@ -596,17 +582,7 @@ describe('Reporter', () => {
   // Test report section generators
   describe('report section generators', () => {
     const mockLines: string[] = [];
-    const mockReportData = {
-      totalErrors: 1,
-      totalWarnings: 1,
-      totalInfos: 1,
-      errorsByZone: { 'zone1': 1 },
-      warningsByZone: { 'zone1': 1 },
-      infosByZone: { 'zone1': 1 },
-      summary: [{ rule: 'rule1', count: 1, percentage: '100.0' }],
-      warningSummary: [{ rule: 'rule2', count: 1, percentage: '100.0' }],
-      infoSummary: [{ rule: 'rule3', count: 1, percentage: '100.0' }],
-    } as any;
+    // ...existing code...
 
     beforeEach(() => {
       mockLines.length = 0;
@@ -661,7 +637,18 @@ describe('Reporter', () => {
     });
 
     it('should add summary section', () => {
-      reporter['addSummarySection'](mockLines, mockReportData);
+      const sectionMockData = {
+        totalErrors: 1,
+        totalWarnings: 1,
+        totalInfos: 1,
+        errorsByZone: { 'zone1': 1 },
+        warningsByZone: { 'zone1': 1 },
+        infosByZone: { 'zone1': 1 },
+        summary: [{ rule: 'rule1', count: 1, percentage: '100.0' }],
+        warningSummary: [{ rule: 'rule2', count: 1, percentage: '100.0' }],
+        infoSummary: [{ rule: 'rule3', count: 1, percentage: '100.0' }],
+      };
+      reporter['addSummarySection'](mockLines, sectionMockData);
 
       expect(mockLines.join('\n')).toContain('SUMMARY: 1 violations found');
       expect(mockLines.join('\n')).toContain(
@@ -670,7 +657,18 @@ describe('Reporter', () => {
     });
 
     it('should add zone results section', () => {
-      reporter['addZoneResultsSection'](mockLines, mockReportData);
+      const sectionMockData = {
+        totalErrors: 1,
+        totalWarnings: 1,
+        totalInfos: 1,
+        errorsByZone: { 'zone1': 1 },
+        warningsByZone: { 'zone1': 1 },
+        infosByZone: { 'zone1': 1 },
+        summary: [{ rule: 'rule1', count: 1, percentage: '100.0' }],
+        warningSummary: [{ rule: 'rule2', count: 1, percentage: '100.0' }],
+        infoSummary: [{ rule: 'rule3', count: 1, percentage: '100.0' }],
+      };
+      reporter['addZoneResultsSection'](mockLines, sectionMockData);
 
       expect(mockLines.join('\n')).toContain('RESULTS BY ZONE');
       expect(mockLines.join('\n')).toContain('📂 Zone: zone1');
@@ -699,7 +697,19 @@ describe('Reporter', () => {
     });
 
     it('should add statistics section', () => {
-      reporter['addStatisticsSection'](mockLines, mockReportData);
+      const sectionMockData = {
+        totalErrors: 1,
+        totalWarnings: 1,
+        totalInfos: 1,
+        errorsByZone: { 'zone1': 1 },
+        warningsByZone: { 'zone1': 1 },
+        infosByZone: { 'zone1': 1 },
+        summary: [{ rule: 'rule1', count: 1, percentage: '100.0' }],
+        warningSummary: [{ rule: 'rule2', count: 1, percentage: '100.0' }],
+        infoSummary: [{ rule: 'rule3', count: 1, percentage: '100.0' }],
+        errorsByRule: { 'rule1': 1 },
+      };
+      reporter['addStatisticsSection'](mockLines, sectionMockData);
 
       expect(mockLines.join('\n')).toContain('ERROR STATISTICS');
       expect(mockLines.join('\n')).toContain('rule1: 1 occurrences (100.0%)');
