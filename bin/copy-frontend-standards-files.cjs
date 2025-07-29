@@ -3,7 +3,7 @@ const fs = require('fs');
 const path = require('path');
 
 const files = [
-  'checkFrontendStandards.config.js',
+  'checkFrontendStandards.config.mjs',
   'checkFrontendStandards.COMPLETE-GUIDE.md',
 ];
 
@@ -26,10 +26,10 @@ console.log(`[frontend-standards-checker] Directorio del proyecto: ${projectRoot
 files.forEach((file) => {
   const src = path.join(packageRoot, file);
   const dest = path.join(projectRoot, file);
-  
+
   console.log(`[frontend-standards-checker] Intentando copiar desde: ${src}`);
   console.log(`[frontend-standards-checker] Hacia: ${dest}`);
-  
+
   if (!fs.existsSync(dest)) {
     if (fs.existsSync(src)) {
       try {
