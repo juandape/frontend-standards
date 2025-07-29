@@ -1,2 +1,14 @@
+echo "Running pre-push checks..."
+
 yarn build
+if [ $? -ne 0 ]; then
+  echo "Build failed. Please fix the errors before pushing."
+  exit 1
+fi
+echo "Build succeeded. Running tests..."
 yarn test
+if [ $? -ne 0 ]; then
+  echo "Tests failed. Please fix the errors before pushing."
+  exit 1
+fi
+echo "All checks passed. Proceeding with push."
