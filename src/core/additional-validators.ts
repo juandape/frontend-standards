@@ -285,7 +285,7 @@ export function checkHardcodedData(
       /(['"]).*(\d{3,}|lorem|dummy|test|prueba|foo|bar|baz).*\1/.test(line);
     const isCSSClass = /className\s*=|class\s*=|style\s*=/.test(line);
 
-    // Comprehensive Tailwind CSS pattern matching
+    // Comprehensive Tailwind CSS pattern matching (incluye clases con corchetes)
     const tailwindPatterns = [
       // Base spacing and layout utilities
       /\b[pmwh]-\d+\b/, // padding, margin, width, height
@@ -312,6 +312,9 @@ export function checkHardcodedData(
 
       // General custom color patterns
       /\b(text|bg|border)-[a-z]+-[a-z]*-?\d{2,3}\b/,
+
+      // Tailwind clases con corchetes, ej: min-w-[100px], max-h-[200px]
+      /[a-z-]+-\[[^\]]+\]/,
     ];
 
     const isTailwindClass = tailwindPatterns.some((pattern) =>

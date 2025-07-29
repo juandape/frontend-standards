@@ -94,7 +94,10 @@ export class FrontendStandardsChecker {
           includeCollaborators = answer.includeCollaborators;
         }
       } catch (e) {
-        this.logger.warn('Could not prompt for collaborators, defaulting to includeCollaborators=true', e);
+        this.logger.warn(
+          'Could not prompt for collaborators, defaulting to includeCollaborators=true',
+          e
+        );
         includeCollaborators = true;
       }
 
@@ -173,22 +176,37 @@ export class FrontendStandardsChecker {
 
       // Pasar la opción al reporter
       this.reporter.includeCollaborators = includeCollaborators;
-      await generateReport(
+      // Generate the report and get processed error/warning counts
+      const reportResult = await generateReport(
         this.reporter,
         this.logger,
         zoneResults,
         projectInfo,
         config
       );
+
+      // Use processed counts from Reporter for console summary
+      // Obtener datos por zona del Reporter para el resumen
+      const processed = this.reporter.processErrors(reportResult.zoneErrors);
       logSummary(
         this.logger,
         result.summary,
         totalFiles,
-        totalErrors,
-        totalWarnings
+        reportResult.totalErrors,
+        reportResult.totalWarnings,
+        {
+          errorsByZone: processed.errorsByZone,
+          warningsByZone: processed.warningsByZone,
+          infosByZone: processed.infosByZone,
+        }
       );
 
-      return result;
+      // Return result, but override totalErrors/totalWarnings to match processed counts
+      return {
+        ...result,
+        totalErrors: reportResult.totalErrors,
+        totalWarnings: reportResult.totalWarnings,
+      };
     } catch (error) {
       this.logger.error('💥 Validation failed:', error);
       throw error;

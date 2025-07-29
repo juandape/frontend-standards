@@ -8,6 +8,8 @@ import type {
   IProcessZoneOptions,
 } from '../types/index.js';
 
+import type { IReportGenerationResult } from '../types/reporter.type.js';
+
 import type { Logger } from '../utils/logger';
 
 export async function loadAndLogConfig(
@@ -100,7 +102,7 @@ export async function generateReport(
   zoneResults: IZoneResult[],
   projectInfo: IProjectInfo,
   config: IStandardsConfiguration
-): Promise<void> {
+): Promise<IReportGenerationResult> {
   const zoneErrors: Record<string, IValidationError[]> = {};
   zoneResults.forEach((zone) => {
     zoneErrors[zone.zone] = zone.errors;
@@ -117,7 +119,13 @@ export async function generateReport(
     `🐛 Total errors being passed to reporter: ${totalErrorsToReporter}`
   );
 
-  await reporter.generate(zoneErrors, projectInfo, config);
+  return await reporter.generate(zoneErrors, projectInfo, config);
+}
+
+export interface ZoneSummary {
+  errorsByZone: Record<string, number>;
+  warningsByZone: Record<string, number>;
+  infosByZone?: Record<string, number>;
 }
 
 export function logSummary(
@@ -125,12 +133,30 @@ export function logSummary(
   summary: IValidationResult['summary'],
   totalFiles: number,
   totalErrors: number,
-  totalWarnings: number
+  totalWarnings: number,
+  zoneSummary?: ZoneSummary
 ): void {
   logger.info(`\n🎉 Validation completed in ${summary.processingTime}ms`);
   logger.info(`📊 Total files: ${totalFiles}`);
   logger.info(`❌ Total errors: ${totalErrors}`);
   logger.info(`⚠️  Total warnings: ${totalWarnings}`);
+  if (zoneSummary) {
+    logger.info(`\n----------------\nRESULTS BY ZONE:\n----------------`);
+    Object.keys(zoneSummary.errorsByZone).forEach((zone) => {
+      logger.info(`\n📂 Zone: ${zone}`);
+      logger.info(`   Errors: ${zoneSummary.errorsByZone[zone]}`);
+      logger.info(`   Warnings: ${zoneSummary.warningsByZone[zone]}`);
+      if (zoneSummary.infosByZone?.[zone] !== undefined) {
+        logger.info(`   Info suggestions: ${zoneSummary.infosByZone[zone]}`);
+      }
+      logger.info(
+        `   Status: ${
+          (zoneSummary.errorsByZone[zone] ?? 0) > 0 ? '❌ FAILED' : '✅ PASSED'
+        }`
+      );
+      logger.info('----------------------------------------');
+    });
+  }
 }
 
 export function filterChangedFiles(

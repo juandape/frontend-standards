@@ -138,7 +138,7 @@ export class Reporter implements IReporter {
       totalCheckedByZone[zone] = 0;
 
       for (const error of errors) {
-        // Excluir cualquier archivo jest
+        // Exclude Jest files
         if (this.isJestFile(error.filePath)) {
           continue;
         }
@@ -148,7 +148,12 @@ export class Reporter implements IReporter {
           oksByZone[zone].push(error.message.replace('✅ ', ''));
         } else if (error.message.startsWith('Present:')) {
           oksByZone[zone].push(error.message.replace('Present:', '').trim());
-        } else if (error.severity === 'error') {
+        } else if (
+          error.severity === 'error' &&
+          !error.message.startsWith('✅') &&
+          !error.message.startsWith('Present:')
+        ) {
+          // Only count errors that would be shown in detailed violations
           errorsByZone[zone]++;
           totalErrors++;
           errorsByRule[error.rule] = (errorsByRule[error.rule] ?? 0) + 1;

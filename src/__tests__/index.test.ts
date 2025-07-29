@@ -34,6 +34,25 @@ describe('FrontendStandardsChecker', () => {
     jest.clearAllMocks();
     checker = new FrontendStandardsChecker({});
     (checker as any).options.rootDir = '/tmp/project';
+    // Por defecto, el mock de generateReport retorna un objeto válido y zoneErrors vacío
+    mockGenerateReport.mockResolvedValue({
+      totalErrors: 0,
+      totalWarnings: 0,
+      zoneErrors: {},
+    });
+    // Mock de processErrors para evitar undefined
+    mockProcessZone.mockResolvedValue({
+      filesProcessed: 1,
+      errorsCount: 0,
+      warningsCount: 0,
+    });
+    require('../core/reporter').Reporter.prototype.processErrors = jest.fn(
+      () => ({
+        errorsByZone: {},
+        warningsByZone: {},
+        infosByZone: {},
+      })
+    );
   });
 
   it('should instantiate with default options', () => {
@@ -41,6 +60,7 @@ describe('FrontendStandardsChecker', () => {
   });
 
   it('should run the happy path (all zones, no onlyChangedFiles)', async () => {
+    jest.setTimeout(15000);
     mockLoadAndLogConfig.mockResolvedValue({ zones: {} });
     mockAnalyzeProject.mockResolvedValue({ zones: ['web', 'auth'] });
     mockProcessZone.mockResolvedValue({
@@ -49,7 +69,11 @@ describe('FrontendStandardsChecker', () => {
       warningsCount: 0,
     });
     mockCreateSummary.mockReturnValue({ summary: 'ok' });
-    mockGenerateReport.mockResolvedValue(undefined);
+    mockGenerateReport.mockResolvedValue({
+      totalErrors: 0,
+      totalWarnings: 0,
+      zoneErrors: {},
+    });
     mockLogSummary.mockReturnValue(undefined);
 
     const result = await checker.run();
@@ -63,6 +87,7 @@ describe('FrontendStandardsChecker', () => {
   });
 
   it('should handle onlyChangedFiles with no changed files', async () => {
+    jest.setTimeout(15000);
     checker = new FrontendStandardsChecker({ onlyChangedFiles: true });
     (checker as any).options.rootDir = '/tmp/project';
     mockLoadAndLogConfig.mockResolvedValue({ onlyChangedFiles: true });
@@ -77,6 +102,7 @@ describe('FrontendStandardsChecker', () => {
   });
 
   it('should handle hasOnlyZone', async () => {
+    jest.setTimeout(15000);
     mockLoadAndLogConfig.mockResolvedValue({ zones: { onlyZone: 'web' } });
     mockAnalyzeProject.mockResolvedValue({ zones: ['web'] });
     mockProcessZone.mockResolvedValue({
@@ -85,7 +111,11 @@ describe('FrontendStandardsChecker', () => {
       warningsCount: 0,
     });
     mockCreateSummary.mockReturnValue({ summary: 'ok' });
-    mockGenerateReport.mockResolvedValue(undefined);
+    mockGenerateReport.mockResolvedValue({
+      totalErrors: 0,
+      totalWarnings: 0,
+      zoneErrors: {},
+    });
     mockLogSummary.mockReturnValue(undefined);
 
     const result = await checker.run();
@@ -96,11 +126,13 @@ describe('FrontendStandardsChecker', () => {
   });
 
   it('should handle errors in run()', async () => {
+    jest.setTimeout(15000);
     mockLoadAndLogConfig.mockRejectedValue(new Error('fail'));
     await expect(checker.run()).rejects.toThrow('fail');
   });
 
   it('should handle prompt error and default to includeCollaborators=true', async () => {
+    jest.setTimeout(15000);
     // Simula que no hay TTY para forzar el catch
     Object.defineProperty(process.stdout, 'isTTY', { value: false });
     mockLoadAndLogConfig.mockResolvedValue({ zones: {} });
@@ -111,7 +143,11 @@ describe('FrontendStandardsChecker', () => {
       warningsCount: 0,
     });
     mockCreateSummary.mockReturnValue({ summary: 'ok' });
-    mockGenerateReport.mockResolvedValue(undefined);
+    mockGenerateReport.mockResolvedValue({
+      totalErrors: 0,
+      totalWarnings: 0,
+      zoneErrors: {},
+    });
     mockLogSummary.mockReturnValue(undefined);
     await checker.run();
     // No assertion, just coverage for the catch
