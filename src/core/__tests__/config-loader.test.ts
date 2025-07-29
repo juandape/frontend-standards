@@ -145,11 +145,11 @@ describe('ConfigLoader', () => {
       const rule = rules.find((r: any) => r.name === 'Missing test files');
       expect(rule).toBeDefined();
       // Will return true if test file does not exist (simulate by always returning false)
-      jest.spyOn(require('fs'), 'existsSync').mockReturnValue(false);
+      jest.spyOn(fs, 'existsSync').mockReturnValue(false);
       expect(rule.check('', '/src/components/Button/ButtonComponent.tsx')).toBe(
         true
       );
-      jest.spyOn(require('fs'), 'existsSync').mockRestore();
+      jest.spyOn(fs, 'existsSync').mockRestore();
     });
     it('Test file naming convention: triggers on bad test file name', () => {
       const rules = (configLoader as any).getStructureRules();
@@ -288,7 +288,7 @@ describe('ConfigLoader', () => {
       const rel = (configLoader as any)['resolveConfigPath']('rel/config.js');
       expect(rel).toContain('/project/root/rel/config.js');
       const def = (configLoader as any)['resolveConfigPath']();
-      expect(def).toContain('/project/root/checkFrontendStandards.config.js');
+      expect(def).toContain('/project/root/checkFrontendStandards.config.mjs');
     });
 
     it('should return false for isConfigFile for random file', () => {
@@ -415,7 +415,7 @@ describe('ConfigLoader', () => {
       expect(configLoader.rootDir).toBe('/project/root');
       expect(configLoader.logger).toBe(mockLogger);
       expect(configLoader.configFileName).toBe(
-        'checkFrontendStandards.config.js'
+        'checkFrontendStandards.config.mjs'
       );
     });
   });
@@ -460,7 +460,7 @@ describe('ConfigLoader', () => {
       // Las reglas deben contener las reglas por defecto (no vacías)
       expect(Array.isArray(config.rules)).toBe(true);
       expect(mockLogger.info).toHaveBeenCalledWith(
-        `📋 Loading configuration from: ${configPath}`
+        `📋 Loading configuration from: ${configPath.replace('.js', '.mjs')}`
       );
 
       (globalThis as any).import = originalImport;
@@ -865,11 +865,15 @@ describe('ConfigLoader', () => {
     const rules = configLoader['getDocumentationRules']();
     for (const rule of rules) {
       // eslint-disable-next-line no-console
+      // Use plain log to avoid chalk issues in test debug
+      // eslint-disable-next-line no-console
       console.log(
         'Doc rule:',
         rule.name,
         typeof rule.check,
-        rule.check?.toString?.().slice(0, 100)
+        typeof rule.check === 'function'
+          ? rule.check.toString().slice(0, 100)
+          : ''
       );
     }
   });
@@ -905,7 +909,7 @@ describe('ConfigLoader', () => {
     if (Array.isArray(result) && result.length === 0) {
       // If the rule does not trigger, skip this test as the rule logic may be too restrictive
       // eslint-disable-next-line no-console
-      console.warn(
+      console.log(
         'Skipping: JSDoc for complex functions rule did not trigger for complex function'
       );
       return;
