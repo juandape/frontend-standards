@@ -25,7 +25,7 @@ export class ConfigLoader implements IConfigLoader {
   constructor(rootDir: string, logger: ILogger) {
     this.rootDir = rootDir;
     this.logger = logger;
-    this.configFileName = 'checkFrontendStandards.config.js';
+    this.configFileName = 'checkFrontendStandards.config.mjs';
     this.helper = new ConfigLoaderHelper(logger);
   }
 

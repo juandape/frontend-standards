@@ -36,7 +36,7 @@ function findPackageJson(): PackageJson {
 
   // Si no encontramos el package.json, usar valores predeterminados
   return {
-    version: '4.9.0',
+    version: '0.0.12',
     name: 'frontend-standards-checker',
   };
 }
@@ -140,8 +140,8 @@ program
         label: 'Guía completa',
       },
       {
-        src: join(__dirname, '../../checkFrontendStandards.config.js'),
-        dest: join(cwd, 'checkFrontendStandards.config.js'),
+        src: join(__dirname, '../../checkFrontendStandards.config.mjs'),
+        dest: join(cwd, 'checkFrontendStandards.config.mjs'),
         label: 'Archivo de configuración',
       },
     ];
@@ -149,12 +149,12 @@ program
       try {
         if (!existsSync(file.dest)) {
           copyFileSync(file.src, file.dest);
-          console.log(chalk.green(`✅ ${file.label} copiado: ${file.dest}`));
+          console.log(chalk.green(`✅ ${file.label} copied: ${file.dest}`));
         } else {
-          console.log(chalk.gray(`ℹ️  ${file.label} ya existe: ${file.dest}`));
+          console.log(chalk.gray(`ℹ️  ${file.label} already exists: ${file.dest}`));
         }
       } catch (e) {
-        console.error(chalk.red(`❌ No se pudo copiar ${file.label}:`), e);
+        console.error(chalk.red(`❌ Could not copy ${file.label}:`), e);
       }
     }
 
@@ -165,24 +165,21 @@ program
       if (!pkg.scripts['standards']) {
         pkg.scripts['standards'] = 'frontend-standards-checker check';
         console.log(
-          chalk.green('✅ Script "standards" agregado a package.json.')
+          chalk.green('✅ Script "standards" added to package.json.')
         );
       } else {
         console.log(
-          chalk.yellow('ℹ️  Script "standards" ya existe en package.json.')
+          chalk.yellow('ℹ️  Script "standards" already exists in package.json.')
         );
       }
       writeFileSync(pkgPath, JSON.stringify(pkg, null, 2) + '\n');
     } catch (e) {
-      console.error(chalk.red('❌ No se pudo actualizar package.json:'), e);
+      console.error(chalk.red('❌ Could not update package.json:'), e);
     }
 
     // 3. Actualizar .gitignore
     const ignoreList = [
-      'frontend-standards-full/',
-      'checkFrontendStandards.COMPLETE-GUIDE.md',
-      'checkFrontendStandards.config.js',
-      'logs-standards-validations/',
+      './logs-standards-validations/',
     ];
     try {
       let gitignoreContent = '';
@@ -199,18 +196,18 @@ program
               '\n'
           );
           added = true;
-          console.log(chalk.green(`✅ Añadido a .gitignore: ${item}`));
+          console.log(chalk.green(`✅ Added to .gitignore: ${item}`));
         } else {
-          console.log(chalk.gray(`ℹ️  Ya existe en .gitignore: ${item}`));
+          console.log(chalk.gray(`ℹ️  Already exists in .gitignore: ${item}`));
         }
       }
       if (!added) {
         console.log(
-          chalk.yellow('ℹ️  Todos los elementos ya estaban en .gitignore.')
+          chalk.yellow('ℹ️  All items were already in .gitignore.')
         );
       }
     } catch (e) {
-      console.error(chalk.red('❌ No se pudo actualizar .gitignore:'), e);
+      console.error(chalk.red('❌ Could not update .gitignore:'), e);
     }
 
     // 4. Agregar hook pre-commit de Husky (solo si el entorno está inicializado)
@@ -271,13 +268,13 @@ program
       } else {
         console.log(
           chalk.yellow(
-            '⚠️  Husky no está inicializado en este proyecto. Si deseas usar hooks, ejecuta "npx husky install" primero.'
+            '⚠️  Husky is not initialized in this project. If you want to use hooks, run "npx husky install" first.'
           )
         );
       }
     } catch (e) {
       console.error(
-        chalk.red('❌ No se pudo crear o actualizar el pre-commit de Husky:'),
+        chalk.red('❌ Could not create or update Husky pre-commit:'),
         e
       );
     }
@@ -285,7 +282,7 @@ program
     // Mensaje final
     console.log(
       chalk.blue(
-        '\n🎉 Configuración completada. Puedes usar "yarn standards" o "npm run standards" para validar tu proyecto.'
+        '\n🎉 Configuration complete. You can use "yarn standards" or "npm run standards" to validate your project.'
       )
     );
   });
