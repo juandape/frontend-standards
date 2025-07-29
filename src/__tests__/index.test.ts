@@ -30,13 +30,13 @@ jest.mock('../helpers/index', () => ({
 
 describe('FrontendStandardsChecker', () => {
   let checker: FrontendStandardsChecker;
-beforeEach(() => {
-  jest.clearAllMocks();
-  checker = new FrontendStandardsChecker({});
-  (checker as any).options.rootDir = '/tmp/project';
-  // Por defecto, el mock de generateReport retorna un objeto válido
-  mockGenerateReport.mockResolvedValue({ totalErrors: 0, totalWarnings: 0 });
-});
+  beforeEach(() => {
+    jest.clearAllMocks();
+    checker = new FrontendStandardsChecker({});
+    (checker as any).options.rootDir = '/tmp/project';
+    // Por defecto, el mock de generateReport retorna un objeto válido
+    mockGenerateReport.mockResolvedValue({ totalErrors: 0, totalWarnings: 0 });
+  });
 
   it('should instantiate with default options', () => {
     expect(checker).toBeInstanceOf(FrontendStandardsChecker);
