@@ -36,7 +36,7 @@
     "src/**/*",
     "bin/**/*",
     "types/**/*",
-    "checkFrontendStandards.config.js",
+    "checkFrontendStandards.config.mjs",
     "package.json",
     "frontend-standards.log"
   ],
