@@ -186,12 +186,19 @@ export class FrontendStandardsChecker {
       );
 
       // Use processed counts from Reporter for console summary
+      // Obtener datos por zona del Reporter para el resumen
+      const processed = this.reporter.processErrors(reportResult.zoneErrors);
       logSummary(
         this.logger,
         result.summary,
         totalFiles,
         reportResult.totalErrors,
-        reportResult.totalWarnings
+        reportResult.totalWarnings,
+        {
+          errorsByZone: processed.errorsByZone,
+          warningsByZone: processed.warningsByZone,
+          infosByZone: processed.infosByZone,
+        }
       );
 
       // Return result, but override totalErrors/totalWarnings to match processed counts

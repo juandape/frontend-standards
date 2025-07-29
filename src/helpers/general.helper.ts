@@ -122,17 +122,41 @@ export async function generateReport(
   return await reporter.generate(zoneErrors, projectInfo, config);
 }
 
+export interface ZoneSummary {
+  errorsByZone: Record<string, number>;
+  warningsByZone: Record<string, number>;
+  infosByZone?: Record<string, number>;
+}
+
 export function logSummary(
   logger: Logger,
   summary: IValidationResult['summary'],
   totalFiles: number,
   totalErrors: number,
-  totalWarnings: number
+  totalWarnings: number,
+  zoneSummary?: ZoneSummary
 ): void {
   logger.info(`\n🎉 Validation completed in ${summary.processingTime}ms`);
   logger.info(`📊 Total files: ${totalFiles}`);
   logger.info(`❌ Total errors: ${totalErrors}`);
   logger.info(`⚠️  Total warnings: ${totalWarnings}`);
+  if (zoneSummary) {
+    logger.info(`\n----------------\nRESULTS BY ZONE:\n----------------`);
+    Object.keys(zoneSummary.errorsByZone).forEach((zone) => {
+      logger.info(`\n📂 Zone: ${zone}`);
+      logger.info(`   Errors: ${zoneSummary.errorsByZone[zone]}`);
+      logger.info(`   Warnings: ${zoneSummary.warningsByZone[zone]}`);
+      if (zoneSummary.infosByZone?.[zone] !== undefined) {
+        logger.info(`   Info suggestions: ${zoneSummary.infosByZone[zone]}`);
+      }
+      logger.info(
+        `   Status: ${
+          (zoneSummary.errorsByZone[zone] ?? 0) > 0 ? '❌ FAILED' : '✅ PASSED'
+        }`
+      );
+      logger.info('----------------------------------------');
+    });
+  }
 }
 
 export function filterChangedFiles(
