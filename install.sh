@@ -227,12 +227,12 @@ create_config_file() {
     # Volver al directorio del proyecto
     cd "$ORIGINAL_DIR"
 
-    if [ ! -f "checkFrontendStandards.config.js" ]; then
-        log_info "Create checkFrontendStandards.config.js..."
+    if [ ! -f "checkFrontendStandards.config.mjs" ]; then
+        log_info "Create checkFrontendStandards.config.mjs..."
 
         if [ "$IS_REACT_NATIVE" = true ]; then
             # Configuración optimizada para React Native
-            cat > checkFrontendStandards.config.js << 'EOF'
+            cat > checkFrontendStandards.config.mjs << 'EOF'
 // Frontend Standards Config - React Native
 /**
  * @fileoverview Configuration file for checkFrontendStandards.mjs
@@ -257,7 +257,6 @@ create_config_file() {
  * - Export array of rules directly (automatically merges with defaults)
  * - Simplest approach for adding a few custom rules
  * @author Juan David Peña
- * @version 4.10.0
  * @since 2024-01-15
     * @license MIT
  * @see {@link ./checkFrontendStandards.types.js} Type definitions
@@ -309,7 +308,7 @@ module.exports = {
 EOF
         else
             # Configuración estándar
-            cat > checkFrontendStandards.config.js << 'EOF'
+            cat > checkFrontendStandards.config.mjs << 'EOF'
 // Frontend Standards Config
 /**
  * @fileoverview Configuration file for checkFrontendStandards.mjs
@@ -335,7 +334,6 @@ EOF
  * - Simplest approach for adding a few custom rules
  *
  * @author Juan David Peña
- * @version 4.10.0
  * @since 2024-01-15
     * @license MIT
  * @see {@link ./checkFrontendStandards.types.js} Type definitions
@@ -519,7 +517,7 @@ export default {
 EOF
         fi
 
-        log_success "Configuration file created: checkFrontendStandards.config.js"
+        log_success "Configuration file created: checkFrontendStandards.config.mjs"
     else
         log_info "Configuration file already exists"
     fi
@@ -561,8 +559,8 @@ else
 fi
 
 # Verificar archivo de configuración
-if [ -f "checkFrontendStandards.config.js" ]; then
-    log_success "Configuration file created successfully"
+if [ -f "checkFrontendStandards.config.mjs" ]; then
+    log_success "Configuration file created successfully: checkFrontendStandards.config.mjs"
 else
     log_warning "Recreating configuration file..."
     create_config_file
@@ -603,7 +601,7 @@ if [ "$PACKAGE_MANAGER" = "yarn" ]; then
 fi
 echo ""
 echo "📁 Created files:"
-echo "   ✅ checkFrontendStandards.config.js"
+echo "   ✅ checkFrontendStandards.config.mjs"
 echo "   ✅ checkFrontendStandards.COMPLETE-GUIDE.md"
 echo "   ✅ frontend-standards-full/ (full installation)"
 echo "   ✅ .gitignore (updated with installed files)"
@@ -619,8 +617,6 @@ add_to_gitignore() {
     fi
     # List of paths to ignore
     IGNORE_LIST=(
-        "checkFrontendStandards.COMPLETE-GUIDE.md"
-        "checkFrontendStandards.config.js"
         "./logs-standards-validations/"
 
     )
@@ -645,7 +641,7 @@ else
     echo "   $PACKAGE_MANAGER run standards     # Use file configuration (onlyChangedFiles)"
 fi
 echo ""
-echo "💡 Configure behavior in: checkFrontendStandards.config.js"
+echo "💡 Configure behavior in: checkFrontendStandards.config.mjs"
 echo "   onlyChangedFiles: true  → Only changed files"
 echo "   onlyChangedFiles: false → All files"
 echo "📖 Add custom rules in the 'rules' section"
