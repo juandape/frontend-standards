@@ -863,6 +863,10 @@ export class ConfigLoader implements IConfigLoader {
         category: 'naming',
         severity: 'error',
         check: (content: string): number[] => {
+          // Omitir cualquier archivo que contenga 'declare module'
+          if (/declare\s+module/.test(content)) {
+            return [];
+          }
           // Check for interface declarations that don't start with I
           const lines = content.split('\n');
           const violationLines: number[] = [];
@@ -1840,6 +1844,10 @@ export class ConfigLoader implements IConfigLoader {
         category: 'react',
         severity: 'error',
         check: (content: string, filePath: string): boolean => {
+          // Excluir archivos que terminen en .hook.ts o .hook.tsx
+          if (filePath.endsWith('.hook.ts') || filePath.endsWith('.hook.tsx')) {
+            return false;
+          }
           if (!filePath.includes('/app/') || !filePath.endsWith('.tsx'))
             return false;
 

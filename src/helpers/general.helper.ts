@@ -8,6 +8,8 @@ import type {
   IProcessZoneOptions,
 } from '../types/index.js';
 
+import type { IReportGenerationResult } from '../types/reporter.type.js';
+
 import type { Logger } from '../utils/logger';
 
 export async function loadAndLogConfig(
@@ -100,7 +102,7 @@ export async function generateReport(
   zoneResults: IZoneResult[],
   projectInfo: IProjectInfo,
   config: IStandardsConfiguration
-): Promise<void> {
+): Promise<IReportGenerationResult> {
   const zoneErrors: Record<string, IValidationError[]> = {};
   zoneResults.forEach((zone) => {
     zoneErrors[zone.zone] = zone.errors;
@@ -117,7 +119,7 @@ export async function generateReport(
     `🐛 Total errors being passed to reporter: ${totalErrorsToReporter}`
   );
 
-  await reporter.generate(zoneErrors, projectInfo, config);
+  return await reporter.generate(zoneErrors, projectInfo, config);
 }
 
 export function logSummary(
