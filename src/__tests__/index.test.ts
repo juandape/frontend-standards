@@ -30,11 +30,13 @@ jest.mock('../helpers/index', () => ({
 
 describe('FrontendStandardsChecker', () => {
   let checker: FrontendStandardsChecker;
-  beforeEach(() => {
-    jest.clearAllMocks();
-    checker = new FrontendStandardsChecker({});
-    (checker as any).options.rootDir = '/tmp/project';
-  });
+beforeEach(() => {
+  jest.clearAllMocks();
+  checker = new FrontendStandardsChecker({});
+  (checker as any).options.rootDir = '/tmp/project';
+  // Por defecto, el mock de generateReport retorna un objeto válido
+  mockGenerateReport.mockResolvedValue({ totalErrors: 0, totalWarnings: 0 });
+});
 
   it('should instantiate with default options', () => {
     expect(checker).toBeInstanceOf(FrontendStandardsChecker);
@@ -49,7 +51,7 @@ describe('FrontendStandardsChecker', () => {
       warningsCount: 0,
     });
     mockCreateSummary.mockReturnValue({ summary: 'ok' });
-    mockGenerateReport.mockResolvedValue(undefined);
+    mockGenerateReport.mockResolvedValue({ totalErrors: 0, totalWarnings: 0 });
     mockLogSummary.mockReturnValue(undefined);
 
     const result = await checker.run();
@@ -85,7 +87,7 @@ describe('FrontendStandardsChecker', () => {
       warningsCount: 0,
     });
     mockCreateSummary.mockReturnValue({ summary: 'ok' });
-    mockGenerateReport.mockResolvedValue(undefined);
+    mockGenerateReport.mockResolvedValue({ totalErrors: 0, totalWarnings: 0 });
     mockLogSummary.mockReturnValue(undefined);
 
     const result = await checker.run();
@@ -111,7 +113,7 @@ describe('FrontendStandardsChecker', () => {
       warningsCount: 0,
     });
     mockCreateSummary.mockReturnValue({ summary: 'ok' });
-    mockGenerateReport.mockResolvedValue(undefined);
+    mockGenerateReport.mockResolvedValue({ totalErrors: 0, totalWarnings: 0 });
     mockLogSummary.mockReturnValue(undefined);
     await checker.run();
     // No assertion, just coverage for the catch
