@@ -1115,8 +1115,11 @@ export class ConfigLoader implements IConfigLoader {
           const lines = content.split('\n');
           const violationLines: number[] = [];
           lines.forEach((line, idx) => {
-            if (/\balert\s*\(/.test(line)) {
-              violationLines.push(idx + 1);
+            // Excluye solo Alert.alert(
+            if (/\balert\s*\(/.test(line) || /window\.alert\s*\(/.test(line)) {
+              if (!/Alert\.alert\s*\(/.test(line)) {
+                violationLines.push(idx + 1);
+              }
             }
           });
           return violationLines;
@@ -1271,15 +1274,15 @@ export class ConfigLoader implements IConfigLoader {
         name: 'No committed credentials',
         category: 'content',
         severity: 'error',
-        check: (content: string, filePath: string): boolean => {
+        check: (content: string, filePath: string): number[] => {
           // Skip configuration files
           if (this.isConfigFile(filePath)) {
-            return false;
+            return [];
           }
 
           // Skip environment files that might legitimately contain environment variables
           if (/(env|\.env)/.test(filePath)) {
-            return false;
+            return [];
           }
 
           // Check for potential credentials or sensitive data
@@ -1291,7 +1294,14 @@ export class ConfigLoader implements IConfigLoader {
             /private[_-]?key\s*[:=]\s*['"][^'"]{50,}['"]/i,
           ];
 
-          return credentialPatterns.some((pattern) => pattern.test(content));
+          const lines = content.split('\n');
+          const violationLines: number[] = [];
+          lines.forEach((line, idx) => {
+            if (credentialPatterns.some((pattern) => pattern.test(line))) {
+              violationLines.push(idx + 1);
+            }
+          });
+          return violationLines;
         },
         message:
           'Potential credentials or sensitive data detected. Use environment variables instead.',
