@@ -14,6 +14,24 @@
         <div class="p-6 border-b">
           <h2 class="text-2xl font-bold text-blue-600">Logs Viewer</h2>
           <p class="text-sm text-gray-500">Frontend Standards</p>
+          <div
+            id="manualLogUpload"
+            class="hidden mt-4 flex flex-col items-center border"
+          >
+            <input
+              type="file"
+              id="logFileInput"
+              accept=".log,.txt"
+              class="mb-2 block text-sm text-gray-600"
+            />
+            <button
+              id="loadLogBtn"
+              class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition"
+            >
+              Load log
+            </button>
+            <div id="manualLogError" class="text-xs text-red-600 mt-2"></div>
+          </div>
         </div>
         <div class="px-6 py-4">
           <div id="sidebarRules" class="space-y-6"></div>
@@ -141,39 +159,68 @@
 
         fetch('frontend-standards.log')
           .then(response => {
-            if (!response.ok) throw new Error('No se encontró el archivo de log.')
+            if (!response.ok) throw new Error('Log not found.')
             return response.text()
           })
           .then(text => {
             logData = text
-
-            const matchDate = logData.match(/^Generated:\s*(.+)$/m)
-            sidebarDate.textContent = matchDate ? `Generated: ${matchDate[1]}` : ''
-
-            const matchProject = logData.match(/^Project:\s*(.+)$/m)
-            const matchType = logData.match(/^Project Type:\s*(.+)$/m)
-            const matchMonorepo = logData.match(/^Monorepo:\s*(.+)$/m)
-
-            sidebarProjectInfo.innerHTML = `
-              <div><span class="font-semibold text-gray-700">Project:</span> ${escapeHTML(matchProject ? matchProject[1] : '-')}</div>
-              <div><span class="font-semibold text-gray-700">Project Type:</span> ${escapeHTML(matchType ? matchType[1] : '-')}</div>
-              <div><span class="font-semibold text-gray-700">Monorepo:</span> ${escapeHTML(matchMonorepo ? matchMonorepo[1] : '-')}</div>
-            `
-            if (!logData.trim()) {
-              summarySection.classList.remove('hidden')
-              summaryInfo.innerHTML = '<div class="text-red-600">No se encontró información en el log.</div>'
-              return
-            }
-            parseGroupedData()
-            renderSidebarRules()
-            renderSummary()
+            processLogData()
           })
           .catch(err => {
             sidebarDate.textContent = ''
             summarySection.classList.remove('hidden')
-            summaryInfo.innerHTML = `<div class="text-red-600">No se pudo cargar el log: ${escapeHTML(err.message)}</div>`
+            summaryInfo.innerHTML = `<div class="text-red-600">Fetch error: ${escapeHTML(err.message)}<br>You can upload the log manually.</div>`
+            document.getElementById('manualLogUpload').classList.remove('hidden')
             console.warn('Log loading error:', err.message)
           })
+
+        function processLogData() {
+          const matchDate = logData.match(/^Generated:\s*(.+)$/m)
+          sidebarDate.textContent = matchDate ? `Generated: ${matchDate[1]}` : ''
+
+          const matchProject = logData.match(/^Project:\s*(.+)$/m)
+          const matchType = logData.match(/^Project Type:\s*(.+)$/m)
+          const matchMonorepo = logData.match(/^Monorepo:\s*(.+)$/m)
+
+          sidebarProjectInfo.innerHTML = `
+            <div><span class="font-semibold text-gray-700">Project:</span> ${escapeHTML(matchProject ? matchProject[1] : '-')}</div>
+            <div><span class="font-semibold text-gray-700">Project Type:</span> ${escapeHTML(matchType ? matchType[1] : '-')}</div>
+            <div><span class="font-semibold text-gray-700">Monorepo:</span> ${escapeHTML(matchMonorepo ? matchMonorepo[1] : '-')}</div>
+          `
+          if (!logData.trim()) {
+            summarySection.classList.remove('hidden')
+            summaryInfo.innerHTML = '<div class="text-red-600">No information found in the log.</div>'
+            return
+          }
+          parseGroupedData()
+          renderSidebarRules()
+          renderSummary()
+        }
+
+        // Manual log upload logic
+        const logFileInput = document.getElementById('logFileInput')
+        const loadLogBtn = document.getElementById('loadLogBtn')
+        const manualLogError = document.getElementById('manualLogError')
+        if (loadLogBtn && logFileInput) {
+          loadLogBtn.addEventListener('click', () => {
+            manualLogError.textContent = ''
+            if (!logFileInput.files || !logFileInput.files[0]) {
+              manualLogError.textContent = 'Select a log file.'
+              return
+            }
+            const file = logFileInput.files[0]
+            const reader = new FileReader()
+            reader.onload = function(e) {
+              logData = e.target.result
+              document.getElementById('manualLogUpload').classList.add('hidden')
+              processLogData()
+            }
+            reader.onerror = function() {
+              manualLogError.textContent = 'Error reading the file.'
+            }
+            reader.readAsText(file)
+          })
+        }
             })
 
             function parseGroupedData() {
