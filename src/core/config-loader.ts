@@ -426,17 +426,16 @@ export class ConfigLoader implements IConfigLoader {
         message:
           'Test files should follow *.test.tsx or *.spec.tsx naming convention',
       },
+
       {
         name: 'Missing index.ts in organization folders',
         category: 'structure',
         severity: 'warning',
         check: (_content: string, filePath: string): boolean => {
-          // Skip configuration files
           if (this.isConfigFile(filePath)) {
             return false;
           }
 
-          // Check if this is a file in an organization folder
           const organizationFolders = [
             '/components/',
             '/types/',
@@ -449,40 +448,41 @@ export class ConfigLoader implements IConfigLoader {
             '/lib/',
           ];
 
-          const isInOrganizationFolder = organizationFolders.some((folder) =>
+          const matchedFolder = organizationFolders.find((folder) =>
             filePath.includes(folder)
           );
 
-          if (!isInOrganizationFolder) {
+          if (!matchedFolder) return false;
+
+          const orgFolderIndex = filePath.indexOf(matchedFolder);
+          const relativePathAfterOrgFolder = filePath.slice(
+            orgFolderIndex + matchedFolder.length
+          );
+          const firstLevelFolder = relativePathAfterOrgFolder.split('/')[0];
+
+          // Si el archivo está directamente dentro del folder organizacional, no requiere index
+          if (
+            !firstLevelFolder ||
+            firstLevelFolder.endsWith('.ts') ||
+            firstLevelFolder.endsWith('.tsx')
+          ) {
             return false;
           }
 
-          const fileName = path.basename(filePath);
+          const baseFolder = path.join(
+            filePath.slice(0, orgFolderIndex + matchedFolder.length),
+            firstLevelFolder
+          );
+          const indexTsPath = path.join(baseFolder, 'index.ts');
+          const indexTsxPath = path.join(baseFolder, 'index.tsx');
 
-          // Skip if this is already an index file
-          if (fileName === 'index.ts' || fileName === 'index.tsx') {
-            return false;
-          }
+          const hasIndexTs = fs.existsSync(indexTsPath);
+          const hasIndexTsx = fs.existsSync(indexTsxPath);
 
-          // Get the immediate parent directory of the file
-          const parentDir = path.dirname(filePath);
-
-          // Check if there's an index.ts or index.tsx in the same directory
-          const indexTsPath = path.join(parentDir, 'index.ts');
-          const indexTsxPath = path.join(parentDir, 'index.tsx');
-
-          try {
-            const fs = require('fs');
-            const hasIndexTs = fs.existsSync(indexTsPath);
-            const hasIndexTsx = fs.existsSync(indexTsxPath);
-
-            return !hasIndexTs && !hasIndexTsx;
-          } catch {
-            return true;
-          }
+          return !hasIndexTs && !hasIndexTsx;
         },
         message:
-          'Organization folders (components, types, hooks, constants, etc.) should have an index.ts file for exports',
+          'Organization subfolders (like /components/Foo/) should contain an index.ts or index.tsx file for exports.',
       },
     ];
   }
