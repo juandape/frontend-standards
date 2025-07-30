@@ -617,7 +617,7 @@ add_to_gitignore() {
     fi
     # List of paths to ignore
     IGNORE_LIST=(
-        "./logs-standards-validations/"
+        "logs-standards-validations/"
 
     )
     for ITEM in "${IGNORE_LIST[@]}"; do

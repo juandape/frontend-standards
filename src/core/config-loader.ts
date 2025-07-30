@@ -1285,20 +1285,45 @@ export class ConfigLoader implements IConfigLoader {
             return [];
           }
 
-          // Check for potential credentials or sensitive data
+          // Helper: check if a string is high entropy (looks random)
+          function isHighEntropy(str: string): boolean {
+            // At least 20 chars, contains upper, lower, and number or symbol
+            if (str.length < 20) return false;
+            const hasUpper = /[A-Z]/.test(str);
+            const hasLower = /[a-z]/.test(str);
+            const hasDigit = /\d/.test(str);
+            const hasSymbol = /[^A-Za-z0-9]/.test(str);
+            let classes = 0;
+            if (hasUpper) classes++;
+            if (hasLower) classes++;
+            if (hasDigit) classes++;
+            if (hasSymbol) classes++;
+            return classes >= 3;
+          }
+
+          // Only flag if the value looks like a real credential (not an event name)
           const credentialPatterns = [
-            /password\s*[:=]\s*['"][^'"]{6,}['"]/i,
-            /secret\s*[:=]\s*['"][^'"]{10,}['"]/i,
-            /token\s*[:=]\s*['"][^'"]{20,}['"]/i,
-            /api[_-]?key\s*[:=]\s*['"][^'"]{15,}['"]/i,
-            /private[_-]?key\s*[:=]\s*['"][^'"]{50,}['"]/i,
+            /password\s*[:=]\s*['"]([^'"]+)['"]/i,
+            /secret\s*[:=]\s*['"]([^'"]+)['"]/i,
+            /token\s*[:=]\s*['"]([^'"]+)['"]/i,
+            /api[_-]?key\s*[:=]\s*['"]([^'"]+)['"]/i,
+            /private[_-]?key\s*[:=]\s*['"]([^'"]+)['"]/i,
           ];
 
           const lines = content.split('\n');
           const violationLines: number[] = [];
           lines.forEach((line, idx) => {
-            if (credentialPatterns.some((pattern) => pattern.test(line))) {
-              violationLines.push(idx + 1);
+            for (const pattern of credentialPatterns) {
+              const match = pattern.exec(line);
+              if (match?.[1]) {
+                const value = match[1];
+                // Ignore if value is all lowercase/underscore or short (likely event name)
+                if (/^[a-z0-9_-]+$/.test(value) && value.length < 40) return;
+                // Only flag if value is high entropy
+                if (isHighEntropy(value)) {
+                  violationLines.push(idx + 1);
+                }
+              }
             }
           });
           return violationLines;

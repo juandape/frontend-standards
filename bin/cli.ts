@@ -179,7 +179,7 @@ program
 
     // 3. Actualizar .gitignore
     const ignoreList = [
-      './logs-standards-validations/',
+      'logs-standards-validations/',
     ];
     try {
       let gitignoreContent = '';
