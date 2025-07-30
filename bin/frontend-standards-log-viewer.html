@@ -16,17 +16,38 @@
           <p class="text-sm text-gray-500">Frontend Standards</p>
           <div
             id="manualLogUpload"
-            class="hidden mt-4 flex flex-col items-center border"
+            class="hidden mt-4 flex flex-col items-center border p-2"
           >
-            <input
-              type="file"
-              id="logFileInput"
-              accept=".log,.txt"
-              class="mb-2 block text-sm text-gray-600"
-            />
+            <div
+              id="dropZone"
+              class="mb-2 w-64 h-24 flex flex-col items-center justify-center border-2 border-dashed border-blue-400 rounded-lg bg-blue-50 text-blue-700 cursor-pointer transition hover:bg-blue-100"
+            >
+              <svg
+                class="w-8 h-8 mb-1 text-blue-400"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  d="M7 16v-4a4 4 0 014-4h2a4 4 0 014 4v4m-4 4v-4m0 0l-2 2m2-2l2 2"
+                />
+              </svg>
+              <span id="dropZoneText" class="text-sm select-none px-3 text-center"
+                >Drag & Drop your log file here or click to select</span
+              >
+              <input
+                type="file"
+                id="logFileInput"
+                accept=".log,.txt"
+                class="hidden"
+              />
+            </div>
             <button
               id="loadLogBtn"
-              class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition"
+              class="py-2 px-5 bg-blue-400 text-white rounded hover:bg-blue-500 transition"
             >
               Load log
             </button>
@@ -197,28 +218,66 @@
           renderSummary()
         }
 
-        // Manual log upload logic
+        // Manual log upload logic with drag & drop
         const logFileInput = document.getElementById('logFileInput')
+        const dropZone = document.getElementById('dropZone')
+        const dropZoneText = document.getElementById('dropZoneText')
         const loadLogBtn = document.getElementById('loadLogBtn')
         const manualLogError = document.getElementById('manualLogError')
-        if (loadLogBtn && logFileInput) {
+
+        function handleFile(file) {
+          manualLogError.textContent = ''
+          if (!file) {
+            manualLogError.textContent = 'Selecciona un archivo de log.'
+            return
+          }
+          const reader = new FileReader()
+          reader.onload = function(e) {
+            logData = e.target.result
+            document.getElementById('manualLogUpload').classList.add('hidden')
+            processLogData()
+          }
+          reader.onerror = function() {
+            manualLogError.textContent = 'Error al leer el archivo.'
+          }
+          reader.readAsText(file)
+        }
+
+        if (dropZone && logFileInput) {
+          // Click to open file dialog
+          dropZone.addEventListener('click', () => logFileInput.click())
+          // File selected via dialog
+          logFileInput.addEventListener('change', (e) => {
+            if (logFileInput.files && logFileInput.files[0]) {
+              handleFile(logFileInput.files[0])
+            }
+          })
+          // Drag over
+          dropZone.addEventListener('dragover', (e) => {
+            e.preventDefault()
+            dropZone.classList.add('bg-blue-200', 'border-blue-600')
+          })
+          dropZone.addEventListener('dragleave', (e) => {
+            e.preventDefault()
+            dropZone.classList.remove('bg-blue-200', 'border-blue-600')
+          })
+          // Drop file
+          dropZone.addEventListener('drop', (e) => {
+            e.preventDefault()
+            dropZone.classList.remove('bg-blue-200', 'border-blue-600')
+            if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+              handleFile(e.dataTransfer.files[0])
+            }
+          })
+        }
+
+        if (loadLogBtn) {
           loadLogBtn.addEventListener('click', () => {
-            manualLogError.textContent = ''
-            if (!logFileInput.files || !logFileInput.files[0]) {
-              manualLogError.textContent = 'Select a log file.'
-              return
+            if (logFileInput.files && logFileInput.files[0]) {
+              handleFile(logFileInput.files[0])
+            } else {
+              manualLogError.textContent = 'Selecciona un archivo de log.'
             }
-            const file = logFileInput.files[0]
-            const reader = new FileReader()
-            reader.onload = function(e) {
-              logData = e.target.result
-              document.getElementById('manualLogUpload').classList.add('hidden')
-              processLogData()
-            }
-            reader.onerror = function() {
-              manualLogError.textContent = 'Error reading the file.'
-            }
-            reader.readAsText(file)
           })
         }
             })
