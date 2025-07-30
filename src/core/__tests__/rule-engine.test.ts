@@ -63,6 +63,88 @@ beforeAll(async () => {
 });
 
 describe('RuleEngine', () => {
+  describe('cobertura extra y edge cases', () => {
+    it('should not add error for applyRule with null/undefined/false', async () => {
+      const rule = {
+        name: 'test',
+        check: jest.fn(() => null) as any,
+        message: 'msg',
+      };
+      const errors: any[] = [];
+      await ruleEngine['applyRule'](rule, 'c', 'f', errors);
+      expect(errors).toEqual([]);
+      (rule.check as any).mockImplementation(() => undefined);
+      await ruleEngine['applyRule'](rule, 'c', 'f', errors);
+      expect(errors).toEqual([]);
+      (rule.check as any).mockImplementation(() => false);
+      await ruleEngine['applyRule'](rule, 'c', 'f', errors);
+      expect(errors).toEqual([]);
+    });
+
+    it('should add error for applyRule with array of lines', async () => {
+      const rule = {
+        name: 'test',
+        check: jest.fn(() => [2, 4]),
+        message: 'msg',
+      };
+      const errors: any[] = [];
+      await ruleEngine['applyRule'](rule, 'c', 'f', errors);
+      expect(errors.length).toBe(2);
+      expect(errors[0].line).toBe(2);
+      expect(errors[1].line).toBe(4);
+    });
+
+    it('should add error for applyRule with true and no shadowing', async () => {
+      const rule = { name: 'test', check: jest.fn(() => true), message: 'msg' };
+      const errors: any[] = [];
+      await ruleEngine['applyRule'](rule, 'c', 'f', errors);
+      expect(errors.length).toBe(1);
+      expect(errors[0].rule).toBe('test');
+    });
+
+    it('should handle addShadowingDetails with missing details', () => {
+      const errorInfo: any = {};
+      ruleEngine['addShadowingDetails'](errorInfo, { shadowingDetails: {} });
+      expect(errorInfo.message).toContain('Variable');
+    });
+
+    it('should skip No unused variables in runBasicRules', async () => {
+      const rules = [
+        { name: 'No unused variables', check: jest.fn(), message: 'msg' },
+        { name: 'other', check: jest.fn(() => true), message: 'msg' },
+      ];
+      ruleEngine.rules = rules;
+      const errors: any[] = [];
+      await ruleEngine['runBasicRules']('c', 'f', errors);
+      expect(rules[0]).toBeDefined();
+      if (rules[0]) expect(rules[0].check).not.toHaveBeenCalled();
+      expect(errors.length).toBe(1);
+    });
+
+    it('should skip runAdditionalValidations for index.ts in validateFileContent', async () => {
+      ruleEngine.rules = [];
+      const spy = jest.spyOn(ruleEngine, 'runAdditionalValidations');
+      await ruleEngine['validateFileContent']('c', '/foo/index.ts');
+      expect(spy).not.toHaveBeenCalled();
+      spy.mockRestore();
+    });
+
+    it('should deduplicate errors with and without line', () => {
+      const errors = [
+        { filePath: 'a', rule: 'r', line: 1 },
+        { filePath: 'a', rule: 'r' },
+        { filePath: 'a', rule: 'r', line: 1 },
+        { filePath: 'a', rule: 'r' },
+      ];
+      const deduped = ruleEngine['deduplicateErrors'](errors);
+      expect(deduped.length).toBe(2);
+    });
+
+    it('should handle handleValidationError with object error', () => {
+      const result = ruleEngine['handleValidationError']({ foo: 1 }, 'file.ts');
+      expect(result[0].message).toContain('object');
+    });
+  });
   let mockLogger: any;
   let ruleEngine: any;
 
