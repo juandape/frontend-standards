@@ -287,9 +287,8 @@ export function checkHardcodedData(
 
     // Comprehensive Tailwind CSS pattern matching (incluye clases con corchetes)
     const tailwindPatterns = [
-      // Base spacing and layout utilities
-      /\b[pmwh]-\d+\b/, // padding, margin, width, height
-      /\b(text|bg|border|rounded|shadow)-\d+\b/, // typography, colors, border, etc.
+      /\b[pmwh]-\d+\b/,
+      /\b(text|bg|border|rounded|shadow)-\d+\b/,
       /\b(grid|flex|space|gap)-\d+\b/,
       /\b(top|bottom|left|right|inset)-\d+\b/,
       /\b(font|leading|tracking|opacity)-\d+\b/,
@@ -298,22 +297,11 @@ export function checkHardcodedData(
       /\b(transition|duration|ease)-\d+\b/,
       /\b(hover|focus|active|disabled)-\d+\b/,
       /\b(absolute|relative|fixed|static|sticky|block|inline|hidden|visible)-\d+\b/,
-      // Responsive prefixes
       /\b([smd]|lg|xl|2xl):/,
-
-      // Color utilities with standard palette
       /\b(text|bg|border)-([a-z]+)-(50|100|200|300|400|500|600|700|800|900|950)\b/,
-
-      // Extended color utilities (gradients, rings, etc.)
       /\b(from|via|to|ring|outline|divide|decoration)-([a-z]+)-(50|100|200|300|400|500|600|700|800|900|950)\b/,
-
-      // Semantic color utilities
       /\b(text|bg|border)-(semantic|custom|brand|primary|secondary|accent|success|warning|error|info|muted|disabled)-[a-z]+-(?:[5-9]0|[1-9]00|950)\b/,
-
-      // General custom color patterns
       /\b(text|bg|border)-[a-z]+-[a-z]*-?\d{2,3}\b/,
-
-      // Tailwind clases con corchetes, ej: min-w-[100px], max-h-[200px]
       /[a-z-]+-\[[^\]]+\]/,
     ];
 
@@ -323,7 +311,7 @@ export function checkHardcodedData(
 
     const isTestFile = /mock|__test__|\.test\.|\.spec\./.test(filePath);
     const isImportStatement = /import.*from/.test(line.trim());
-    const isURL = /https?:\/\//.test(line);
+    const isURL = /https?:\/.\//.test(line);
     const isSingleLineComment = /^\s*\/\//.test(line);
     const isMultiLineComment = /^\s*\/\*/.test(line) && /\*\//.test(line);
 
@@ -332,11 +320,18 @@ export function checkHardcodedData(
       /(className|class)\s*[:=]\s*['"`]/.test(line) ||
       /['"`]\s*\?\s*['"`][^'"`]*\d+[^'"`]*['"`]\s*:\s*['"`]/.test(line);
 
+    // Robust translation key detection: allow for whitespace, any key, and any translation function (t, useTranslations, i18n, etc.)
+    const isTranslationAssignment =
+      /:\s*t\s*\(\s*['"`][^'"`]+['"`]\s*\)/.test(line) ||
+      /=\s*t\s*\(\s*['"`][^'"`]+['"`]\s*\)/.test(line) ||
+      /:\s*useTranslations\s*\(\s*['"`][^'"`]+['"`]\s*\)/.test(line) ||
+      /=\s*useTranslations\s*\(\s*['"`][^'"`]+['"`]\s*\)/.test(line) ||
+      /:\s*i18n\s*\(\s*['"`][^'"`]+['"`]\s*\)/.test(line) ||
+      /=\s*i18n\s*\(\s*['"`][^'"`]+['"`]\s*\)/.test(line);
+
     // Check for valid configuration contexts that should not be flagged as hardcoded data
     const isValidConfiguration =
-      // Next.js font configuration (weight, subset properties)
       /(weight|subsets|style|display)\s*:\s*\[/.test(line) ||
-      // Font-specific numeric values in arrays (like ['100', '300', '400'])
       (/weight\s*:\s*\[/.test(
         content.substring(
           Math.max(0, content.indexOf(line) - 200),
@@ -344,32 +339,23 @@ export function checkHardcodedData(
         )
       ) &&
         /['"]\d{3}['"]/.test(line)) ||
-      // Configuration objects with numeric values that are library-specific
       /\b(timeout|port|delay|duration|interval|retry|maxRetries|limit|size|width|height|fontSize|lineHeight)\s*:\s*['"]?\d+['"]?/.test(
         line
       ) ||
-      // Version numbers or semantic versioning
       /['"](\d+\.){1,2}\d+['"]/.test(line) ||
-      // API endpoints with version numbers
       /['"]\/api\/v\d+\//.test(line) ||
-      // Valid configuration properties in objects
       /(from|to|via|offset|opacity|scale|rotate|skew|translate)\s*:\s*['"][\d-]+['"]/.test(
         line
       ) ||
-      // Theme configuration values
       /(fontSize|spacing|borderRadius|colors)\s*:\s*\{/.test(line) ||
-      // i18n/translation keys (like 'common.buttons.save', 'footer.success')
       /\b(useTranslations|t)\s*\(\s*['"][a-zA-Z]+(\.[a-zA-Z]+)*['"]/.test(
         line
       ) ||
-      // Toast/notification messages using translation keys
       /\b(toast|notification)\.(success|error|info|warning)\s*\(\s*t\s*\(/.test(
         line
       ) ||
-      // General translation key pattern (dotted notation)
       /['"][a-zA-Z]+(\.[a-zA-Z]+){2,}['"]/.test(line);
 
-    // Check if the file is a configuration file that commonly contains valid numeric values
     const isConfigurationFile =
       /\/(config|configs|constants|theme|styles|fonts)\//.test(filePath) ||
       /\.(config|constants|theme|styles|fonts)\.(ts|tsx|js|jsx)$/.test(
@@ -377,6 +363,8 @@ export function checkHardcodedData(
       ) ||
       /\/fonts\//.test(filePath);
 
+    // Skip property accessor patterns like Colors['color-complementary-cyan-500']
+    const isPropertyAccessor = /\w+\s*\[\s*['"][^'"]+['"]\s*\]/.test(line);
     if (
       hasHardcodedPattern &&
       !isCSSClass &&
@@ -388,7 +376,9 @@ export function checkHardcodedData(
       !isSingleLineComment &&
       !isMultiLineComment &&
       !isValidConfiguration &&
-      !isConfigurationFile
+      !isConfigurationFile &&
+      !isTranslationAssignment &&
+      !isPropertyAccessor
     ) {
       errors.push({
         rule: 'Hardcoded data',
