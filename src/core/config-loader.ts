@@ -1151,6 +1151,11 @@ export class ConfigLoader implements IConfigLoader {
             return [];
           }
 
+          // Excepción: permitir URLs en archivos .constant.ts
+          if (filePath?.endsWith('.constant.ts')) {
+            return [];
+          }
+
           // Skip setup and test files
           const isSetupFile =
             /(setup|mock|__tests__|\.test\.|\.spec\.|instrumentation|sentry)/.test(
