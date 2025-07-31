@@ -394,6 +394,146 @@ describe('ProjectAnalyzer', () => {
   });
 
   describe('validateZoneStructure', () => {
+    it('should handle error in validateComponentFunctionName', async () => {
+      const mockValidators = {
+        checkNamingConventions: jest.fn().mockReturnValue(null),
+        checkDirectoryNaming: jest.fn().mockReturnValue([]),
+        checkComponentStructure: jest.fn().mockReturnValue([]),
+        checkComponentFunctionNameMatch: jest.fn().mockReturnValue(null),
+      };
+      (analyzer as any).loadAdditionalValidators = jest
+        .fn()
+        .mockResolvedValue(mockValidators as never);
+      jest.spyOn(fs, 'readFileSync').mockImplementation(() => {
+        throw new Error('fail');
+      });
+      const spyWarn = jest.spyOn(mockLogger, 'warn');
+      await expect(
+        analyzer.validateZoneStructure(
+          ['/path/to/components/Test/index.tsx'],
+          [],
+          'zone1'
+        )
+      ).resolves.toEqual([]);
+      // Acepta cualquier llamada a logger.warn que contenga el string esperado
+      const calls = (spyWarn as jest.Mock).mock.calls;
+      expect(
+        calls.some((call) =>
+          String(call[0]).includes(
+            'Could not read file for function name validation'
+          )
+        )
+      ).toBe(true);
+    });
+
+    it('should validate directory naming and component structure', async () => {
+      const mockValidators = {
+        checkNamingConventions: jest.fn().mockReturnValue(null),
+        checkDirectoryNaming: jest
+          .fn()
+          .mockReturnValue([
+            {
+              rule: 'Dir',
+              message: 'dir error',
+              filePath: 'dir',
+              severity: 'error',
+              category: 'naming',
+            },
+          ]),
+        checkComponentStructure: jest
+          .fn()
+          .mockReturnValue([
+            {
+              rule: 'Comp',
+              message: 'comp error',
+              filePath: 'dir',
+              severity: 'error',
+              category: 'structure',
+            },
+          ]),
+        checkComponentFunctionNameMatch: jest.fn().mockReturnValue(null),
+      };
+      (analyzer as any).loadAdditionalValidators = jest
+        .fn()
+        .mockResolvedValue(mockValidators as never);
+      const errors = await analyzer.validateZoneStructure(
+        [],
+        ['/path/to/components/Test'],
+        'zone1'
+      );
+      expect(errors).toEqual([
+        {
+          rule: 'Dir',
+          message: 'dir error',
+          filePath: 'dir',
+          severity: 'error',
+          category: 'naming',
+        },
+        {
+          rule: 'Comp',
+          message: 'comp error',
+          filePath: 'dir',
+          severity: 'error',
+          category: 'structure',
+        },
+      ]);
+    });
+
+    it('should validateSingleFile return both errors', () => {
+      const namingValidator = jest
+        .fn()
+        .mockReturnValue({
+          rule: 'Naming',
+          message: 'err',
+          filePath: 'f',
+          severity: 'error',
+          category: 'naming',
+        });
+      const functionNameValidator = jest
+        .fn()
+        .mockReturnValue({
+          rule: 'Func',
+          message: 'err',
+          filePath: 'f',
+          severity: 'error',
+          category: 'naming',
+        });
+      jest.spyOn(analyzer as any, 'isComponentIndexFile').mockReturnValue(true);
+      jest
+        .spyOn(analyzer as any, 'validateComponentFunctionName')
+        .mockImplementation((_f, _v, errors) => {
+          (errors as any[]).push({
+            rule: 'Func',
+            message: 'err',
+            filePath: 'f',
+            severity: 'error',
+            category: 'naming',
+          });
+        });
+      const errors = (analyzer as any).validateSingleFile(
+        'f',
+        namingValidator,
+        functionNameValidator
+      );
+      expect(errors.length).toBeGreaterThanOrEqual(1);
+    });
+
+    it('should get expected structure for all types', () => {
+      expect(analyzer.getExpectedStructure('next')).toContain('app');
+      expect(analyzer.getExpectedStructure('react')).toContain('src');
+      expect(analyzer.getExpectedStructure('angular')).toContain('e2e');
+      expect(analyzer.getExpectedStructure('vue')).toContain('public');
+      expect(analyzer.getExpectedStructure('node')).toContain('lib');
+      expect(analyzer.getExpectedStructure('generic')).toEqual([]);
+      expect(analyzer.getExpectedStructure('unknown')).toEqual([]);
+    });
+
+    it('should get expected src structure', () => {
+      const srcStruct = analyzer.getExpectedSrcStructure();
+      expect(srcStruct).toHaveProperty('assets');
+      expect(srcStruct).toHaveProperty('components');
+      expect(srcStruct).toHaveProperty('store');
+    });
     it('should return empty array when validators not available', async () => {
       (analyzer as any).loadAdditionalValidators = jest
         .fn()
