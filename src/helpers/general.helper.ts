@@ -12,6 +12,17 @@ import type { IReportGenerationResult } from '../types/reporter.type.js';
 
 import type { Logger } from '../utils/logger';
 
+// Detect if a file is a Jest (test/spec)
+function isJestFile(filePath: string | undefined | null): boolean {
+  if (!filePath || typeof filePath !== 'string') return false;
+  const lowerPath = filePath.toLowerCase();
+  return (
+    /\.(test|spec)\.[jt]sx?$/.test(lowerPath) ||
+    /__tests__/.test(lowerPath) ||
+    lowerPath.includes('jest')
+  );
+}
+
 export async function loadAndLogConfig(
   configLoader: any,
   options: any,
@@ -240,11 +251,12 @@ export async function processZone({
     zoneErrors.push(...fileErrors);
   }
 
+  // Exclude Jest files from error counts
   const zoneErrorsCount = zoneErrors.filter(
-    (e) => e.severity === 'error'
+    (e) => e.severity === 'error' && !isJestFile(e.filePath)
   ).length;
   const zoneWarningsCount = zoneErrors.filter(
-    (e) => e.severity === 'warning'
+    (e) => e.severity === 'warning' && !isJestFile(e.filePath)
   ).length;
 
   logger.info(`  ✅ Files processed: ${files.length}`);
