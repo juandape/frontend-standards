@@ -220,13 +220,29 @@ export class Reporter implements IReporter {
 
     this.addReportHeader(lines, projectInfo);
 
-    if (reportData.totalErrors === 0) {
+    const validationsPassed = reportData.totalErrors === 0;
+    const hasWarnings = reportData.totalWarnings > 0;
+    const hasInfos = reportData.totalInfos > 0;
+
+    if (validationsPassed && !hasWarnings && !hasInfos) {
       lines.push('✅ ALL VALIDATIONS PASSED!');
       lines.push('');
       lines.push(
         'Congratulations! Your project complies with all defined frontend standards.'
       );
       return lines.join('\n');
+    }
+
+    if (validationsPassed) {
+      if (hasWarnings && hasInfos) {
+        lines.push(
+          '⚠️ No errors found, but there are warnings and suggestions.\n'
+        );
+      } else if (hasWarnings) {
+        lines.push('🟡 No errors found, but there are warnings.\n');
+      } else if (hasInfos) {
+        lines.push('ℹ️ No errors found, but there are suggestions.\n');
+      }
     }
 
     this.addSummarySection(lines, reportData);

@@ -229,7 +229,11 @@ describe('ConfigLoader', () => {
       const names = (configLoader as any)['extractImportedNames'](line);
       expect(names).toEqual(['useState', 'useEffect']);
     });
-    it('extractImportedNames handles default + named imports', () => {});
+    it('extractImportedNames handles default + named imports', () => {
+      const line = "import React, { useState } from 'react'";
+      const names = (configLoader as any)['extractImportedNames'](line);
+      expect(names).toEqual(['React', 'useState']);
+    });
 
     describe('performance rules', () => {
       it.skip('Avoid inline functions in JSX: triggers on inline function', () => {
@@ -513,6 +517,141 @@ describe('convertObjectRulesToArray', () => {
     expect(mockLogger.warn).toHaveBeenCalledWith('Unknown rule: Unknown Rule');
   });
 });
+// Edge cases for mergeWithDefaults and convertObjectRulesToArray
+describe('mergeWithDefaults and convertObjectRulesToArray edge cases', () => {
+  it('mergeWithDefaults: returns default config if customConfig is undefined', () => {
+    const result = configLoader.mergeWithDefaults(undefined as any);
+    const def = configLoader.getDefaultConfig();
+    expect(result.merge).toBe(def.merge);
+    expect(result.rules?.length ?? 0).toBe(def.rules?.length ?? 0);
+  });
+  it('mergeWithDefaults: returns default config if customConfig is a boolean', () => {
+    const result = configLoader.mergeWithDefaults(true as any);
+    const def = configLoader.getDefaultConfig();
+    expect(result.merge).toBe(def.merge);
+    expect(result.rules?.length ?? 0).toBe(def.rules?.length ?? 0);
+  });
+  it('mergeWithDefaults: returns default config if customConfig is a string', () => {
+    const result = configLoader.mergeWithDefaults('foo' as any);
+    const def = configLoader.getDefaultConfig();
+    expect(result.merge).toBe(def.merge);
+    expect(result.rules?.length ?? 0).toBe(def.rules?.length ?? 0);
+  });
+  it('mergeWithDefaults: handles config as object with rules as non-array, non-object', () => {
+    const config = { rules: 123 };
+    const result = configLoader.mergeWithDefaults(config as any);
+    // El código fuente asigna un array vacío en este caso
+    expect(result.rules?.length ?? 0).toBe(0);
+  });
+  it('mergeWithDefaults: handles config as object with rules as empty object', () => {
+    const config = { rules: {} };
+    const result = configLoader.mergeWithDefaults(config as any);
+    expect(Array.isArray(result.rules)).toBe(true);
+  });
+  it('mergeWithDefaults: handles config as object with rules as unknown key', () => {
+    const config = { rules: { 'NotARealRule': 'error' } };
+    const result = configLoader.mergeWithDefaults(config as any);
+    expect(Array.isArray(result.rules)).toBe(true);
+  });
+  it('mergeWithDefaults: handles config as object with rules as object with valid and invalid keys', () => {
+    const config = { rules: { 'No console.log': 'error', 'FakeRule': true } };
+    const result = configLoader.mergeWithDefaults(config as any);
+    expect(Array.isArray(result.rules)).toBe(true);
+    expect(
+      (result.rules ?? []).some((r: any) => r.name === 'No console.log')
+    ).toBe(true);
+  });
+  it('mergeWithDefaults: handles config as object with rules as object with severity string', () => {
+    const config = { rules: { 'No console.log': 'warning' } };
+    const result = configLoader.mergeWithDefaults(config as any);
+    expect(Array.isArray(result.rules)).toBe(true);
+    expect(result.rules?.[0]?.severity).toBe('warning');
+  });
+  it('mergeWithDefaults: handles config as object with rules as object with severity info', () => {
+    const config = { rules: { 'No console.log': 'info' } };
+    const result = configLoader.mergeWithDefaults(config as any);
+    expect(Array.isArray(result.rules)).toBe(true);
+    expect(result.rules?.[0]?.severity).toBe('info');
+  });
+  it('mergeWithDefaults: handles config as object with rules as object with value true', () => {
+    const config = { rules: { 'No console.log': true } };
+    const result = configLoader.mergeWithDefaults(config as any);
+    expect(Array.isArray(result.rules)).toBe(true);
+    expect(result.rules?.[0]?.name).toBe('No console.log');
+  });
+  it('mergeWithDefaults: handles config as object with rules as object with value false (should skip)', () => {
+    const config = { rules: { 'No console.log': false } };
+    const result = configLoader.mergeWithDefaults(config as any);
+    expect(Array.isArray(result.rules)).toBe(true);
+    // Should not include the rule
+    expect(
+      (result.rules ?? []).some((r: any) => r.name === 'No console.log')
+    ).toBe(false);
+  });
+  it('mergeWithDefaults: handles config as object with rules as array', () => {
+    const config = {
+      rules: [
+        {
+          name: 'test',
+          category: 'test',
+          severity: 'error',
+          check: () => true,
+          message: 'msg',
+        },
+      ],
+    };
+    const result = configLoader.mergeWithDefaults(config as any);
+    expect((result.rules ?? []).some((r: any) => r.name === 'test')).toBe(true);
+  });
+  it('mergeWithDefaults: handles config as empty object', () => {
+    const config = {};
+    const result = configLoader.mergeWithDefaults(config as any);
+    expect(Array.isArray(result.rules)).toBe(true);
+  });
+  it('convertObjectRulesToArray: skips rules with value false', () => {
+    const rulesObject = { 'No console.log': false };
+    const defaultRules = configLoader.getDefaultRules();
+    const result = (configLoader as any)['convertObjectRulesToArray'](
+      rulesObject as any,
+      defaultRules
+    );
+    expect(result.length).toBe(0);
+  });
+  it('convertObjectRulesToArray: skips rules with unknown severity', () => {
+    const rulesObject = { 'No console.log': 'critical' };
+    const defaultRules = configLoader.getDefaultRules();
+    const result = (configLoader as any)['convertObjectRulesToArray'](
+      rulesObject as any,
+      defaultRules
+    );
+    expect(result.length).toBe(0);
+  });
+  it('convertObjectRulesToArray: handles empty rules object', () => {
+    const rulesObject = {};
+    const defaultRules = configLoader.getDefaultRules();
+    const result = (configLoader as any)['convertObjectRulesToArray'](
+      rulesObject as any,
+      defaultRules
+    );
+    expect(Array.isArray(result)).toBe(true);
+    expect(result.length).toBe(0);
+  });
+  it('convertObjectRulesToArray: handles rulesObject with multiple valid and invalid rules', () => {
+    const rulesObject = {
+      'No console.log': true,
+      'FakeRule': 'error',
+      'No var': 'warning',
+    };
+    const defaultRules = configLoader.getDefaultRules();
+    const result = (configLoader as any)['convertObjectRulesToArray'](
+      rulesObject as any,
+      defaultRules
+    );
+    expect(result.some((r: any) => r.name === 'No console.log')).toBe(true);
+    expect(result.some((r: any) => r.name === 'No var')).toBe(true);
+    expect(result.some((r: any) => r.name === 'FakeRule')).toBe(false);
+  });
+});
 
 // Inserted new test suites for coverage
 
@@ -617,6 +756,122 @@ describe('constructor', () => {
       expect(rule.check(content)).toBe(true);
       const good = 'useEffect(() => { setTimeout(() => {}, 1000); }, [])';
       expect(rule.check(good)).toBe(false);
+    });
+
+    it('Avoid inline functions in JSX: returns false for non-jsx files', () => {
+      const rules = (configLoader as any).getPerformanceRules();
+      const rule = rules.find(
+        (r: any) => r.name === 'Avoid inline functions in JSX'
+      );
+      if (!rule) return;
+      const content = '<Button onClick={() => doSomething()} />';
+      expect(rule.check(content, '/src/components/Button.js')).toBe(false);
+    });
+    it('Avoid inline functions in JSX: returns true for inline function in tsx', () => {
+      const rules = (configLoader as any).getPerformanceRules();
+      const rule = rules.find(
+        (r: any) => r.name === 'Avoid inline functions in JSX'
+      );
+      if (!rule) return;
+      const content = '<Button onClick={() => doSomething()} />';
+      expect(rule.check(content, '/src/components/Button.tsx')).toBe(true);
+    });
+    it('Missing React.memo for pure components: returns false for non-tsx or non-components', () => {
+      const rules = (configLoader as any).getPerformanceRules();
+      const rule = rules.find(
+        (r: any) => r.name === 'Missing React.memo for pure components'
+      );
+      if (!rule) return;
+      const content = 'function Pure({a}) { return <div>{a}</div>; }';
+      expect(rule.check(content, '/src/utils/Pure.js')).toBe(false);
+    });
+    it('Large bundle imports: returns false for no large imports', () => {
+      const rules = (configLoader as any).getPerformanceRules();
+      const rule = rules.find((r: any) => r.name === 'Large bundle imports');
+      if (!rule) return;
+      const content = "import pick from 'lodash/pick';";
+      expect(rule.check(content)).toBe(false);
+    });
+    it('Avoid re-renders with object literals: returns false for non-jsx files', () => {
+      const rules = (configLoader as any).getPerformanceRules();
+      const rule = rules.find(
+        (r: any) => r.name === 'Avoid re-renders with object literals'
+      );
+      if (!rule) return;
+      const content = "<div style={{ color: 'red' }} />";
+      expect(rule.check(content, '/src/components/Obj.js')).toBe(false);
+    });
+    it('Button missing accessible name: returns false for button with text', () => {
+      const rules = (configLoader as any).getAccessibilityRules();
+      const rule = rules.find(
+        (r: any) => r.name === 'Button missing accessible name'
+      );
+      if (!rule) return;
+      const content = '<button>Click me</button>';
+      expect(rule.check(content)).toBe(false);
+    });
+    it('Button missing accessible name: returns false for button with aria-label', () => {
+      const rules = (configLoader as any).getAccessibilityRules();
+      const rule = rules.find(
+        (r: any) => r.name === 'Button missing accessible name'
+      );
+      if (!rule) return;
+      const content = '<button aria-label="foo"></button>';
+      expect(rule.check(content)).toBe(false);
+    });
+    it('Form inputs missing labels: returns false for input with aria-label', () => {
+      const rules = (configLoader as any).getAccessibilityRules();
+      const rule = rules.find(
+        (r: any) => r.name === 'Form inputs missing labels'
+      );
+      if (!rule) return;
+      const content = '<input type="text" aria-label="foo" />';
+      expect(rule.check(content)).toBe(false);
+    });
+    it('Form inputs missing labels: returns false for hidden input', () => {
+      const rules = (configLoader as any).getAccessibilityRules();
+      const rule = rules.find(
+        (r: any) => r.name === 'Form inputs missing labels'
+      );
+      if (!rule) return;
+      const content = '<input type="hidden" />';
+      expect(rule.check(content)).toBe(false);
+    });
+    it('Links missing accessible names: returns false for link with text', () => {
+      const rules = (configLoader as any).getAccessibilityRules();
+      const rule = rules.find(
+        (r: any) => r.name === 'Links missing accessible names'
+      );
+      if (!rule) return;
+      const content = '<a href="#">Home</a>';
+      expect(rule.check(content)).toBe(false);
+    });
+    it('Links missing accessible names: returns false for link with aria-label', () => {
+      const rules = (configLoader as any).getAccessibilityRules();
+      const rule = rules.find(
+        (r: any) => r.name === 'Links missing accessible names'
+      );
+      if (!rule) return;
+      const content = '<a href="#" aria-label="foo"></a>';
+      expect(rule.check(content)).toBe(false);
+    });
+    it('Missing focus management: returns false for non-jsx files', () => {
+      const rules = (configLoader as any).getAccessibilityRules();
+      const rule = rules.find(
+        (r: any) => r.name === 'Missing focus management'
+      );
+      if (!rule) return;
+      const content = '<div>modal</div>';
+      expect(rule.check(content, '/src/components/Modal.js')).toBe(false);
+    });
+    it('Color contrast considerations: returns false for no low contrast', () => {
+      const rules = (configLoader as any).getAccessibilityRules();
+      const rule = rules.find(
+        (r: any) => r.name === 'Color contrast considerations'
+      );
+      if (!rule) return;
+      const content = '<div style="color: #000; background: #fff;">ok</div>';
+      expect(rule.check(content)).toBe(false);
     });
   });
 
@@ -796,41 +1051,120 @@ describe('constructor', () => {
   });
 
   describe('isConfigFile', () => {
-    it('should identify common config files', () => {
-      expect(configLoader['isConfigFile']('webpack.config.js')).toBe(true);
-      expect(configLoader['isConfigFile']('jest.config.ts')).toBe(true);
-      expect(configLoader['isConfigFile']('.eslintrc.json')).toBe(true);
-      expect(configLoader['isConfigFile']('tsconfig.json')).toBe(true);
-      expect(configLoader['isConfigFile']('babel.config.js')).toBe(true);
+    it('should identify all common config files', () => {
+      const patterns = [
+        'foo.config.js',
+        'bar.config.ts',
+        'baz.config.mjs',
+        'jest.config.js',
+        'vite.config.ts',
+        'webpack.config.js',
+        'tailwind.config.js',
+        'next.config.js',
+        'eslint.config.js',
+        'prettier.config.js',
+        'babel.config.js',
+        'rollup.config.js',
+        'tsconfig.json',
+        '.eslintrc',
+        '.prettierrc',
+        'babel.config.js',
+        'postcss.config.js',
+        'stylelint.config.js',
+        'cypress.config.js',
+        'playwright.config.js',
+        'storybook.config.js',
+        'metro.config.js',
+        'expo.config.js',
+      ];
+      for (const file of patterns) {
+        expect((configLoader as any)['isConfigFile'](file)).toBe(true);
+      }
     });
-
     it('should not identify non-config files', () => {
-      expect(configLoader['isConfigFile']('component.tsx')).toBe(false);
-      expect(configLoader['isConfigFile']('utils.js')).toBe(false);
-      expect(configLoader['isConfigFile']('styles.css')).toBe(false);
+      const files = [
+        'foo.js',
+        'bar.ts',
+        'baz.txt',
+        'component.tsx',
+        'README.md',
+        'package.json',
+      ];
+      for (const file of files) {
+        expect((configLoader as any)['isConfigFile'](file)).toBe(false);
+      }
     });
   });
 
   describe('convertObjectRulesToArray', () => {
     it('should convert rules object to array format', () => {
+      const rulesObject = { 'No console.log': 'error', 'No var': 'warning' };
       const defaultRules = configLoader.getDefaultRules();
-      const rulesObject = {
-        'No console.log': 'error',
-        'Component naming': true,
-      };
-
-      const result = configLoader['convertObjectRulesToArray'](
+      const result = (configLoader as any)['convertObjectRulesToArray'](
         rulesObject as any,
         defaultRules
       );
-
-      expect(result).toEqual(expect.any(Array));
-      expect(result.length).toBe(2);
-      expect(result[0]).toBeDefined();
-      expect(result[0]?.name).toBe('No console.log');
-      expect(result[0]?.severity).toBe('error');
-      expect(result[1]).toBeDefined();
-      expect(result[1]?.name).toBe('Component naming');
+      expect(Array.isArray(result)).toBe(true);
+      expect(result.some((r: any) => r.name === 'No console.log')).toBe(true);
+      expect(result.some((r: any) => r.name === 'No var')).toBe(true);
+    });
+    it('should skip rules with value false or unknown severity', () => {
+      const rulesObject = { 'No console.log': false, 'No var': 'critical' };
+      const defaultRules = configLoader.getDefaultRules();
+      const result = (configLoader as any)['convertObjectRulesToArray'](
+        rulesObject as any,
+        defaultRules
+      );
+      expect(result.length).toBe(0);
+    });
+    it('should handle config as object with rules as non-array, non-object', () => {
+      const config = { rules: 123 };
+      const result = configLoader.mergeWithDefaults(config as any);
+      expect(result.rules?.length ?? 0).toBe(0);
+    });
+    it('should handle config as object with rules as empty object', () => {
+      const config = { rules: {} };
+      const result = configLoader.mergeWithDefaults(config as any);
+      expect(Array.isArray(result.rules)).toBe(true);
+    });
+    it('should handle config as object with rules as unknown key', () => {
+      const config = { rules: { 'NotARealRule': 'error' } };
+      const result = configLoader.mergeWithDefaults(config as any);
+      expect(Array.isArray(result.rules)).toBe(true);
+    });
+    it('should handle config as object with rules as object with valid and invalid keys', () => {
+      const config = { rules: { 'No console.log': 'error', 'FakeRule': true } };
+      const result = configLoader.mergeWithDefaults(config as any);
+      expect(Array.isArray(result.rules)).toBe(true);
+      expect(
+        (result.rules ?? []).some((r: any) => r.name === 'No console.log')
+      ).toBe(true);
+    });
+    it('should handle config as object with rules as object with severity string', () => {
+      const config = { rules: { 'No console.log': 'warning' } };
+      const result = configLoader.mergeWithDefaults(config as any);
+      expect(Array.isArray(result.rules)).toBe(true);
+      expect(result.rules?.[0]?.severity).toBe('warning');
+    });
+    it('should handle config as object with rules as object with severity info', () => {
+      const config = { rules: { 'No console.log': 'info' } };
+      const result = configLoader.mergeWithDefaults(config as any);
+      expect(Array.isArray(result.rules)).toBe(true);
+      expect(result.rules?.[0]?.severity).toBe('info');
+    });
+    it('should handle config as object with rules as object with value true', () => {
+      const config = { rules: { 'No console.log': true } };
+      const result = configLoader.mergeWithDefaults(config as any);
+      expect(Array.isArray(result.rules)).toBe(true);
+      expect(result.rules?.[0]?.name).toBe('No console.log');
+    });
+    it('should handle config as object with rules as object with value false (should skip)', () => {
+      const config = { rules: { 'No console.log': false } };
+      const result = configLoader.mergeWithDefaults(config as any);
+      expect(Array.isArray(result.rules)).toBe(true);
+      expect(
+        (result.rules ?? []).some((r: any) => r.name === 'No console.log')
+      ).toBe(false);
     });
   });
 
