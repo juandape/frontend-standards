@@ -317,9 +317,77 @@ describe('FileScanner', () => {
     const files = await scanner.scanDirectory('/root/zone', options);
     expect(files.length).toBe(0);
   });
+
+  it('getFilesInCommit handles error in exec callback', async () => {
+    jest.resetModules();
+    jest.doMock('child_process', () => ({
+      exec: (_cmd: string, _opts: any, cb: Function) =>
+        cb(new Error('fail'), ''),
+    }));
+    const { FileScanner: FileScannerMock } = await import('../file-scanner');
+    const scanner2 = new FileScannerMock(rootDir, logger);
+    const files = await scanner2.getFilesInCommit();
+    // Acepta cualquier string que contenga 'Failed to get staged files'
+    expect(logger.warn).toHaveBeenCalledWith(
+      expect.stringContaining('Failed to get staged files')
+    );
+    expect(files).toEqual([]);
+    jest.dontMock('child_process');
+  });
+
+  it('determineZone returns custom zone and package zone', () => {
+    const options: any = {
+      customZones: ['custom'],
+      zones: ['apps'],
+      includePackages: true,
+    };
+    // custom zone
+    expect((scanner as any).determineZone('custom/foo.js', options)).toBe(
+      'custom'
+    );
+    // apps zone (la función retorna solo 'apps' por la lógica actual)
+    expect((scanner as any).determineZone('apps/app1/foo.js', options)).toBe(
+      'apps'
+    );
+    // packages zone
+    expect(
+      (scanner as any).determineZone('packages/pkg1/foo.js', options)
+    ).toBe('packages/pkg1');
+    // root zone
+    expect((scanner as any).determineZone('foo.js', options)).toBe('.');
+  });
+
+  it('isIgnored handles invalid gitignore pattern', () => {
+    const patterns = [{ pattern: '[', isNegation: false, isDirectory: false }];
+    expect(scanner.isIgnored('foo.js', patterns)).toBe(false);
+    expect(logger.warn).toHaveBeenCalledWith(
+      expect.stringContaining('Invalid gitignore pattern'),
+      expect.any(Error)
+    );
+  });
+
+  it('isIgnored handles multiple negation patterns', () => {
+    const patterns = [
+      { pattern: 'foo/', isNegation: false, isDirectory: true },
+      { pattern: 'foo/bar.js', isNegation: true, isDirectory: false },
+      { pattern: 'foo/bar.js', isNegation: false, isDirectory: false },
+    ];
+    // Negación intermedia
+    expect(scanner.isIgnored('foo/bar.js', patterns)).toBe(true);
+  });
 });
 
 describe('isReactNativeProject', () => {
+  it('returns false if project has metro.config.js and android/ios dirs but no package.json', () => {
+    jest.spyOn(fs, 'existsSync').mockImplementation((p) => {
+      if (typeof p === 'string' && p.endsWith('package.json')) return false;
+      if (typeof p === 'string' && p.endsWith('metro.config.js')) return true;
+      if (typeof p === 'string' && p.endsWith('android')) return true;
+      if (typeof p === 'string' && p.endsWith('ios')) return true;
+      return false;
+    });
+    expect(isReactNativeProject('/foo/bar/App.js')).toBe(false);
+  });
   it('returns false if no package.json', () => {
     jest.spyOn(fs, 'existsSync').mockReturnValue(false);
     expect(isReactNativeProject('/foo/bar/App.js')).toBe(false);
