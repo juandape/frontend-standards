@@ -1,18 +1,22 @@
-import { execSync } from 'child_process';
+import { spawnSync } from 'child_process';
 import path from 'path';
+import which from 'which'; // Necesitarías instalarlo: npm i which
 
-/**
- * Safely retrieves the last author of a file using git.
- * Only works if the file exists and is part of a Git repo.
- */
 export function getGitLastAuthor(filePath: string, cwd: string): string {
   try {
     const absPath = path.resolve(filePath);
-        const output = execSync(
-      `git log -1 --pretty=format:'%an' -- "${absPath}"`,
-      { cwd, encoding: 'utf8' }
-    );
-    return output.trim();
+    const gitPath = which.sync('git'); // Te da la ruta absoluta
+    const args = ['log', '-1', '--pretty=format:%an', '--', absPath];
+
+    const result = spawnSync(gitPath, args, {
+      cwd,
+      encoding: 'utf8',
+      shell: false,
+    });
+
+    if (result.error) return 'Unknown';
+
+    return result.stdout.trim() || 'Unknown';
   } catch {
     return 'Unknown';
   }

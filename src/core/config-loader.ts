@@ -1569,7 +1569,7 @@ export class ConfigLoader implements IConfigLoader {
           }
           const complexFunctionPatterns = [
             /function\s+[a-zA-Z_$][a-zA-Z0-9_$]*\s*\([^)]*\)\s*\{[\s\S]{500,}?\}/g,
-            /(export\s+)?(const|function)\s+[a-zA-Z_$][a-zA-Z0-9_$]*.*=.*\([^)]*\)\s*=>\s*\{[\s\S]{400,}?\}/g,
+            /(export\s+)?(const|function)\s+[a-zA-Z_$][a-zA-Z0-9_$]*.{0,100}?=.*\([^)]{0,100}?\)\s*=>\s*\{[\s\S]{1,1000}\}/g,
           ];
           const violationLines: number[] = [];
           for (const pattern of complexFunctionPatterns) {
@@ -1580,7 +1580,11 @@ export class ConfigLoader implements IConfigLoader {
                 .split('\n')
                 .slice(-15)
                 .join('\n');
-              if (!/\/\*\*[\s\S]*?\*\/\s*(\n\s*)*$/.test(lastLines)) {
+              if (
+                !/\/\*\*[^*]{0,1000}\*\/[ \t]{0,20}(?:\n[ \t]{0,20}){0,5}$/.test(
+                  lastLines
+                )
+              ) {
                 // Calcular la línea de inicio de la función
                 const functionStartIdx = match.index || 0;
                 const functionStartLine = content
@@ -1744,8 +1748,8 @@ export class ConfigLoader implements IConfigLoader {
           function containsSpanishWord(comment: string): boolean {
             const cleanComment = comment
               .replace(/https?:\/\/[^\s)]+/g, '')
-              .replace(/import\s+.*from\s+['"][^'"]+['"]/g, '')
-              .replace(/export\s+.*from\s+['"][^'"]+['"]/g, '')
+              .replace(/import\s+.{1,200}?from\s+['"][^'"]+['"]/g, '')
+              .replace(/export\s+.{1,200}?from\s+['"][^'"]+['"]/g, '')
               .replace(/(['"])(?:(?=(\\?))\2.)*?\1/g, '');
             for (const word of spanishWords) {
               const pattern = wordBoundaryPattern(word);
@@ -1763,7 +1767,7 @@ export class ConfigLoader implements IConfigLoader {
           const violationLines: number[] = [];
           lines.forEach((line, idx) => {
             // Buscar comentarios de línea y bloque en cada línea
-            const singleLineCommentRegex = /\/\/(.*)$/;
+            const singleLineCommentRegex = /\/\/(.{1,300})?$/;
             const singleLineCommentMatch = singleLineCommentRegex.exec(line);
             const blockCommentRegex = /\/\*([\s\S]*?)\*\//;
             const blockCommentMatch = blockCommentRegex.exec(line);
@@ -1800,7 +1804,8 @@ export class ConfigLoader implements IConfigLoader {
         check: (content: string): boolean => {
           // Look for interface declarations that define actual union types
           // Not just properties that happen to have union types
-          const interfaceDeclarationRegex = /interface\s+\w+[^{]*\{([^}]*)\}/g;
+          const interfaceDeclarationRegex =
+            /interface\s+\w{1,100}[^{]{0,100}\{[^}\n]{0,2000}\}/g;
           let match;
 
           while ((match = interfaceDeclarationRegex.exec(content)) !== null) {
@@ -1864,7 +1869,7 @@ export class ConfigLoader implements IConfigLoader {
         category: 'typescript',
         severity: 'info', // Cambiado de 'warning' a 'info'
         check: (content: string): boolean => {
-          const genericMatches = content.match(/<([^>]+)>/g);
+          const genericMatches = content.match(/<([^>]{1,50})>/g);
           if (!genericMatches) return false;
 
           // Solo verificar generics muy obvios como <a>, <b>, <x>
@@ -1934,7 +1939,7 @@ export class ConfigLoader implements IConfigLoader {
         severity: 'warning',
         check: (content: string): boolean => {
           const hookRegex =
-            /use(Effect|Callback|Memo)\s*\(\s*[^,]+,\s*\[\s*\]/g;
+            /use(Effect|Callback|Memo)\s*\(\s*[^,\n]{1,100},\s*\[\s*\]/g;
           return hookRegex.test(content);
         },
         message:
@@ -2260,9 +2265,9 @@ export class ConfigLoader implements IConfigLoader {
         severity: 'warning',
         check: (content: string): boolean => {
           const largeLibraryImports = [
-            /import\s+.*\s+from\s+['"`]lodash['"`]/,
-            /import\s+.*\s+from\s+['"`]moment['"`]/,
-            /import\s+.*\s+from\s+['"`]@mui\/icons-material['"`]/,
+            /import[ \t\w{}*]{1,100}\s+from\s+['"`]lodash['"`]/,
+            /import[ \t\w{}*]{1,100}\s+from\s+['"`]moment['"`]/,
+            /import[ \t\w{}*]{1,100}\s+from\s+['"`]@mui\/icons-material['"`]/,
           ];
 
           return largeLibraryImports.some((regex) => regex.test(content));
@@ -2279,7 +2284,7 @@ export class ConfigLoader implements IConfigLoader {
             return false;
 
           const objectLiteralInProps =
-            /(?:style|className|data-\w+)\s*=\s*\{[^}]*\{[^}]*\}[^}]*\}/g;
+            /(?:style|className|data-\w+)\s*=\s*\{[^}\n]{0,100}\{[^}\n]{0,100}\}[^}\n]{0,100}\}/g;
           return objectLiteralInProps.test(content);
         },
         message:
@@ -2468,7 +2473,7 @@ export class ConfigLoader implements IConfigLoader {
    * Extract imported names from an import line
    */
   private extractImportedNames(importLine: string): string[] {
-    const importRegex = /import\s+(.+?)\s+from/;
+    const importRegex = /import\s+([\w\s,{}*]+)\s+from/;
     const importMatch = importRegex.exec(importLine);
     if (!importMatch?.[1]) return [];
 
@@ -2489,7 +2494,7 @@ export class ConfigLoader implements IConfigLoader {
     }
     // Handle named imports: import { useState, useEffect } from 'react'
     else if (importPart.includes('{')) {
-      const namedImportsRegex = /\{([^}]+)\}/;
+      const namedImportsRegex = /\{([^}\n]{1,200})\}/;
       const namedImportsMatch = namedImportsRegex.exec(importPart);
       if (namedImportsMatch?.[1]) {
         importedNames = namedImportsMatch[1].split(',').map((name) => {
@@ -2497,7 +2502,7 @@ export class ConfigLoader implements IConfigLoader {
           return name
             .trim()
             .replace(/^type\s+/, '')
-            .replace(/\s+as\s+\w+/, '');
+            .replace(/\s{1,5}as\s{1,5}\w+/, '');
         });
       }
 

@@ -17,9 +17,9 @@ export function findFunctionMatch(
     // Función nombrada: export default function StoriesList() { ... }
     /export\s+default\s+function\s+(\w+)\s*\(/g,
     // Exportación directa con const: export const StoriesList = () => { ... }
-    /export\s+const\s+(\w+)\s*=\s*\(?.*\)?\s*=>\s*\{/g,
+    /export\s+const\s+([a-zA-Z_$][a-zA-Z0-9_$]{0,39})\s*=\s*\(([^)]{0,80})\)\s*=>\s*\{/g,
     // Función anónima asignada: const StoriesList = () => { ... }; export default StoriesList;
-    /const\s+(\w+)\s*=\s*\(?.*\)?\s*=>\s*\{/g,
+    /const\s+([a-zA-Z_$][a-zA-Z0-9_$]{0,39})\s*=\s*\(([^)]{0,80})\)\s*=>\s*\{/g,
     // Declaración de función: function StoriesList() { ... }; export default StoriesList;
     /function\s+(\w+)\s*\(/g,
     // React.FC con nombre: const StoriesList: React.FC = () => { ... }
@@ -110,14 +110,14 @@ export function detectFunctionDeclaration(
 ): RegExpMatchArray | null {
   // Split the complex regex into simpler ones
   const patterns = [
-    // export const/let/var/function FunctionName = (...) => { ... }
-    /(export\s+)?(const|let|var|function)\s+([a-zA-Z_$][a-zA-Z0-9_$]*)\s*[:=]?\s*\([^)]*\)\s*=>/,
-    // export const/let/var/function FunctionName = async (...) => { ... }
-    /(export\s+)?(const|let|var|function)\s+([a-zA-Z_$][a-zA-Z0-9_$]*)\s*[:=]?\s*async\s*\([^)]*\)\s*=>/,
-    // export function FunctionName(...) { ... }
-    /(export\s+)?function\s+([a-zA-Z_$][a-zA-Z0-9_$]*)\s*\(/,
-    // const FunctionName = function (...) { ... }
-    /(const|let|var)\s+([a-zA-Z_$][a-zA-Z0-9_$]*)\s*=\s*function\s*\(/,
+    // export const FunctionName = () =>
+    /export\s+const\s+([a-zA-Z_$][a-zA-Z0-9_$]{1,39})\s*=\s*\(.*\)\s*=>/,
+    // export function FunctionName(
+    /export\s+function\s+([a-zA-Z_$][a-zA-Z0-9_$]{1,39})\s*\(/,
+    // const FunctionName = function (
+    /const\s+([a-zA-Z_$][a-zA-Z0-9_$]{1,39})\s*=\s*function\s*\(/,
+    // function FunctionName(
+    /function\s+([a-zA-Z_$][a-zA-Z0-9_$]{1,39})\s*\(/,
   ];
 
   for (const pattern of patterns) {
@@ -213,7 +213,7 @@ function calculateLineComplexity(line: string): number {
     score += 2;
   if (/\.(map|filter|reduce|forEach|find|some|every)\s*\(/.test(line))
     score += 1;
-  if (/\?\s*[^:]*\s*:/.test(line)) score += 1; // Ternary operators
+  if (/\?\s*[a-zA-Z0-9_$,\s=[]{}:.<>]{0,100}\s*:/.test(line)) score += 1; // Ternary operators
   if (/&&|\|\|/.test(line)) score += 0.5; // Logical operators
 
   return score;

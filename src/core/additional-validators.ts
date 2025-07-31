@@ -282,7 +282,9 @@ export function checkHardcodedData(
 
     // Check for hardcoded data but exclude CSS classes, Tailwind classes, and other valid cases
     const hasHardcodedPattern =
-      /(['"]).*(\d{3,}|lorem|dummy|test|prueba|foo|bar|baz).*\1/.test(line);
+      /(['"])[^'"\n]{0,200}?(\d{3,}|lorem|dummy|test|prueba|foo|bar|baz)[^'"\n]{0,200}?\1/.test(
+        line
+      );
     const isCSSClass = /className\s*=|class\s*=|style\s*=/.test(line);
 
     // Comprehensive Tailwind CSS pattern matching (incluye clases con corchetes)
@@ -302,7 +304,7 @@ export function checkHardcodedData(
       /\b(from|via|to|ring|outline|divide|decoration)-([a-z]+)-(50|100|200|300|400|500|600|700|800|900|950)\b/,
       /\b(text|bg|border)-(semantic|custom|brand|primary|secondary|accent|success|warning|error|info|muted|disabled)-[a-z]+-(?:[5-9]0|[1-9]00|950)\b/,
       /\b(text|bg|border)-[a-z]+-[a-z]*-?\d{2,3}\b/,
-      /[a-z-]+-\[[^\]]+\]/,
+      /[a-z-]{1,40}-\[[^\]\n]{1,100}\]/,
     ];
 
     const isTailwindClass = tailwindPatterns.some((pattern) =>
@@ -318,7 +320,9 @@ export function checkHardcodedData(
     // Additional check: if line contains common CSS/Tailwind context
     const hasClassContext =
       /(className|class)\s*[:=]\s*['"`]/.test(line) ||
-      /['"`]\s*\?\s*['"`][^'"`]*\d+[^'"`]*['"`]\s*:\s*['"`]/.test(line);
+      /['"`]\s*\?\s*['"`][^'"`\n]{0,50}\d+[^'"`\n]{0,50}['"`]\s*:\s*['"`]/.test(
+        line
+      );
 
     // Robust translation key detection: allow for whitespace, any key, and any translation function (t, useTranslations, i18n, etc.)
     const isTranslationAssignment =
@@ -364,7 +368,9 @@ export function checkHardcodedData(
       /\/fonts\//.test(filePath);
 
     // Skip property accessor patterns like Colors['color-complementary-cyan-500']
-    const isPropertyAccessor = /\w+\s*\[\s*['"][^'"]+['"]\s*\]/.test(line);
+    const isPropertyAccessor = /\w{1,40}\s*\[\s*['"][^'"]{1,100}['"]\s*\]/.test(
+      line
+    );
     if (
       hasHardcodedPattern &&
       !isCSSClass &&
