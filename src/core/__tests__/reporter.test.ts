@@ -1,4 +1,3 @@
-
 import fs from 'fs';
 import path from 'path';
 import { Reporter } from '../reporter';
@@ -21,83 +20,95 @@ const mockLogger = {
 
 describe('Reporter', () => {
   it('should format report with only warnings', async () => {
-    const report = await reporter.formatReport({
-      totalErrors: 0,
-      totalWarnings: 2,
-      totalInfos: 0,
-      errorsByRule: {},
-      warningsByRule: { w1: 2 },
-      infosByRule: {},
-      errorsByZone: {},
-      warningsByZone: {},
-      infosByZone: {},
-      oksByZone: {},
-      totalCheckedByZone: {},
-      summary: [],
-      warningSummary: [{ rule: 'w1', count: 2, percentage: '100.0' }],
-      infoSummary: [],
-    }, {
-      type: 'react',
-      isMonorepo: false,
-      projectType: 'react',
-      zones: [],
-      structure: {},
-      rootPath: '/mock/root',
-    }, {} as any);
+    const report = await reporter.formatReport(
+      {
+        totalErrors: 0,
+        totalWarnings: 2,
+        totalInfos: 0,
+        errorsByRule: {},
+        warningsByRule: { w1: 2 },
+        infosByRule: {},
+        errorsByZone: {},
+        warningsByZone: {},
+        infosByZone: {},
+        oksByZone: {},
+        totalCheckedByZone: {},
+        summary: [],
+        warningSummary: [{ rule: 'w1', count: 2, percentage: '100.0' }],
+        infoSummary: [],
+      },
+      {
+        type: 'react',
+        isMonorepo: false,
+        projectType: 'react',
+        zones: [],
+        structure: {},
+        rootPath: '/mock/root',
+      },
+      {} as any
+    );
     expect(report).toContain('warnings');
   });
 
   it('should format report with only infos', async () => {
-    const report = await reporter.formatReport({
-      totalErrors: 0,
-      totalWarnings: 0,
-      totalInfos: 2,
-      errorsByRule: {},
-      warningsByRule: {},
-      infosByRule: { i1: 2 },
-      errorsByZone: {},
-      warningsByZone: {},
-      infosByZone: {},
-      oksByZone: {},
-      totalCheckedByZone: {},
-      summary: [],
-      warningSummary: [],
-      infoSummary: [{ rule: 'i1', count: 2, percentage: '100.0' }],
-    }, {
-      type: 'react',
-      isMonorepo: false,
-      projectType: 'react',
-      zones: [],
-      structure: {},
-      rootPath: '/mock/root',
-    }, {} as any);
+    const report = await reporter.formatReport(
+      {
+        totalErrors: 0,
+        totalWarnings: 0,
+        totalInfos: 2,
+        errorsByRule: {},
+        warningsByRule: {},
+        infosByRule: { i1: 2 },
+        errorsByZone: {},
+        warningsByZone: {},
+        infosByZone: {},
+        oksByZone: {},
+        totalCheckedByZone: {},
+        summary: [],
+        warningSummary: [],
+        infoSummary: [{ rule: 'i1', count: 2, percentage: '100.0' }],
+      },
+      {
+        type: 'react',
+        isMonorepo: false,
+        projectType: 'react',
+        zones: [],
+        structure: {},
+        rootPath: '/mock/root',
+      },
+      {} as any
+    );
     expect(report).toContain('suggestions');
   });
 
   it('should format report with warnings and infos', async () => {
-    const report = await reporter.formatReport({
-      totalErrors: 0,
-      totalWarnings: 1,
-      totalInfos: 1,
-      errorsByRule: {},
-      warningsByRule: { w1: 1 },
-      infosByRule: { i1: 1 },
-      errorsByZone: {},
-      warningsByZone: {},
-      infosByZone: {},
-      oksByZone: {},
-      totalCheckedByZone: {},
-      summary: [],
-      warningSummary: [{ rule: 'w1', count: 1, percentage: '100.0' }],
-      infoSummary: [{ rule: 'i1', count: 1, percentage: '100.0' }],
-    }, {
-      type: 'react',
-      isMonorepo: false,
-      projectType: 'react',
-      zones: [],
-      structure: {},
-      rootPath: '/mock/root',
-    }, {} as any);
+    const report = await reporter.formatReport(
+      {
+        totalErrors: 0,
+        totalWarnings: 1,
+        totalInfos: 1,
+        errorsByRule: {},
+        warningsByRule: { w1: 1 },
+        infosByRule: { i1: 1 },
+        errorsByZone: {},
+        warningsByZone: {},
+        infosByZone: {},
+        oksByZone: {},
+        totalCheckedByZone: {},
+        summary: [],
+        warningSummary: [{ rule: 'w1', count: 1, percentage: '100.0' }],
+        infoSummary: [{ rule: 'i1', count: 1, percentage: '100.0' }],
+      },
+      {
+        type: 'react',
+        isMonorepo: false,
+        projectType: 'react',
+        zones: [],
+        structure: {},
+        rootPath: '/mock/root',
+      },
+      {} as any
+    );
     expect(report).toContain('warnings');
     expect(report).toContain('suggestions');
   });
@@ -106,8 +117,20 @@ describe('Reporter', () => {
     const lines: string[] = [];
     const zoneErrors = {
       zoneA: [
-        { filePath: 'fileA.js', message: 'Error message', severity: 'error', rule: 'r1', line: 10 },
-        { filePath: 'fileA.js', message: '✅ ok', severity: 'error', rule: 'r2', line: 11 },
+        {
+          filePath: 'fileA.js',
+          message: 'Error message',
+          severity: 'error',
+          rule: 'r1',
+          line: 10,
+        },
+        {
+          filePath: 'fileA.js',
+          message: '✅ ok',
+          severity: 'error',
+          rule: 'r2',
+          line: 11,
+        },
       ],
     };
     reporter.setOriginalZoneErrors(zoneErrors as any);
@@ -120,8 +143,20 @@ describe('Reporter', () => {
     const lines: string[] = [];
     const zoneErrors = {
       zoneA: [
-        { filePath: 'fileA.js', message: 'Warning message', severity: 'warning', rule: 'w1', line: 5 },
-        { filePath: 'fileA.js', message: '✅ ok', severity: 'error', rule: 'r2', line: 11 },
+        {
+          filePath: 'fileA.js',
+          message: 'Warning message',
+          severity: 'warning',
+          rule: 'w1',
+          line: 5,
+        },
+        {
+          filePath: 'fileA.js',
+          message: '✅ ok',
+          severity: 'error',
+          rule: 'r2',
+          line: 11,
+        },
       ],
     };
     reporter.setOriginalZoneErrors(zoneErrors as any);
@@ -134,8 +169,20 @@ describe('Reporter', () => {
     const lines: string[] = [];
     const zoneErrors = {
       zoneA: [
-        { filePath: 'fileA.js', message: 'Info message', severity: 'info', rule: 'i1', line: 2 },
-        { filePath: 'fileA.js', message: '✅ ok', severity: 'error', rule: 'r2', line: 11 },
+        {
+          filePath: 'fileA.js',
+          message: 'Info message',
+          severity: 'info',
+          rule: 'i1',
+          line: 2,
+        },
+        {
+          filePath: 'fileA.js',
+          message: '✅ ok',
+          severity: 'error',
+          rule: 'r2',
+          line: 11,
+        },
       ],
     };
     reporter.setOriginalZoneErrors(zoneErrors as any);
@@ -171,12 +218,16 @@ describe('Reporter', () => {
     const lines: string[] = [];
     reporter['addRecommendationsSection'](lines);
     expect(lines.join('\n')).toContain('RECOMMENDATIONS');
-    expect(lines.join('\n')).toContain('Focus on the most frequent violation types');
+    expect(lines.join('\n')).toContain(
+      'Focus on the most frequent violation types'
+    );
   });
 
   it('should handle error in saveReport', async () => {
     (fs.existsSync as jest.Mock).mockReturnValue(false);
-    (fs.writeFileSync as jest.Mock).mockImplementationOnce(() => { throw new Error('fail-write'); });
+    (fs.writeFileSync as jest.Mock).mockImplementationOnce(() => {
+      throw new Error('fail-write');
+    });
     await expect(reporter.saveReport('content')).rejects.toThrow('fail-write');
     expect(mockLogger.error).toHaveBeenCalled();
   });
@@ -235,12 +286,27 @@ describe('Reporter', () => {
   it('should process errors and skip jest files', () => {
     const zoneErrors = {
       zone1: [
-        { filePath: 'foo.test.js', message: 'error', severity: 'error', rule: 'r1' },
+        {
+          filePath: 'foo.test.js',
+          message: 'error',
+          severity: 'error',
+          rule: 'r1',
+        },
         { filePath: 'bar.js', message: 'error', severity: 'error', rule: 'r2' },
-        { filePath: 'bar.js', message: 'warning', severity: 'warning', rule: 'r3' },
+        {
+          filePath: 'bar.js',
+          message: 'warning',
+          severity: 'warning',
+          rule: 'r3',
+        },
         { filePath: 'bar.js', message: 'info', severity: 'info', rule: 'r4' },
         { filePath: 'bar.js', message: '✅ ok', severity: 'error', rule: 'r5' },
-        { filePath: 'bar.js', message: 'Present: ok', severity: 'error', rule: 'r6' },
+        {
+          filePath: 'bar.js',
+          message: 'Present: ok',
+          severity: 'error',
+          rule: 'r6',
+        },
       ],
     };
     const data = reporter.processErrors(zoneErrors as any);
@@ -264,36 +330,41 @@ describe('Reporter', () => {
   });
 
   it('should format report for all validations passed', async () => {
-    const report = await reporter.formatReport({
-      totalErrors: 0,
-      totalWarnings: 0,
-      totalInfos: 0,
-      errorsByRule: {},
-      warningsByRule: {},
-      infosByRule: {},
-      errorsByZone: {},
-      warningsByZone: {},
-      infosByZone: {},
-      oksByZone: {},
-      totalCheckedByZone: {},
-      summary: [],
-      warningSummary: [],
-      infoSummary: [],
-    }, {
-      type: 'react',
-      isMonorepo: false,
-      projectType: 'react',
-      zones: [],
-      structure: {},
-      rootPath: '/mock/root',
-    }, {} as any);
+    const report = await reporter.formatReport(
+      {
+        totalErrors: 0,
+        totalWarnings: 0,
+        totalInfos: 0,
+        errorsByRule: {},
+        warningsByRule: {},
+        infosByRule: {},
+        errorsByZone: {},
+        warningsByZone: {},
+        infosByZone: {},
+        oksByZone: {},
+        totalCheckedByZone: {},
+        summary: [],
+        warningSummary: [],
+        infoSummary: [],
+      },
+      {
+        type: 'react',
+        isMonorepo: false,
+        projectType: 'react',
+        zones: [],
+        structure: {},
+        rootPath: '/mock/root',
+      },
+      {} as any
+    );
     expect(report).toContain('ALL VALIDATIONS PASSED');
   });
 
   it('should call saveReport and copy viewer', async () => {
     // Forzar que la carpeta de logs no existe (para que se llame mkdirSync), y que el viewer sí existe
     (fs.existsSync as jest.Mock).mockImplementation((p) => {
-      if (typeof p === 'string' && p.includes('logs-standards-validations')) return false;
+      if (typeof p === 'string' && p.includes('logs-standards-validations'))
+        return false;
       if (typeof p === 'string' && p.includes('viewer')) return true;
       return true;
     });
@@ -310,7 +381,9 @@ describe('Reporter', () => {
   });
 
   it('should get/set original zone errors', () => {
-    const errors = { zone: [{ filePath: 'a', message: 'm', severity: 'error', rule: 'r' }] };
+    const errors = {
+      zone: [{ filePath: 'a', message: 'm', severity: 'error', rule: 'r' }],
+    };
     reporter.setOriginalZoneErrors(errors as any);
     expect(reporter.getOriginalZoneErrors()).toBe(errors);
   });
@@ -327,89 +400,103 @@ describe('Reporter', () => {
   });
 
   it('should generate quick summary for no errors', () => {
-    const summary = reporter.generateQuickSummary({ totalErrors: 0, summary: [] } as any);
+    const summary = reporter.generateQuickSummary({
+      totalErrors: 0,
+      summary: [],
+    } as any);
     expect(summary).toContain('All validations passed');
   });
 
-
   it('should format report with only warnings', async () => {
-    const report = await reporter.formatReport({
-      totalErrors: 0,
-      totalWarnings: 2,
-      totalInfos: 0,
-      errorsByRule: {},
-      warningsByRule: { w1: 2 },
-      infosByRule: {},
-      errorsByZone: {},
-      warningsByZone: {},
-      infosByZone: {},
-      oksByZone: {},
-      totalCheckedByZone: {},
-      summary: [],
-      warningSummary: [{ rule: 'w1', count: 2, percentage: '100.0' }],
-      infoSummary: [],
-    }, {
-      type: 'react',
-      isMonorepo: false,
-      projectType: 'react',
-      zones: [],
-      structure: {},
-      rootPath: '/mock/root',
-    }, {} as any);
+    const report = await reporter.formatReport(
+      {
+        totalErrors: 0,
+        totalWarnings: 2,
+        totalInfos: 0,
+        errorsByRule: {},
+        warningsByRule: { w1: 2 },
+        infosByRule: {},
+        errorsByZone: {},
+        warningsByZone: {},
+        infosByZone: {},
+        oksByZone: {},
+        totalCheckedByZone: {},
+        summary: [],
+        warningSummary: [{ rule: 'w1', count: 2, percentage: '100.0' }],
+        infoSummary: [],
+      },
+      {
+        type: 'react',
+        isMonorepo: false,
+        projectType: 'react',
+        zones: [],
+        structure: {},
+        rootPath: '/mock/root',
+      },
+      {} as any
+    );
     expect(report).toContain('warnings');
   });
 
   it('should format report with only infos', async () => {
-    const report = await reporter.formatReport({
-      totalErrors: 0,
-      totalWarnings: 0,
-      totalInfos: 2,
-      errorsByRule: {},
-      warningsByRule: {},
-      infosByRule: { i1: 2 },
-      errorsByZone: {},
-      warningsByZone: {},
-      infosByZone: {},
-      oksByZone: {},
-      totalCheckedByZone: {},
-      summary: [],
-      warningSummary: [],
-      infoSummary: [{ rule: 'i1', count: 2, percentage: '100.0' }],
-    }, {
-      type: 'react',
-      isMonorepo: false,
-      projectType: 'react',
-      zones: [],
-      structure: {},
-      rootPath: '/mock/root',
-    }, {} as any);
+    const report = await reporter.formatReport(
+      {
+        totalErrors: 0,
+        totalWarnings: 0,
+        totalInfos: 2,
+        errorsByRule: {},
+        warningsByRule: {},
+        infosByRule: { i1: 2 },
+        errorsByZone: {},
+        warningsByZone: {},
+        infosByZone: {},
+        oksByZone: {},
+        totalCheckedByZone: {},
+        summary: [],
+        warningSummary: [],
+        infoSummary: [{ rule: 'i1', count: 2, percentage: '100.0' }],
+      },
+      {
+        type: 'react',
+        isMonorepo: false,
+        projectType: 'react',
+        zones: [],
+        structure: {},
+        rootPath: '/mock/root',
+      },
+      {} as any
+    );
     expect(report).toContain('suggestions');
   });
 
   it('should format report with warnings and infos', async () => {
-    const report = await reporter.formatReport({
-      totalErrors: 0,
-      totalWarnings: 1,
-      totalInfos: 1,
-      errorsByRule: {},
-      warningsByRule: { w1: 1 },
-      infosByRule: { i1: 1 },
-      errorsByZone: {},
-      warningsByZone: {},
-      infosByZone: {},
-      oksByZone: {},
-      totalCheckedByZone: {},
-      summary: [],
-      warningSummary: [{ rule: 'w1', count: 1, percentage: '100.0' }],
-      infoSummary: [{ rule: 'i1', count: 1, percentage: '100.0' }],
-    }, {
-      type: 'react',
-      isMonorepo: false,
-      projectType: 'react',
-      zones: [],
-      structure: {},
-      rootPath: '/mock/root',
-    }, {} as any);
+    const report = await reporter.formatReport(
+      {
+        totalErrors: 0,
+        totalWarnings: 1,
+        totalInfos: 1,
+        errorsByRule: {},
+        warningsByRule: { w1: 1 },
+        infosByRule: { i1: 1 },
+        errorsByZone: {},
+        warningsByZone: {},
+        infosByZone: {},
+        oksByZone: {},
+        totalCheckedByZone: {},
+        summary: [],
+        warningSummary: [{ rule: 'w1', count: 1, percentage: '100.0' }],
+        infoSummary: [{ rule: 'i1', count: 1, percentage: '100.0' }],
+      },
+      {
+        type: 'react',
+        isMonorepo: false,
+        projectType: 'react',
+        zones: [],
+        structure: {},
+        rootPath: '/mock/root',
+      },
+      {} as any
+    );
     expect(report).toContain('warnings');
     expect(report).toContain('suggestions');
   });
@@ -418,8 +505,20 @@ describe('Reporter', () => {
     const lines: string[] = [];
     const zoneErrors = {
       zoneA: [
-        { filePath: 'fileA.js', message: 'Error message', severity: 'error', rule: 'r1', line: 10 },
-        { filePath: 'fileA.js', message: '✅ ok', severity: 'error', rule: 'r2', line: 11 },
+        {
+          filePath: 'fileA.js',
+          message: 'Error message',
+          severity: 'error',
+          rule: 'r1',
+          line: 10,
+        },
+        {
+          filePath: 'fileA.js',
+          message: '✅ ok',
+          severity: 'error',
+          rule: 'r2',
+          line: 11,
+        },
       ],
     };
     reporter.setOriginalZoneErrors(zoneErrors as any);
@@ -432,8 +531,20 @@ describe('Reporter', () => {
     const lines: string[] = [];
     const zoneErrors = {
       zoneA: [
-        { filePath: 'fileA.js', message: 'Warning message', severity: 'warning', rule: 'w1', line: 5 },
-        { filePath: 'fileA.js', message: '✅ ok', severity: 'error', rule: 'r2', line: 11 },
+        {
+          filePath: 'fileA.js',
+          message: 'Warning message',
+          severity: 'warning',
+          rule: 'w1',
+          line: 5,
+        },
+        {
+          filePath: 'fileA.js',
+          message: '✅ ok',
+          severity: 'error',
+          rule: 'r2',
+          line: 11,
+        },
       ],
     };
     reporter.setOriginalZoneErrors(zoneErrors as any);
@@ -446,8 +557,20 @@ describe('Reporter', () => {
     const lines: string[] = [];
     const zoneErrors = {
       zoneA: [
-        { filePath: 'fileA.js', message: 'Info message', severity: 'info', rule: 'i1', line: 2 },
-        { filePath: 'fileA.js', message: '✅ ok', severity: 'error', rule: 'r2', line: 11 },
+        {
+          filePath: 'fileA.js',
+          message: 'Info message',
+          severity: 'info',
+          rule: 'i1',
+          line: 2,
+        },
+        {
+          filePath: 'fileA.js',
+          message: '✅ ok',
+          severity: 'error',
+          rule: 'r2',
+          line: 11,
+        },
       ],
     };
     reporter.setOriginalZoneErrors(zoneErrors as any);
@@ -483,12 +606,16 @@ describe('Reporter', () => {
     const lines: string[] = [];
     reporter['addRecommendationsSection'](lines);
     expect(lines.join('\n')).toContain('RECOMMENDATIONS');
-    expect(lines.join('\n')).toContain('Focus on the most frequent violation types');
+    expect(lines.join('\n')).toContain(
+      'Focus on the most frequent violation types'
+    );
   });
 
   it('should handle error in saveReport', async () => {
     (fs.existsSync as jest.Mock).mockReturnValue(false);
-    (fs.writeFileSync as jest.Mock).mockImplementationOnce(() => { throw new Error('fail-write'); });
+    (fs.writeFileSync as jest.Mock).mockImplementationOnce(() => {
+      throw new Error('fail-write');
+    });
     await expect(reporter.saveReport('content')).rejects.toThrow('fail-write');
     expect(mockLogger.error).toHaveBeenCalled();
   });
@@ -501,7 +628,11 @@ describe('Reporter', () => {
   });
 
   it('should throw on exportJson error', async () => {
-    (fs.writeFileSync as jest.Mock).mockImplementationOnce(() => { throw new Error('fail'); });
-    await expect(reporter.exportJson({} as any, '/fail.json')).rejects.toThrow('fail');
+    (fs.writeFileSync as jest.Mock).mockImplementationOnce(() => {
+      throw new Error('fail');
+    });
+    await expect(reporter.exportJson({} as any, '/fail.json')).rejects.toThrow(
+      'fail'
+    );
   });
 });
