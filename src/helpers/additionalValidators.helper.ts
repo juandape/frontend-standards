@@ -112,6 +112,10 @@ export function detectFunctionDeclaration(
   const patterns = [
     // export const FunctionName = () =>
     /export\s+const\s+([a-zA-Z_$][a-zA-Z0-9_$]{1,39})\s*=\s*\(.*\)\s*=>/,
+    // export const FunctionName = async () =>
+    /export\s+const\s+([a-zA-Z_$][a-zA-Z0-9_$]{1,39})\s*=\s*async\s*\(.*\)\s*=>/,
+    // const FunctionName = async () =>
+    /const\s+([a-zA-Z_$][a-zA-Z0-9_$]{1,39})\s*=\s*async\s*\(.*\)\s*=>/,
     // export function FunctionName(
     /export\s+function\s+([a-zA-Z_$][a-zA-Z0-9_$]{1,39})\s*\(/,
     // const FunctionName = function (
@@ -132,7 +136,7 @@ export function detectFunctionDeclaration(
 export function getFunctionName(
   functionMatch: RegExpMatchArray
 ): string | null {
-  return functionMatch[3] ?? functionMatch[2] ?? null;
+  return functionMatch[1] ?? null;
 }
 
 export function shouldSkipFunction(

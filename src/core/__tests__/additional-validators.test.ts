@@ -192,17 +192,18 @@ describe('additional-validators', () => {
   });
   describe('checkFunctionComments', () => {
     it('should flag complex functions without comments', () => {
-      const content = `
-      function complexFunction() {
-        if (true) {
-          return 1;
-        } else if (false) {
-          return 2;
-        } else {
-          return 3;
-        }
-      }
-    `;
+      const content = [
+        'function complexFunction() {',
+        'if (true) { return 1; }',
+        'else if (false) { return 2; }',
+        'else if (Math.random() > 0.5) { return 4; }',
+        'else if (Math.random() > 0.8) { return 5; }',
+        'else { return 3; }',
+        'for (let i = 0; i < 2; i++) { console.log(i); }',
+        'while(false) { break; }',
+        'try { throw new Error(); } catch(e) { /* handle */ }',
+        '}',
+      ].join('\n');
       const errors = validators.checkFunctionComments(
         content,
         '/path/to/file.ts'
