@@ -747,9 +747,9 @@ describe('ConfigLoader', () => {
       const rules = (configLoader as any).getNamingRules();
       const rule = rules.find((r: any) => r.name === 'Type naming');
       expect(rule).toBeDefined();
-      // Solo .d.ts directamente bajo /types/ debe estar permitido
+      // Solo .d.ts directamente bajo /types/ o /type/ debe estar permitido
       expect(rule.check('', '/src/types/foo.d.ts')).toBe(false); // permitido
-      expect(rule.check('', '/src/type/bar.d.ts')).toBe(true); // error
+      expect(rule.check('', '/src/type/bar.d.ts')).toBe(false); // permitido
       expect(rule.check('', '/src/types/subfolder/baz.d.ts')).toBe(true); // error
       expect(rule.check('', '/src/types/foo.type.ts')).toBe(false); // permitido
     });

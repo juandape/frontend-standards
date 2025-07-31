@@ -640,15 +640,15 @@ export class ConfigLoader implements IConfigLoader {
             return false;
           }
 
-          // Excepción: solo permitir .d.ts directamente bajo /types/ (plural)
+          // Excepción: permitir .d.ts directamente bajo /types/ (plural) o /type/ (singular)
           if (
             fileName.endsWith('.d.ts') &&
-            /\/types\/[a-zA-Z0-9_-]+\.d\.ts$/.test(normalizedPath)
+            /\/(types|type)\/[a-zA-Z0-9_-]+\.d\.ts$/.test(normalizedPath)
           ) {
             return false;
           }
 
-          // Si es .d.ts en cualquier otro lugar (incluyendo /type/ singular o subcarpetas), debe marcar error
+          // Si es .d.ts en cualquier otro lugar (subcarpetas, etc.), debe marcar error
           if (fileName.endsWith('.d.ts')) {
             return true;
           }
