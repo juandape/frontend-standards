@@ -290,7 +290,7 @@ export class RuleEngine implements IRuleEngine {
     } catch (error) {
       this.logger.warn(
         'Failed to run content validators:',
-        (error as Error).message
+        error instanceof Error ? error.message : String(error)
       );
     }
   }
@@ -321,7 +321,7 @@ export class RuleEngine implements IRuleEngine {
     } catch (error) {
       this.logger.warn(
         'Failed to run file validators:',
-        (error as Error).message
+        error instanceof Error ? error.message : String(error)
       );
     }
   }

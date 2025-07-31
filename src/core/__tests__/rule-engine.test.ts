@@ -331,6 +331,19 @@ describe('RuleEngine', () => {
       expect(ruleEngine['isConfigFile']('.eslintrc.json')).toBe(true);
       expect(ruleEngine['isConfigFile']('tsconfig.json')).toBe(true);
       expect(ruleEngine['isConfigFile']('babel.config.js')).toBe(true);
+      // Additional config patterns for full branch coverage
+      expect(ruleEngine['isConfigFile']('vite.config.mjs')).toBe(true);
+      expect(ruleEngine['isConfigFile']('nuxt.config.js')).toBe(true);
+      expect(ruleEngine['isConfigFile']('quasar.config.js')).toBe(true);
+      expect(ruleEngine['isConfigFile']('tsconfig.base.json')).toBe(true);
+      expect(ruleEngine['isConfigFile']('.prettierrc')).toBe(true);
+      expect(ruleEngine['isConfigFile']('postcss.config.js')).toBe(true);
+      expect(ruleEngine['isConfigFile']('stylelint.config.js')).toBe(true);
+      expect(ruleEngine['isConfigFile']('cypress.config.js')).toBe(true);
+      expect(ruleEngine['isConfigFile']('playwright.config.js')).toBe(true);
+      expect(ruleEngine['isConfigFile']('storybook.config.js')).toBe(true);
+      expect(ruleEngine['isConfigFile']('metro.config.js')).toBe(true);
+      expect(ruleEngine['isConfigFile']('expo.config.js')).toBe(true);
     });
 
     it('should not identify non-config files', () => {
@@ -570,6 +583,22 @@ describe('RuleEngine', () => {
         'Failed to run content validators:',
         'Validator failed'
       );
+      // Also test non-Error thrown value
+      const mockValidators2 = {
+        checkInlineStyles: jest.fn(() => {
+          throw 'string error';
+        }),
+      };
+      ruleEngine['runContentValidators'](
+        mockValidators2,
+        'const test = 123;',
+        '/path/to/file.ts',
+        mockErrors
+      );
+      expect(mockLogger.warn).toHaveBeenCalledWith(
+        'Failed to run content validators:',
+        'string error'
+      );
     });
   });
 
@@ -615,6 +644,21 @@ describe('RuleEngine', () => {
       expect(mockLogger.warn).toHaveBeenCalledWith(
         'Failed to run file validators:',
         'Validator failed'
+      );
+      // Also test non-Error thrown value
+      const mockValidators2 = {
+        checkEnumsOutsideTypes: jest.fn(() => {
+          throw 12345;
+        }),
+      };
+      ruleEngine['runFileValidators'](
+        mockValidators2,
+        '/path/to/file.ts',
+        mockErrors
+      );
+      expect(mockLogger.warn).toHaveBeenCalledWith(
+        'Failed to run file validators:',
+        '12345'
       );
     });
   });
