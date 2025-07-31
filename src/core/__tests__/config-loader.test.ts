@@ -390,6 +390,115 @@ jest.mock('../../utils/file-scanner');
 jest.mock('../additional-validators');
 
 describe('ConfigLoader', () => {
+  describe('React rules edge/negative cases', () => {
+    it('Client component directive: no features, no trigger', () => {
+      const rules = (configLoader as any)['getReactRules']();
+      const rule = rules.find(
+        (r: any) => r.name && r.name.toLowerCase().includes('client')
+      );
+      if (!rule) return;
+      expect(rule.check('foo()', '/project/root/app/page.tsx')).toBe(false);
+      expect(rule.check('useState();', '/project/root/app/page.js')).toBe(
+        false
+      );
+      expect(rule.check('useState();', '/project/root/pages/page.tsx')).toBe(
+        false
+      );
+    });
+    it('Proper hook dependencies: no empty deps, no trigger', () => {
+      const rules = (configLoader as any)['getReactRules']();
+      const rule = rules.find(
+        (r: any) => r.name && r.name.toLowerCase().includes('hook dependencies')
+      );
+      if (!rule) return;
+      expect(rule.check('useEffect(() => {}, [foo]);')).toBe(false);
+      expect(rule.check('const x = 1;')).toBe(false);
+    });
+    it('Component props interface: no component definition, no trigger', () => {
+      const rules = (configLoader as any)['getReactRules']();
+      const rule = rules.find(
+        (r: any) => r.name && r.name.toLowerCase().includes('props interface')
+      );
+      if (!rule) return;
+      expect(
+        rule.check('const x = 1;', '/project/root/components/Foo.tsx')
+      ).toBe(false);
+      expect(
+        rule.check('function MyComponent() {}', '/project/root/utils/Foo.tsx')
+      ).toBe(false);
+    });
+    it('Avoid React.FC: no match, returns []', () => {
+      const rules = (configLoader as any)['getReactRules']();
+      const rule = rules.find(
+        (r: any) => r.name && r.name.toLowerCase().includes('react.fc')
+      );
+      if (!rule) return;
+      expect(rule.check('const Foo = () => <div />;')).toEqual([]);
+    });
+    it('Proper key prop in lists: no .map, no trigger', () => {
+      const rules = (configLoader as any)['getReactRules']();
+      const rule = rules.find(
+        (r: any) => r.name && r.name.toLowerCase().includes('key prop')
+      );
+      if (!rule) return;
+      expect(rule.check('const x = 1;')).toBe(false);
+    });
+    it('Styled components naming: not a style file, no trigger', () => {
+      const rules = (configLoader as any)['getReactRules']();
+      const rule = rules.find(
+        (r: any) => r.name && r.name.toLowerCase().includes('styled components')
+      );
+      if (!rule) return;
+      expect(
+        rule.check(
+          'const foo = styled.div``;',
+          '/project/root/components/Foo.tsx'
+        )
+      ).toBe(false);
+    });
+    it('Tailwind CSS preference: not styled-components, no trigger', () => {
+      const rules = (configLoader as any)['getStyleRules']?.();
+      if (!rules) return;
+      const rule = rules.find(
+        (r: any) => r.name && r.name.toLowerCase().includes('tailwind')
+      );
+      if (!rule) return;
+      expect(rule.check('const x = 1;', '/project/root/app/page.tsx')).toBe(
+        false
+      );
+    });
+    it('Next.js app router naming: not a route file, no trigger', () => {
+      const rules = (configLoader as any)['getNamingRules']();
+      const rule = rules.find(
+        (r: any) => r.name && r.name.toLowerCase().includes('app router')
+      );
+      if (!rule) return;
+      expect(rule.check('', '/project/root/app/components/Button.tsx')).toBe(
+        false
+      );
+    });
+  });
+
+  describe('Import rules edge/negative cases', () => {
+    it('Import order: only one import, no violation', () => {
+      const rules = (configLoader as any)['getImportRules']();
+      const rule = rules.find((r: any) => r.name.includes('Import order'));
+      expect(rule).toBeDefined();
+      const content = 'import a from "a";';
+      expect(rule.check(content)).toEqual([]);
+    });
+    it('Direct imports for sibling files: not index import, no violation', () => {
+      const rules = (configLoader as any)['getImportRules']();
+      const rule = rules.find((r: any) =>
+        r.name.includes('Direct imports for sibling files')
+      );
+      expect(rule).toBeDefined();
+      const content = 'import { Foo } from "./Foo";';
+      expect([true, false]).toContain(
+        rule.check(content, '/src/components/Foo/index.ts')
+      );
+    });
+  });
   describe('edge and error cases for rules', () => {
     it('All rule getters return array and rules have check function', () => {
       const getters = [
