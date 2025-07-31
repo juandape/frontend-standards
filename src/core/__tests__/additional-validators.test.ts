@@ -499,4 +499,120 @@ describe('additional-validators', () => {
       expect(error).toBeNull();
     });
   });
+
+  // --- COVERAGE BOOSTERS ---
+  describe('checkAssetNaming', () => {
+    it('should return null for files outside assets', () => {
+      expect(validators.checkAssetNaming('/foo/bar.svg')).toBeNull();
+    });
+    it('should return null for .d.ts files', () => {
+      expect(validators.checkAssetNaming('/assets/foo.d.ts')).toBeNull();
+    });
+    it('should return error for bad asset name', () => {
+      const err = validators.checkAssetNaming('/assets/FooBar.svg');
+      expect(err).not.toBeNull();
+      expect(err?.message).toContain('kebab-case');
+    });
+    it('should return null for good asset name', () => {
+      expect(validators.checkAssetNaming('/assets/foo-bar.svg')).toBeNull();
+    });
+    it('should skip SVG in React Native', () => {
+      // El mock global de isReactNativeProject ya retorna false, así que solo cubrimos el path
+      expect(validators.checkAssetNaming('/assets/Svg/test.svg')).toBeNull();
+    });
+  });
+
+  describe('checkDirectoryNaming', () => {
+    it('should return error for bad directory name', () => {
+      const errors = validators.checkDirectoryNaming('/foo/src/bad_dir');
+      expect(errors.length).toBeGreaterThanOrEqual(1);
+    });
+    it('should return empty for ignored dirs', () => {
+      expect(validators.checkDirectoryNaming('/foo/node_modules')).toEqual([]);
+      expect(validators.checkDirectoryNaming('/foo/.git')).toEqual([]);
+      expect(validators.checkDirectoryNaming('/foo/apps')).toEqual([]);
+    });
+    it('should return empty for camelCase dir', () => {
+      expect(validators.checkDirectoryNaming('/foo/src/goodDir')).toEqual([]);
+    });
+    it('should return empty for PascalCase dir', () => {
+      expect(validators.checkDirectoryNaming('/foo/src/GoodDir')).toEqual([]);
+    });
+    it('should return empty for kebab-case in /pages/', () => {
+      expect(
+        validators.checkDirectoryNaming('/foo/src/pages/good-dir')
+      ).toEqual([]);
+    });
+  });
+
+  describe('checkHookFileExtension', () => {
+    it('should return null for non-hook file', () => {
+      expect(validators.checkHookFileExtension('/foo/useTest.ts')).toBeNull();
+    });
+    it('should return null if index.ts exists', () => {
+      const fs = require('fs');
+      const origExistsSync = fs.existsSync;
+      fs.existsSync = (p: string) =>
+        typeof p === 'string' && p.endsWith('index.ts');
+      expect(
+        validators.checkHookFileExtension('/foo/useTest.hook.ts')
+      ).toBeNull();
+      fs.existsSync = origExistsSync;
+    });
+    it('should handle readFileSync error gracefully', () => {
+      const fs = require('fs');
+      const origReadFileSync = fs.readFileSync;
+      fs.readFileSync = () => {
+        throw new Error('fail');
+      };
+      expect(
+        validators.checkHookFileExtension('/foo/useTest.hook.ts')
+      ).toBeNull();
+      fs.readFileSync = origReadFileSync;
+    });
+  });
+
+  describe('checkNamingConventions', () => {
+    it('should return null for index files', () => {
+      expect(
+        validators.checkNamingConventions('/foo/components/index.tsx')
+      ).toBeNull();
+    });
+    it('should return null for files without parentDir', () => {
+      expect(validators.checkNamingConventions('/index.tsx')).toBeNull();
+    });
+    it('should return null for files with parentDir but no rule', () => {
+      expect(
+        validators.checkNamingConventions('/foo/unknown/SomeFile.tsx')
+      ).toBeNull();
+    });
+    it('should return error for bad component name', () => {
+      const err = validators.checkNamingConventions(
+        '/foo/components/badname.tsx'
+      );
+      expect(err).not.toBeNull();
+    });
+    it('should return null for good component name', () => {
+      expect(
+        validators.checkNamingConventions('/foo/components/GoodName.tsx')
+      ).toBeNull();
+    });
+  });
+
+  describe('checkComponentStructure', () => {
+    it('should skip for components dir', () => {
+      expect(validators.checkComponentStructure('/foo/components')).toEqual([]);
+    });
+    it('should check index file for utility dir', () => {
+      const fs = require('fs');
+      const origExistsSync = fs.existsSync;
+      fs.existsSync = () => false;
+      const errors = validators.checkComponentStructure('/foo/hooks');
+      expect(errors.some((e: any) => e.rule === 'Component structure')).toBe(
+        true
+      );
+      fs.existsSync = origExistsSync;
+    });
+  });
 });
+// Fin del describe principal
