@@ -633,15 +633,29 @@ export class ConfigLoader implements IConfigLoader {
           }
 
           const fileName = path.basename(filePath);
+          const normalizedPath = filePath.replace(/\\/g, '/');
 
           // Allow index.ts/index.tsx files in types directories (used for exporting types)
           if (fileName === 'index.ts' || fileName === 'index.tsx') {
             return false;
           }
 
+          // Excepción: solo permitir .d.ts directamente bajo /types/ (plural)
+          if (
+            fileName.endsWith('.d.ts') &&
+            /\/types\/[a-zA-Z0-9_-]+\.d\.ts$/.test(normalizedPath)
+          ) {
+            return false;
+          }
+
+          // Si es .d.ts en cualquier otro lugar (incluyendo /type/ singular o subcarpetas), debe marcar error
+          if (fileName.endsWith('.d.ts')) {
+            return true;
+          }
+
           // Type files should be camelCase and end with .type.ts or .types.ts
           if (
-            filePath.includes('/types/') ||
+            normalizedPath.includes('/types/') ||
             fileName.endsWith('.type.ts') ||
             fileName.endsWith('.types.ts')
           ) {

@@ -1081,6 +1081,12 @@ function checkTypesDirectory(componentDir: string): IValidationError[] {
         );
 
       for (const typeFile of typeFiles) {
+        // Excepción: si es .d.ts y está en carpeta type o types, no exigir .type.ts
+        const isDeclaration = typeFile.endsWith('.d.ts');
+        const parentDir = path.basename(typesDir).toLowerCase();
+        if (isDeclaration && (parentDir === 'type' || parentDir === 'types')) {
+          continue;
+        }
         if (!typeFile.endsWith('.type.ts')) {
           const typeFilePath = path.join(typesDir, typeFile);
           errors.push({
