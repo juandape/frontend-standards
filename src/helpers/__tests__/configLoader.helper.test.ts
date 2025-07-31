@@ -161,6 +161,109 @@ describe('ConfigLoaderHelper', () => {
   });
 
   describe('private helpers', () => {
+    it('checkSymbolsAgainstExports returns false for empty dirFiles', () => {
+      const helper = new ConfigLoaderHelper(mockLogger);
+      // @ts-ignore
+      expect(
+        helper['checkSymbolsAgainstExports'](
+          ['foo'],
+          [],
+          'file.ts',
+          'index content',
+          '/dir'
+        )
+      ).toBe(false);
+    });
+    it('checkSymbolsAgainstExports returns false if all files are skipped', () => {
+      const helper = new ConfigLoaderHelper(mockLogger);
+      // @ts-ignore
+      expect(
+        helper['checkSymbolsAgainstExports'](
+          ['foo'],
+          ['index.ts', 'file.ts'],
+          'file.ts',
+          'index content',
+          '/dir'
+        )
+      ).toBe(false);
+    });
+    it('checkSymbolsAgainstExports returns false if isSymbolExported always false', () => {
+      const helper = new ConfigLoaderHelper(mockLogger);
+      jest.spyOn(helper as any, 'isSymbolExported').mockReturnValue(false);
+      // @ts-ignore
+      expect(
+        helper['checkSymbolsAgainstExports'](
+          ['foo'],
+          ['other.ts'],
+          'file.ts',
+          'index content',
+          '/dir'
+        )
+      ).toBe(false);
+    });
+    it('checkSymbolsAgainstExports returns true if isSymbolExported true for any', () => {
+      const helper = new ConfigLoaderHelper(mockLogger);
+      jest
+        .spyOn(helper as any, 'isSymbolExported')
+        .mockImplementation((...args) => (args[0] as string[]).includes('foo'));
+      // @ts-ignore
+      expect(
+        helper['checkSymbolsAgainstExports'](
+          ['foo'],
+          ['other.ts'],
+          'file.ts',
+          'index content',
+          '/dir'
+        )
+      ).toBe(true);
+    });
+    it('shouldSkipFile returns true for index or self', () => {
+      const helper = new ConfigLoaderHelper(mockLogger);
+      // @ts-ignore
+      expect(helper['shouldSkipFile']('index.ts', 'file.ts')).toBe(true);
+      // @ts-ignore
+      expect(helper['shouldSkipFile']('file.ts', 'file.ts')).toBe(true);
+      // @ts-ignore
+      expect(helper['shouldSkipFile']('other.ts', 'file.ts')).toBe(false);
+    });
+    it('getFileBaseName strips only known extensions', () => {
+      const helper = new ConfigLoaderHelper(mockLogger);
+      // @ts-ignore
+      expect(helper['getFileBaseName']('foo.ts')).toBe('foo');
+      // @ts-ignore
+      expect(helper['getFileBaseName']('bar.jsx')).toBe('bar');
+      // @ts-ignore
+      expect(helper['getFileBaseName']('baz.txt')).toBe('baz.txt');
+    });
+    it('isSymbolExported returns false if symbols is empty', () => {
+      const helper = new ConfigLoaderHelper(mockLogger);
+      jest
+        .spyOn(helper as any, 'getExportPatterns')
+        .mockReturnValue(['pattern']);
+      jest.spyOn(helper as any, 'checkSymbolExport').mockReturnValue(false);
+      // @ts-ignore
+      expect(
+        helper['isSymbolExported']([], 'foo', 'index content', 'foo.ts')
+      ).toBe(false);
+    });
+    it('isSymbolExported returns true if any symbol matches', () => {
+      const helper = new ConfigLoaderHelper(mockLogger);
+      jest
+        .spyOn(helper as any, 'getExportPatterns')
+        .mockReturnValue(['pattern']);
+      jest
+        .spyOn(helper as any, 'checkSymbolExport')
+        .mockImplementation((symbol) => symbol === 'foo');
+      // @ts-ignore
+      expect(
+        helper['isSymbolExported'](
+          ['foo', 'bar'],
+          'foo',
+          'index content',
+          'foo.ts'
+        )
+      ).toBe(true);
+    });
     it('getConsoleLogLineNumbers ignora comentarios y detecta console.log', () => {
       const helper = new ConfigLoaderHelper(mockLogger);
       const code = [
