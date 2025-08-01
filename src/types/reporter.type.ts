@@ -1,5 +1,5 @@
 import type { ILogger, IProjectAnalysisResult } from './projectAnalizer.type';
-import type { IValidationError } from './additionaValidators.type';
+import type { IValidationError } from './additionalValidators.type';
 
 export interface IReporter {
   rootDir: string;
@@ -21,7 +21,7 @@ export interface IReporter {
     reportData: IProcessedReportData,
     projectInfo: IProjectAnalysisResult,
     config: IStandardsConfiguration
-  ): string;
+  ): Promise<string>;
   saveReport(content: string): Promise<void>;
   generateQuickSummary(reportData: IProcessedReportData): string;
   exportJson(
@@ -30,8 +30,13 @@ export interface IReporter {
   ): Promise<string>;
   addReportHeader(lines: string[], projectInfo: IProjectAnalysisResult): void;
   addSummarySection(lines: string[], reportData: IProcessedReportData): void;
-  addZoneResultsSection(lines: string[], reportData: IProcessedReportData): void;
+  addZoneResultsSection(
+    lines: string[],
+    reportData: IProcessedReportData
+  ): void;
   addDetailedErrorsSection(lines: string[]): void;
+  // addDetailedWarningsSection(lines: string[]): Promise<void>;
+  // addDetailedInfosSection(lines: string[]): Promise<void>;
   addStatisticsSection(lines: string[], reportData: IProcessedReportData): void;
   addRecommendationsSection(lines: string[]): void;
   getOriginalZoneErrors(): Record<string, IValidationError[]>;
@@ -86,7 +91,10 @@ export interface ISummaryItem {
 
 export interface IValidationRule {
   name: string;
-  check: (content: string, filePath: string) => boolean | Promise<boolean>;
+  check: (
+    content: string,
+    filePath: string
+  ) => boolean | number[] | Promise<boolean> | Promise<number[]>;
   message: string;
   category?:
     | 'structure'

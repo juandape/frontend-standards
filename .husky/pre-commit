@@ -1,0 +1,10 @@
+echo "Running pre-commit checks..."
+
+yarn type-check
+
+if [ $? -ne 0 ]; then
+  echo "Type checking failed. Please fix the errors before committing."
+  exit 1
+fi
+
+echo "Type checking passed. Proceeding with commit."

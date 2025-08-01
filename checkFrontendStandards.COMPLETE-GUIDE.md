@@ -1,350 +1,205 @@
-# CheckFrontendStandards v4.10.0 - Guía Completa de Configuración
+# Frontend Standards Checker Complete Configuration Guide
 
-Esta guía contiene todos los ejemplos posibles para configurar reglas personalizadas en **Frontend Standards Checker v4.10.0**.
+This guide contains all possible examples for configuring custom rules in **Frontend Standards Checker**.
 
-> **⚠️ Importante**: Esta versión 4.10.0 incluye validadores avanzados, mensajes de error enriquecidos y mejoras de precisión. Si tienes una versión anterior, actualiza usando el script de instalación automático.
+> **⚠️ Important**: This version includes advanced validators, enriched error messages and precision improvements. If you have a previous version, update using the recommended installation.
 
-## 🆕 Novedades en v4.10.0
+## 🆕 New Features
 
-- Validadores avanzados con mensajes enriquecidos (línea, carpeta, función)
-- Mejoras en la precisión de reglas de componentes y hooks
-- Mensajes de error más claros y útiles para debugging rápido
-- Compatibilidad total con React Native y monorepos
-- Documentación y ejemplos actualizados
-- Carpeta de reportes `logs-standards-validations` para almacenar los reportes generados con fecha y hora y último colaborador que modificó el archivo
-- Visor HTML para reportes de validación
+- **🆕 `--all-files` Flag**: New CLI option that forces validation of all project files, overriding `onlyChangedFiles` configuration and Git staging
+- **🆕 Improved Option Precedence**: CLI flags now take precedence over file configuration for greater flexibility
+- **🆕 Advanced Debug Mode**: New `--debug` option that shows detailed information about the file scanning process
+- Advanced validators with enriched messages (line, folder, function)
+- Improvements in component and hooks rule precision
+- Clearer and more useful error messages for quick debugging
+- Full compatibility with React Native and monorepos
+- Updated documentation and examples
+- `logs-standards-validations` reports folder to store generated reports with date, time and last collaborator who modified the file
+- HTML viewer for validation reports
+- Selective validation: `onlyZone` option to validate only specific modules
+- Efficient validation: by default only validates staged files for commit (`onlyChangedFiles: true`)
+- Native TypeScript: strict types, autocompletion and better development experience
+- Smart installation: detects React Native and adapts installation automatically
+- Compatibility improvements: robust installation for projects with complex dependencies (React Native, monorepos with private dependencies)
+- Documentation improvements: updated examples and guides to facilitate integration
+- New validation rules: additional rules to improve code quality
+- CSV export: possibility to export reports to CSV format for external analysis
+
+### 🎯 Use cases for the new `--all-files` flag
+
+- **CI/CD**: Complete project validation in continuous integration pipelines
+- **Pre-release**: Complete review before important releases
+- **Onboarding**: Complete validation of legacy projects or new developers
+- **Troubleshooting**: Debug issues in specific files that are not staged
+- **Audits**: Complete code quality reviews
 
 ---
-### 🔎 Ejemplo de mensaje de error enriquecido (v4.9.5)
+
+### 🔎 Enriched error message example
 
 ```log
 📄 /src/components/Calendar/index.tsx:23
    Rule: Component function name match
-   Issue: La función principal en index.tsx debe tener el mismo nombre que su carpeta contenedora. Carpeta: 'Calendar', Función: 'CalendarPicker' - Los nombres no coinciden exactamente.
+   Issue: The main function in index.tsx must have the same name as its containing folder. Folder: 'Calendar', Function: 'CalendarPicker' - Names do not match exactly.
 ```
 
-Ahora los mensajes incluyen número de línea, nombre de carpeta y función, facilitando la corrección rápida.
+Messages now include line number, folder name and function, facilitating quick correction.
 
 ---
 
-## 📋 Tabla de Contenidos
+## 📋 Table of Contents
 
-- [CheckFrontendStandards v4.10.0 - Guía Completa de Configuración](#checkfrontendstandards-v4100---guía-completa-de-configuración)
-  - [🆕 Novedades en v4.10.0](#-novedades-en-v4100)
-    - [🔎 Ejemplo de mensaje de error enriquecido (v4.9.5)](#-ejemplo-de-mensaje-de-error-enriquecido-v495)
-  - [📋 Tabla de Contenidos](#-tabla-de-contenidos)
-  - [🆕 Novedades en v4.9.1](#-novedades-en-v491)
-    - [� Correcciones Críticas de Instalación](#-correcciones-críticas-de-instalación)
-      - [✅ Scripts de Package.json Corregidos](#-scripts-de-packagejson-corregidos)
-      - [🔧 Instalación de Dependencias Arreglada](#-instalación-de-dependencias-arreglada)
-      - [🎯 Instalación Inteligente Mejorada](#-instalación-inteligente-mejorada)
-      - [📋 Comandos Actualizados](#-comandos-actualizados)
-      - [📦 Configuración por Defecto Corregida](#-configuración-por-defecto-corregida)
-  - [🚀 Instrucciones de Instalación](#-instrucciones-de-instalación)
-    - [Método 1: Script Automático (Recomendado)](#método-1-script-automático-recomendado)
-    - [Método 2: Instalación Manual Estándar](#método-2-instalación-manual-estándar)
-    - [Método 3: Instalación Manual React Native](#método-3-instalación-manual-react-native)
-  - [📋 Tabla de Contenidos](#-tabla-de-contenidos-1)
-  - [🚀 Instrucciones de Uso](#-instrucciones-de-uso)
-  - [📁 Configuración de Zonas](#-configuración-de-zonas)
-    - [Incluir zonas packages/](#incluir-zonas-packages)
-    - [Agregar zonas personalizadas](#agregar-zonas-personalizadas)
-    - [Configuración completa de zonas](#configuración-completa-de-zonas)
-  - [Sección 1: Agregar Reglas Simples](#sección-1-agregar-reglas-simples)
-  - [Sección 2: Modificar Reglas Existentes](#sección-2-modificar-reglas-existentes)
-  - [Sección 3: Reemplazar Completamente las Reglas](#sección-3-reemplazar-completamente-las-reglas)
-  - [Sección 4: Reglas Condicionales Avanzadas](#sección-4-reglas-condicionales-avanzadas)
-  - [Sección 5: Zonas Personalizadas](#sección-5-zonas-personalizadas)
-    - [📋 Zonas Personalizadas Disponibles](#-zonas-personalizadas-disponibles)
-  - [Sección 6: Reglas por Tipo de Archivo](#sección-6-reglas-por-tipo-de-archivo)
-  - [Sección 7: Arquitectura y Mejores Prácticas](#sección-7-arquitectura-y-mejores-prácticas)
-  - [📋 Comandos Útiles](#-comandos-útiles)
-    - [Comandos Principales (Post-instalación)](#comandos-principales-post-instalación)
-    - [Opciones de CLI Avanzadas](#opciones-de-cli-avanzadas)
-  - [🎯 Ejemplo Activo para Probar](#-ejemplo-activo-para-probar)
-  - [💡 Consejos](#-consejos)
-  - [📋 Lista Completa de Verificaciones](#-lista-completa-de-verificaciones)
-    - [🔍 Reglas de Código Base](#-reglas-de-código-base)
-    - [📁 Reglas de Estructura de Archivos](#-reglas-de-estructura-de-archivos)
-    - [🏗️ Reglas de Arquitectura](#️-reglas-de-arquitectura)
-    - [📝 Reglas de Nomenclatura](#-reglas-de-nomenclatura)
-    - [🔧 Reglas de Componentes React](#-reglas-de-componentes-react)
-    - [🎨 Reglas de Estilos](#-reglas-de-estilos)
-    - [📚 Reglas de Documentación](#-reglas-de-documentación)
-    - [⚙️ Reglas de Configuración](#️-reglas-de-configuración)
-  - [Resumen de Estadísticas Actuales](#resumen-de-estadísticas-actuales)
-  - [Estructura de Directorio Estándar](#estructura-de-directorio-estándar)
+- [Frontend Standards Checker Complete Configuration Guide](#frontend-standards-checker-complete-configuration-guide)
+  - [🆕 New Features](#-new-features)
+    - [🎯 Use cases for the new `--all-files` flag](#-use-cases-for-the-new---all-files-flag)
+    - [🔎 Enriched error message example](#-enriched-error-message-example)
+  - [📋 Table of Contents](#-table-of-contents)
+  - [� Instalación Rápida](#-instalación-rápida)
+    - [Instalación estándar (Recomendado)](#instalación-estándar-recomendado)
+    - [Scripts in package.json](#scripts-in-packagejson)
+    - [Copy installation guide and configuration file](#copy-installation-guide-and-configuration-file)
+  - [🚀 Usage Instructions](#-usage-instructions)
+  - [📁 Zone Configuration](#-zone-configuration)
+    - [Include packages/ zones](#include-packages-zones)
+    - [Add custom zones](#add-custom-zones)
+    - [Complete zone configuration](#complete-zone-configuration)
+  - [Section 1: Adding Simple Rules](#section-1-adding-simple-rules)
+  - [Section 2: Modifying Existing Rules](#section-2-modifying-existing-rules)
+  - [Section 3: Completely Replacing Rules](#section-3-completely-replacing-rules)
+  - [Section 4: Advanced Conditional Rules](#section-4-advanced-conditional-rules)
+  - [Section 5: Custom Zones](#section-5-custom-zones)
+    - [📋 Available Custom Zones](#-available-custom-zones)
+  - [Section 6: Rules by File Type](#section-6-rules-by-file-type)
+  - [Section 7: Architecture and Best Practices](#section-7-architecture-and-best-practices)
+  - [📋 Useful Commands](#-useful-commands)
+    - [Main Commands (Post-installation)](#main-commands-post-installation)
+    - [Advanced CLI Options](#advanced-cli-options)
+  - [🚀 Detailed CLI Options Guide](#-detailed-cli-options-guide)
+    - [File Validation Options](#file-validation-options)
+      - [`--all-files` (Recommended for specific cases)](#--all-files-recommended-for-specific-cases)
+      - [`--only-changed-files` (Default)](#--only-changed-files-default)
+    - [Information and Debug Options](#information-and-debug-options)
+      - [`--debug`](#--debug)
+      - [`--verbose`](#--verbose)
+    - [Zone and Configuration Options](#zone-and-configuration-options)
+      - [`--zones <zone1> <zone2>`](#--zones-zone1-zone2)
+      - [`--config <path>`](#--config-path)
+    - [Practical Use Cases](#practical-use-cases)
+      - [🔄 Daily Development](#-daily-development)
+      - [🚀 Pre-Release](#-pre-release)
+      - [🐛 Troubleshooting](#-troubleshooting)
+      - [🏗️ CI/CD](#️-cicd)
+      - [📊 Quality Audit](#-quality-audit)
+  - [🎯 Active Example to Test](#-active-example-to-test)
+  - [💡 Tips](#-tips)
+  - [📋 Complete List of Checks](#-complete-list-of-checks)
+    - [🔍 Code Base Rules](#-code-base-rules)
+    - [📁 File Structure Rules](#-file-structure-rules)
+    - [🏗️ Architecture Rules](#️-architecture-rules)
+    - [📝 Naming Rules](#-naming-rules)
+    - [🔧 React Component Rules](#-react-component-rules)
+    - [🎨 Style Rules](#-style-rules)
+    - [📚 Documentation Rules](#-documentation-rules)
+    - [⚙️ Configuration Rules](#️-configuration-rules)
+  - [Current Statistics Summary](#current-statistics-summary)
+  - [Standard Directory Structure](#standard-directory-structure)
 
-## 🆕 Novedades en v4.9.1
+## � Instalación Rápida
 
-### � Correcciones Críticas de Instalación
-
-La versión 4.9.1 corrige problemas críticos en la instalación y funcionamiento en diferentes tipos de proyectos:
-
-#### ✅ Scripts de Package.json Corregidos
-
-- **Para Monorepos (BluAdmin)**: Usa `frontend-standards-checker` (funciona correctamente)
-- **Para React Native (BluPersonas)**: Usa `node dist/bin/cli.js` con configuración externa
-- **Scripts nuevos**: `standards:init`, `standards:all`, `standards:zones`, `standards:verbose`
-
-#### 🔧 Instalación de Dependencias Arreglada
-
-- **React Native**: Instala dependencias completas y compila el proyecto automáticamente
-- **Configuración externa**: Scripts leen correctamente desde la raíz con `--config ../checkFrontendStandards.config.js`
-- **onlyChangedFiles**: Por defecto `true` en todos los proyectos (se puede cambiar manualmente)
-
-#### 🎯 Instalación Inteligente Mejorada
-
-- **Detección automática**: Reconoce React Native vs proyectos estándar sin intervención manual
-- **Instalación estándar**: Para monorepos usando `frontend-standards-checker` como dependencia
-- **Instalación local**: Para React Native copia completa en `frontend-standards-full/`
-
-#### 📋 Comandos Actualizados
-
-**Con npm:**
-
-```bash
-npm run standards              # ✅ Funciona correctamente
-npm run standards:zones        # ✅ Zonas específicas
-npm run standards:verbose      # ✅ Modo detallado
-npm run standards:all          # ✅ Todos los archivos
-npm run standards:init         # ✅ Copiar configuraciones
-```
-
-**Con yarn:**
-
-```bash
-yarn standards                 # ✅ Ahora funciona correctamente
-yarn standards:zones           # ✅ Lee desde la raíz del proyecto
-yarn standards:verbose         # ✅ Con configuración externa
-yarn standards:all             # ✅ Todos los archivos
-yarn standards:init            # ✅ Copiar configuraciones
-```
-
-#### 📦 Configuración por Defecto Corregida
-
-```javascript
-// checkFrontendStandards.config.js - React Native
-module.exports = {
-  zones: {
-    includePackages: false,
-    customZones: ['src'] // Solo validar directorio src
-  },
-  extensions: ['.js', '.ts', '.jsx', '.tsx'],
-  ignorePatterns: [
-    'android/**', 'ios/**', 'build/**', 'dist/**',
-    'node_modules/**', '*.config.js',
-    'frontend-standards-full/**' // ✅ Excluir carpeta local
-  ],
-  onlyChangedFiles: true, // ✅ Por defecto true - cambiar si se necesita
-  rules: [
-    // Reglas personalizadas específicas para React Native
-  ]
-};
-```
-
-```javascript
-// checkFrontendStandards.config.js - Optimizado para React Native
-module.exports = {
-  zones: {
-    includePackages: false,
-    customZones: ['src'] // Solo validar directorio src
-  },
-  extensions: ['.js', '.ts', '.jsx', '.tsx'],
-  ignorePatterns: [
-    'android/**', 'ios/**', 'build/**', 'dist/**',
-    'node_modules/**', '*.config.js',
-    'frontend-standards-full/**' // ✅ Excluir carpeta local
-  ],
-  onlyChangedFiles: true, // ✅ Por defecto true - cambiar si se necesita
-  rules: [
-    // Reglas personalizadas específicas para React Native
-    {
-      name: 'React Native - No console.log in production',
-      check: (content, filePath) => {
-        if (filePath.includes('debug') || filePath.includes('dev')) {
-          return false; // Permitir en archivos de desarrollo
-        }
-        return content.includes('console.log');
-      },
-      message: 'Use proper logging solution for React Native production.',
-      level: 'ERROR'
-    }
-  ]
-};
-```
-
-## 🚀 Instrucciones de Instalación
-
-### Método 1: Script Automático (Recomendado)
-
-```bash
-curl -sSL https://raw.githubusercontent.com/juandape/frontend-standards/main/install.sh | bash
-```
-
-**El script detecta automáticamente:**
-
-- ✅ **Monorepos y proyectos web**: Instala como dependencia `frontend-standards-checker`
-- ✅ **React Native**: Copia el proyecto completo para evitar conflictos de dependencias
-
-**¿Qué hace el script v4.9.1?**
-
-- Detecta automáticamente yarn/npm y tipo de proyecto
-- Instala la herramienta usando el método correcto para cada tipo
-- Agrega scripts al package.json automáticamente
-- Crea archivo de configuración optimizado
-- Compila dependencias para React Native
-- Configura rutas y comandos correctamente
-
-### Método 2: Instalación Manual Estándar
-
-**Para proyectos estándar (monorepos, Next.js, Vite, etc.):**
+### Instalación estándar (Recomendado)
 
 ```bash
 # Con Yarn
-yarn add --dev frontend-standards-checker@https://github.com/juandape/frontend-standards.git
+yarn add --dev frontend-standards-checker@latest
 
 # Con NPM
-npm install --save-dev frontend-standards-checker@https://github.com/juandape/frontend-standards.git
+npm install --save-dev frontend-standards-checker@latest
+```
 
-# Agregar scripts manualmente al package.json:
+### Scripts in package.json
+
+```json
 {
   "scripts": {
     "standards": "frontend-standards-checker",
     "standards:zones": "frontend-standards-checker --zones",
     "standards:verbose": "frontend-standards-checker --verbose",
     "standards:all": "frontend-standards-checker --all",
-    "standards:init": "frontend-standards-init"
+    "standards:init": "frontend-standards-checker --init"
   }
 }
 ```
 
-### Método 3: Instalación Manual React Native
+**Important note:**
 
-**Para proyectos React Native:**
+- Always install from npm using the above commands.
+- Do not use local tarballs or workspace references to avoid installation errors.
+- The package includes all necessary files and is compatible with monorepos, Next.js, Vite and React Native.
+
+### Copy installation guide and configuration file
 
 ```bash
-# 1. Clonar y compilar
-git clone https://github.com/juandape/frontend-standards.git frontend-standards-full
-cd frontend-standards-full
-npm install && npm run build
-cd ..
-
-# 2. Agregar scripts al package.json:
-{
-  "scripts": {
-    "standards": "cd frontend-standards-full && node dist/bin/cli.js --config ../checkFrontendStandards.config.js && cd ..",
-    "standards:zones": "cd frontend-standards-full && node dist/bin/cli.js --zones --config ../checkFrontendStandards.config.js && cd ..",
-    "standards:verbose": "cd frontend-standards-full && node dist/bin/cli.js --verbose --config ../checkFrontendStandards.config.js && cd ..",
-    "standards:all": "cd frontend-standards-full && node dist/bin/cli.js --all --config ../checkFrontendStandards.config.js && cd ..",
-    "standards:init": "cd frontend-standards-full && node bin/copy-frontend-standards-files.cjs && cd .."
-  }
-}
+npx frontend-standards-init
 ```
 
-## 📋 Tabla de Contenidos
+This will copy the complete guide and the `checkFrontendStandards.config.js` file to your project root.
 
-- [CheckFrontendStandards v4.10.0 - Guía Completa de Configuración](#checkfrontendstandards-v4100---guía-completa-de-configuración)
-  - [🆕 Novedades en v4.10.0](#-novedades-en-v4100)
-    - [🔎 Ejemplo de mensaje de error enriquecido (v4.9.5)](#-ejemplo-de-mensaje-de-error-enriquecido-v495)
-  - [📋 Tabla de Contenidos](#-tabla-de-contenidos)
-  - [🆕 Novedades en v4.9.1](#-novedades-en-v491)
-    - [� Correcciones Críticas de Instalación](#-correcciones-críticas-de-instalación)
-      - [✅ Scripts de Package.json Corregidos](#-scripts-de-packagejson-corregidos)
-      - [🔧 Instalación de Dependencias Arreglada](#-instalación-de-dependencias-arreglada)
-      - [🎯 Instalación Inteligente Mejorada](#-instalación-inteligente-mejorada)
-      - [📋 Comandos Actualizados](#-comandos-actualizados)
-      - [📦 Configuración por Defecto Corregida](#-configuración-por-defecto-corregida)
-  - [🚀 Instrucciones de Instalación](#-instrucciones-de-instalación)
-    - [Método 1: Script Automático (Recomendado)](#método-1-script-automático-recomendado)
-    - [Método 2: Instalación Manual Estándar](#método-2-instalación-manual-estándar)
-    - [Método 3: Instalación Manual React Native](#método-3-instalación-manual-react-native)
-  - [📋 Tabla de Contenidos](#-tabla-de-contenidos-1)
-  - [🚀 Instrucciones de Uso](#-instrucciones-de-uso)
-  - [📁 Configuración de Zonas](#-configuración-de-zonas)
-    - [Incluir zonas packages/](#incluir-zonas-packages)
-    - [Agregar zonas personalizadas](#agregar-zonas-personalizadas)
-    - [Configuración completa de zonas](#configuración-completa-de-zonas)
-  - [Sección 1: Agregar Reglas Simples](#sección-1-agregar-reglas-simples)
-  - [Sección 2: Modificar Reglas Existentes](#sección-2-modificar-reglas-existentes)
-  - [Sección 3: Reemplazar Completamente las Reglas](#sección-3-reemplazar-completamente-las-reglas)
-  - [Sección 4: Reglas Condicionales Avanzadas](#sección-4-reglas-condicionales-avanzadas)
-  - [Sección 5: Zonas Personalizadas](#sección-5-zonas-personalizadas)
-    - [📋 Zonas Personalizadas Disponibles](#-zonas-personalizadas-disponibles)
-  - [Sección 6: Reglas por Tipo de Archivo](#sección-6-reglas-por-tipo-de-archivo)
-  - [Sección 7: Arquitectura y Mejores Prácticas](#sección-7-arquitectura-y-mejores-prácticas)
-  - [📋 Comandos Útiles](#-comandos-útiles)
-    - [Comandos Principales (Post-instalación)](#comandos-principales-post-instalación)
-    - [Opciones de CLI Avanzadas](#opciones-de-cli-avanzadas)
-  - [🎯 Ejemplo Activo para Probar](#-ejemplo-activo-para-probar)
-  - [💡 Consejos](#-consejos)
-  - [📋 Lista Completa de Verificaciones](#-lista-completa-de-verificaciones)
-    - [🔍 Reglas de Código Base](#-reglas-de-código-base)
-    - [📁 Reglas de Estructura de Archivos](#-reglas-de-estructura-de-archivos)
-    - [🏗️ Reglas de Arquitectura](#️-reglas-de-arquitectura)
-    - [📝 Reglas de Nomenclatura](#-reglas-de-nomenclatura)
-    - [🔧 Reglas de Componentes React](#-reglas-de-componentes-react)
-    - [🎨 Reglas de Estilos](#-reglas-de-estilos)
-    - [📚 Reglas de Documentación](#-reglas-de-documentación)
-    - [⚙️ Reglas de Configuración](#️-reglas-de-configuración)
-  - [Resumen de Estadísticas Actuales](#resumen-de-estadísticas-actuales)
-  - [Estructura de Directorio Estándar](#estructura-de-directorio-estándar)
+## 🚀 Usage Instructions
 
-## 🚀 Instrucciones de Uso
+1. Use the command `npx frontend-standards-init`
+   - This command will create the configuration file and copy the complete installation guide.
+2. Copy the code from the section you need (only one at a time)
+3. Modify the rules according to your needs
+4. Run the script normally
 
-1. Crea un archivo llamado `checkFrontendStandards.config.js`
-2. Copia el código de la sección que necesites (solo una a la vez)
-3. Modifica las reglas según tus necesidades
-4. Ejecuta el script normalmente
+## 📁 Zone Configuration
 
-## 📁 Configuración de Zonas
+**By default, `packages/` zones are excluded** from validation. Only `apps/` zones are automatically validated.
 
-**Por defecto, las zonas `packages/` están excluidas** de la validación. Solo se validan las zonas `apps/` automáticamente.
-
-### Incluir zonas packages/
+### Include packages/ zones
 
 ```javascript
 export default {
   zones: {
-    includePackages: true, // Incluir validación de packages/
+    includePackages: true, // Include packages/ validation
   },
   rules: [
-    // Tus reglas personalizadas aquí
+    // Your custom rules here
   ],
 }
 ```
 
-### Agregar zonas personalizadas
+### Add custom zones
 
 ```javascript
 export default {
   zones: {
-    includePackages: false, // Excluir packages/ (por defecto)
-    customZones: ['shared', 'tools', 'libs'], // Zonas adicionales a validar
+    includePackages: false, // Exclude packages/ (default)
+    customZones: ['shared', 'tools', 'libs'], // Additional zones to validate
   },
   rules: [
-    // Tus reglas personalizadas aquí
+    // Your custom rules here
   ],
 }
 ```
 
-### Configuración completa de zonas
+### Complete zone configuration
 
 ```javascript
 export default {
   zones: {
-    includePackages: true, // Incluir packages/
-    customZones: ['shared', 'docs', 'scripts'], // Zonas adicionales
+    includePackages: true, // Include packages/
+    customZones: ['shared', 'docs', 'scripts'], // Additional zones
   },
   rules: [
-    // Tus reglas personalizadas aquí
+    // Your custom rules here
   ],
 }
 ```
 
-## Sección 1: Agregar Reglas Simples
+## Section 1: Adding Simple Rules
 
-**La opción más común** - Para agregar reglas personalizadas a las existentes:
+**The most common option** - To add custom rules to existing ones:
 
 ```javascript
 export default [
@@ -371,13 +226,13 @@ export default [
 ]
 ```
 
-## Sección 2: Modificar Reglas Existentes
+## Section 2: Modifying Existing Rules
 
-Para modificar reglas existentes y agregar nuevas usando una función:
+To modify existing rules and add new ones using a function:
 
 ```javascript
 export default function (defaultRules) {
-  // Agregar nuevas reglas
+  // Add new rules
   const customRules = [
     {
       name: 'No hardcoded URLs',
@@ -386,7 +241,7 @@ export default function (defaultRules) {
     },
   ]
 
-  // Modificar una regla existente
+  // Modify an existing rule
   const modifiedRules = defaultRules.map((rule) => {
     if (rule.name === 'No console.log') {
       return {
@@ -402,18 +257,18 @@ export default function (defaultRules) {
 }
 ```
 
-## Sección 3: Reemplazar Completamente las Reglas
+## Section 3: Completely Replacing Rules
 
-Para usar solo tus reglas personalizadas:
+To use only your custom rules:
 
 ```javascript
 export default {
-  merge: false, // Si es false, reemplaza completamente las reglas por defecto
+  merge: false, // If false, completely replaces default rules
   rules: [
     {
       name: 'Custom TypeScript rule',
       check: (content) => {
-        // Regla más compleja que analiza múltiples patrones
+        // More complex rule that analyzes multiple patterns
         const hasAny = /:\s*any\b/.test(content)
         const hasUnknown = /:\s*unknown\b/.test(content)
         return hasAny && !hasUnknown
@@ -423,7 +278,7 @@ export default {
     {
       name: 'React functional components only',
       check: (content) => {
-        // Solo en archivos .tsx
+        // Only in .tsx files
         if (!content.includes('React') && !content.includes('jsx')) return false
         return /class\s+\w+\s+extends\s+(React\.)?Component/.test(content)
       },
@@ -437,7 +292,7 @@ export default {
         for (const line of lines) {
           if (line.trim() === '') continue
           if (line.startsWith('import ')) {
-            if (foundNonImport) return true // Import después de código
+            if (foundNonImport) return true // Import after code
           } else if (line.trim()) {
             foundNonImport = true
           }
@@ -450,9 +305,9 @@ export default {
 }
 ```
 
-## Sección 4: Reglas Condicionales Avanzadas
+## Section 4: Advanced Conditional Rules
 
-Para reglas que se aplican solo en ciertos archivos:
+For rules that only apply to certain files:
 
 ```javascript
 export default function (defaultRules) {
@@ -461,10 +316,10 @@ export default function (defaultRules) {
     {
       name: 'React hooks rules',
       check: (content, filePath) => {
-        // Solo aplicar en archivos de hooks
+        // Only apply to hook files
         if (!filePath.includes('.hook.')) return false
 
-        // Verificar que los hooks de React estén en la parte superior
+        // Check that React hooks are at the top
         const lines = content.split('\n')
         let foundUseEffect = false
         let foundOtherCode = false
@@ -486,7 +341,7 @@ export default function (defaultRules) {
       check: (content, filePath) => {
         if (!filePath.includes('.test.') && !filePath.includes('.spec.')) return false
 
-        // Los archivos de test deben tener describe() y it()
+        // Test files must have describe() and it()
         return !(/describe\s*\(/.test(content) && /it\s*\(/.test(content))
       },
       message: 'Test files must use describe() and it() blocks.',
@@ -495,25 +350,25 @@ export default function (defaultRules) {
 }
 ```
 
-## Sección 5: Zonas Personalizadas
+## Section 5: Custom Zones
 
-Para agregar validaciones para zonas personalizadas específicas:
+To add validations for specific custom zones:
 
 ```javascript
 export default [
   // ---------------------------------------------------------------
-  // ZONA: UTILS - Archivos de utilidades
+  // ZONE: UTILS - Utility files
   // ---------------------------------------------------------------
   {
     name: 'Custom zone structure - utils',
     check: (content, filePath) => {
-      // Solo aplicar en la zona 'utils'
+      // Only apply in the 'utils' zone
       if (!filePath.includes('/utils/')) return false
 
-      // Validar que los archivos en utils sigan un patrón específico
+      // Validate that files in utils follow a specific pattern
       const fileName = filePath.split('/').pop()
       if (!fileName.endsWith('.util.ts')) {
-        return true // Error: no sigue el patrón
+        return true // Error: doesn't follow pattern
       }
       return false
     },
@@ -527,7 +382,7 @@ export default [
       const parentDir = pathParts.pop()
 
       if (parentDir === 'utils') {
-        // Validar nomenclatura: debe ser camelCase.util.ts
+        // Validate naming: must be camelCase.util.ts
         if (!/^[a-z][a-zA-Z0-9]*\.util\.ts$/.test(fileName)) {
           return true
         }
@@ -538,7 +393,7 @@ export default [
   },
 
   // ---------------------------------------------------------------
-  // ZONA: VALIDATORS - Archivos de validación
+  // ZONE: VALIDATORS - Validation files
   // ---------------------------------------------------------------
   {
     name: 'Custom zone structure - validators',
@@ -546,12 +401,12 @@ export default [
       if (!filePath.includes('/validators/')) return false
 
       const fileName = filePath.split('/').pop()
-      // Los validadores deben seguir el patrón name.validator.ts
+      // Validators must follow the pattern name.validator.ts
       if (!fileName.endsWith('.validator.ts')) {
         return true
       }
 
-      // Y deben exportar una función validate
+      // And must export a validate function
       if (!content.includes('export') || !content.includes('validate')) {
         return true
       }
@@ -562,22 +417,22 @@ export default [
   },
 
   // ---------------------------------------------------------------
-  // ZONA: API ROUTES - Rutas de API
+  // ZONA: API ROUTES - API routes
   // ---------------------------------------------------------------
   {
     name: 'Custom zone - API routes',
     check: (content, filePath) => {
-      // Para una zona de rutas API
+      // For an API routes zone
       if (!filePath.includes('/api/routes/')) return false
 
       const fileName = filePath.split('/').pop()
 
-      // Las rutas deben seguir el patrón name.route.ts
+      // Routes must follow the pattern name.route.ts
       if (!fileName.endsWith('.route.ts')) {
         return true
       }
 
-      // Deben exportar un router
+      // Must export a router
       if (!content.includes('export') || !content.includes('router')) {
         return true
       }
@@ -588,7 +443,7 @@ export default [
   },
 
   // ---------------------------------------------------------------
-  // ZONA: MIDDLEWARE - Middleware de aplicación
+  // ZONA: MIDDLEWARE - Application middleware
   // ---------------------------------------------------------------
   {
     name: 'Custom zone - Middleware',
@@ -597,12 +452,12 @@ export default [
 
       const fileName = filePath.split('/').pop()
 
-      // Middleware debe seguir el patrón name.middleware.ts
+      // Middleware must follow the pattern name.middleware.ts
       if (!fileName.endsWith('.middleware.ts')) {
         return true
       }
 
-      // Debe exportar una función middleware
+      // Must export a middleware function
       if (
         !content.includes('export') ||
         (!content.includes('middleware') && !content.includes('function'))
@@ -616,7 +471,7 @@ export default [
   },
 
   // ---------------------------------------------------------------
-  // ZONA: MODELS - Modelos de base de datos
+  // ZONA: MODELS - Data Base Models
   // ---------------------------------------------------------------
   {
     name: 'Custom zone - Database models',
@@ -625,12 +480,12 @@ export default [
 
       const fileName = filePath.split('/').pop()
 
-      // Los modelos deben seguir el patrón Name.model.ts (PascalCase)
+      // Models must follow the pattern Name.model.ts (PascalCase)
       if (!/^[A-Z][a-zA-Z0-9]*\.model\.ts$/.test(fileName)) {
         return true
       }
 
-      // Deben exportar una clase o interface
+      // Must export a class or interface
       if (
         !content.includes('export') ||
         (!content.includes('class') && !content.includes('interface'))
@@ -644,7 +499,7 @@ export default [
   },
 
   // ---------------------------------------------------------------
-  // ZONA: CONFIG - Archivos de configuración
+  // ZONA: CONFIG - Config files
   // ---------------------------------------------------------------
   {
     name: 'Custom zone - Config files',
@@ -653,12 +508,12 @@ export default [
 
       const fileName = filePath.split('/').pop()
 
-      // Los archivos de configuración deben seguir el patrón name.config.ts
+      // Config files must follow the pattern name.config.ts
       if (!fileName.endsWith('.config.ts')) {
         return true
       }
 
-      // Deben exportar un objeto de configuración
+      // Must export a config object
       if (!content.includes('export') || !content.includes('config')) {
         return true
       }
@@ -669,7 +524,7 @@ export default [
   },
 
   // ---------------------------------------------------------------
-  // ZONA: SERVICES - Servicios de aplicación
+  // ZONA: SERVICES - Application services
   // ---------------------------------------------------------------
   {
     name: 'Custom naming - services',
@@ -679,7 +534,7 @@ export default [
       const parentDir = pathParts.pop()
 
       if (parentDir === 'services') {
-        // Servicios deben ser PascalCase.service.ts
+        // Services must be PascalCase.service.ts
         if (!/^[A-Z][a-zA-Z0-9]*\.service\.ts$/.test(fileName)) {
           return true
         }
@@ -690,12 +545,12 @@ export default [
   },
 
   // ---------------------------------------------------------------
-  // ZONA: FEATURES - Estructura completa de features
+  // ZONA: FEATURES - Complete structure of features
   // ---------------------------------------------------------------
   {
     name: 'Custom zone complete structure',
     check: (content, filePath) => {
-      // Validar que la zona 'features' tenga la estructura correcta
+      // Validate that the 'features' zone has the correct structure
       if (!filePath.includes('/features/')) return false
 
       const pathParts = filePath.split('/')
@@ -705,9 +560,9 @@ export default [
         const featureName = pathParts[featuresIndex + 1]
         const requiredDirs = ['components', 'hooks', 'services', 'types']
 
-        // Verificar que la feature tenga los directorios requeridos
-        // (Esta es una validación simplificada, en un caso real necesitarías
-        // verificar la existencia de los directorios)
+        // Check that the feature has the required directories
+        // (This is a simplified validation, in a real case you would need to
+        // check for the existence of the directories)
         const currentDir = pathParts[featuresIndex + 2]
 
         if (!requiredDirs.includes(currentDir)) {
@@ -721,15 +576,15 @@ export default [
   },
 
   // ---------------------------------------------------------------
-  // ZONA: RESTRICCIONES POR CAPAS DE ARQUITECTURA
+  // ZONA: ARCHITECTURE RESTRICTIONS BY LAYERS
   // ---------------------------------------------------------------
   {
     name: 'API layer restrictions',
     check: (content, filePath) => {
-      // Solo en archivos de servicios/API
+      // Only in service/API files
       if (!filePath.includes('/services/') && !filePath.includes('/api/')) return false
 
-      // No permitir imports de componentes UI en la capa de API
+      // Do not allow imports of UI components in the API layer
       return /import.*from.*['"](\.\.\/)*components/.test(content)
     },
     message: 'API/Service layer should not import UI components.',
@@ -737,22 +592,22 @@ export default [
 ]
 ```
 
-### 📋 Zonas Personalizadas Disponibles
+### 📋 Available Custom Zones
 
-| Zona           | Patrón de Archivo    | Requisitos                          |
+| Zone           | File Pattern         | Requirements                        |
 | -------------- | -------------------- | ----------------------------------- |
 | **Utils**      | `name.util.ts`       | camelCase                           |
-| **Validators** | `name.validator.ts`  | Export función `validate`           |
+| **Validators** | `name.validator.ts`  | Export `validate` function          |
 | **API Routes** | `name.route.ts`      | Export `router`                     |
-| **Middleware** | `name.middleware.ts` | Export función middleware           |
+| **Middleware** | `name.middleware.ts` | Export middleware function          |
 | **Models**     | `Name.model.ts`      | PascalCase + export class/interface |
-| **Config**     | `name.config.ts`     | Export objeto config                |
+| **Config**     | `name.config.ts`     | Export config object                |
 | **Services**   | `Name.service.ts`    | PascalCase                          |
-| **Features**   | Estructura completa  | Subdirectorios requeridos           |
+| **Features**   | Complete structure   | Required subdirectories             |
 
-## Sección 6: Reglas por Tipo de Archivo
+## Section 6: Rules by File Type
 
-Ejemplos para tipos específicos de archivos:
+Examples for specific file types:
 
 ```javascript
 export default [
@@ -761,7 +616,7 @@ export default [
     check: (content, filePath) => {
       if (!filePath.endsWith('.tsx') || !content.includes('export')) return false
 
-      // Los componentes React deben tener PropTypes o TypeScript interfaces
+      // React components must have PropTypes or TypeScript interfaces
       if (
         !content.includes('interface') &&
         !content.includes('type') &&
@@ -779,7 +634,7 @@ export default [
     check: (content, filePath) => {
       if (!filePath.includes('.hook.')) return false
 
-      // Los hooks personalizados deben tener tipo de retorno explícito
+      // Custom hooks must have explicit return type
       const hookExport = /export\s+const\s+use[A-Z]\w*\s*=/.test(content)
       const hasReturnType = /:\s*\w+/.test(content)
 
@@ -796,7 +651,7 @@ export default [
     check: (content, filePath) => {
       if (!content.includes('styled') && !content.includes('css`')) return false
 
-      // Los styled components deben seguir nomenclatura específica
+      // Styled components must follow specific naming
       const styledComponents = content.match(/const\s+(\w+)\s*=\s*styled/g)
       if (styledComponents) {
         return styledComponents.some((comp) => {
@@ -813,16 +668,16 @@ export default [
 ]
 ```
 
-## Sección 7: Arquitectura y Mejores Prácticas
+## Section 7: Architecture and Best Practices
 
-Reglas avanzadas para mantener buena arquitectura:
+Advanced rules for maintaining good architecture:
 
 ```javascript
 export default [
   {
     name: 'No circular dependencies',
     check: (content, filePath) => {
-      // Detectar posibles dependencias circulares
+      // Detect possible circular dependencies
       const imports = content.match(/import.*from\s+['"]([^'"]+)['"]/g) || []
       const currentDir = filePath.split('/').slice(0, -1).join('/')
 
@@ -830,7 +685,7 @@ export default [
         const importPath = imp.match(/from\s+['"]([^'"]+)['"]/)[1]
         if (importPath.startsWith('./') || importPath.startsWith('../')) {
           // Check if import path leads back to current directory
-          // Esta es una validación simplificada
+          // This is a simplified validation
           return importPath.includes(currentDir.split('/').pop())
         }
         return false
@@ -844,7 +699,7 @@ export default [
       if (!filePath.endsWith('.tsx') && !filePath.endsWith('.jsx')) return false
 
       const lines = content.split('\n').length
-      return lines > 200 // Componentes no deben tener más de 200 líneas
+      return lines > 200 // Components should not have more than 200 lines
     },
     message: 'Component is too large (>200 lines). Consider breaking it into smaller components.',
   },
@@ -853,7 +708,7 @@ export default [
     check: (content, filePath) => {
       if (!filePath.includes('.hook.')) return false
 
-      // Los hooks no deben tener muchas dependencias externas
+      // Hooks should not have too many external dependencies
       const imports = content.match(/import.*from/g) || []
       return imports.length > 10
     },
@@ -864,7 +719,7 @@ export default [
     check: (content, filePath) => {
       if (!filePath.endsWith('index.ts') && !filePath.endsWith('index.tsx')) return false
 
-      // Los archivos index deben solo tener exports
+      // Index files should only have exports
       const lines = content.split('\n').filter((line) => line.trim())
       const nonExportLines = lines.filter(
         (line) =>
@@ -881,79 +736,309 @@ export default [
 ]
 ```
 
-## 📋 Comandos Útiles
+## 📋 Useful Commands
 
-### Comandos Principales (Post-instalación)
+### Main Commands (Post-installation)
 
-**Para proyectos estándar (monorepos, Next.js, etc.):**
+**For standard projects (monorepos, Next.js, etc.):**
 
 ```bash
-# Validación estándar (solo archivos modificados)
+# Standard validation (only staged files for commit)
 npm run standards
 
-# Validar zonas específicas
+# Validate specific zones (only staged files)
 npm run standards:zones
 
-# Modo verbose (más detalles)
+# Verbose mode (more details, only staged files)
 npm run standards:verbose
 
-# Validar TODOS los archivos
+# Validate ALL project files
 npm run standards:all
 
-# Copiar archivos de configuración adicionales
+# Debug mode with detailed information
+npm run standards:debug
+
+# Initial project setup
 npm run standards:init
 ```
 
-**Para React Native:**
+**For React Native:**
 
 ```bash
-# Validación estándar
+# Standard validation (only staged files)
 yarn standards
 
-# Validar zonas específicas
+# Validate specific zones (only staged files)
 yarn standards:zones
 
-# Modo verbose
+# Verbose mode (only staged files)
 yarn standards:verbose
 
-# Validar todos los archivos
+# Validate ALL files
 yarn standards:all
 
-# Copiar configuraciones
+# Debug mode for troubleshooting
+yarn standards:debug
+
+# Initial setup
 yarn standards:init
 ```
 
-### Opciones de CLI Avanzadas
+### Advanced CLI Options
 
-**Para instalación estándar con argumentos:**
+**New available options:**
 
 ```bash
-# Validar zonas específicas
+# Check only specific staged files
+frontend-standards-checker check --only-changed-files --zones src
+
+# Check ALL files (ignores staging)
+frontend-standards-checker check --all-files
+
+# Check all files in specific zones
+frontend-standards-checker check --all-files --zones src components
+
+# Debug mode with detailed scan information
+frontend-standards-checker check --debug --verbose
+
+# Combination of options for CI/CD
+frontend-standards-checker check --all-files --verbose --zones apps/web
+
+# Skip specific validations
+frontend-standards-checker check --skip-structure --skip-naming
+
+# Custom configuration
+frontend-standards-checker check --config ./custom-config.mjs
+```
+
+**`onlyChangedFiles` option precedence:**
+
+1. **`--all-files`** (CLI) - Highest precedence, always processes all files
+2. **`--only-changed-files`** (CLI) - Forces only staged files
+3. **`onlyChangedFiles: false/true`** (file configuration)
+4. **Default value** (`true` - only staged files)
+
+**Practical use cases:**
+
+```bash
+# Daily development - only current changes
+yarn standards
+
+# Complete review before merge/release
+yarn standards:all
+
+# Debug specific issues
+yarn standards -- --all-files --debug --zones src
+
+# CI/CD - complete validation
+yarn standards -- --all-files --verbose
+
+# Quick validation of specific zone
+yarn standards -- --zones components utils
+```
+
+yarn standards:init
+
+````
+### Advanced CLI Options
+
+**For standard installation with arguments:**
+
+```bash
+# Validate specific zones (only staged files)
 npm run standards -- --zones src components
 
-# Validar solo una zona
+# Validate only one specific zone
 npm run standards -- --only-zone auth
 
-# Validar todos los archivos (override config)
-npm run standards -- --only-changed-files=false
+# Validate ALL files (ignores staging and config)
+npm run standards -- --all-files
 
-# Modo verbose con configuración personalizada
-npm run standards -- --verbose --config mi-config.js
-```
+# Validate all files in specific zones
+npm run standards -- --all-files --zones src components
 
-**Para React Native (los comandos ya incluyen configuración externa):**
+# Force only staged files (overrides config if set to false)
+npm run standards -- --only-changed-files
+
+# Verbose mode with all files
+npm run standards -- --all-files --verbose
+
+# Debug mode with custom configuration
+npm run standards -- --all-files --debug --config my-config.js
+````
+
+**For React Native (updated commands):**
 
 ```bash
-# Los scripts ya están configurados correctamente
-yarn standards                 # Incluye --config ../checkFrontendStandards.config.js
-yarn standards:zones           # Incluye configuración externa
-yarn standards:verbose         # Con configuración optimizada
+# Only staged files (fast for development)
+yarn standards
+
+# Complete validation of the entire project
+yarn standards -- --all-files
+
+# Validate only src/ completely
+yarn standards -- --all-files --zones src
+
+# Debug mode for troubleshooting
+yarn standards -- --all-files --debug --verbose
 ```
 
-## 🎯 Ejemplo Activo para Probar
+---
+
+## 🚀 Detailed CLI Options Guide
+
+### File Validation Options
+
+#### `--all-files` (Recommended for specific cases)
+
+**Description**: Forces validation of ALL project files, ignoring Git staging and the `onlyChangedFiles` configuration.
+
+**When to use**:
+
+- ✅ **CI/CD**: Complete validation in pipelines
+- ✅ **Pre-release**: Full review before major releases
+- ✅ **Audits**: Comprehensive code quality evaluation
+- ✅ **Onboarding**: Validation of new or legacy projects
+- ✅ **Troubleshooting**: Debug files that are not staged
+
+**Examples**:
+
+```bash
+# Complete project validation
+frontend-standards-checker check --all-files
+
+# Full validation with detailed information
+frontend-standards-checker check --all-files --verbose --debug
+
+# Complete validation of specific zones
+frontend-standards-checker check --all-files --zones src components utils
+```
+
+#### `--only-changed-files` (Default)
+
+**Description**: Validates only the files staged for commit in Git.
+
+**When to use**:
+
+- ✅ **Daily development**: Fast validation of current changes
+- ✅ **Pre-commit hooks**: Automatic validation before commits
+- ✅ **Incremental development**: Efficient validation of specific changes
+
+**Examples**:
+
+```bash
+# Default behavior (no flag needed)
+frontend-standards-checker check
+
+# Explicitly force (useful if config has onlyChangedFiles: false)
+frontend-standards-checker check --only-changed-files
+
+# With specific zones
+frontend-standards-checker check --only-changed-files --zones src
+```
+
+### Information and Debug Options
+
+#### `--debug`
+
+**Description**: Shows detailed information about the file scanning process, exclusion patterns, and validation engine decisions.
+
+**Information provided**:
+
+- 📁 Files found in each zone
+- 🚫 Applied exclusion patterns
+- ⚙️ Loaded configuration
+- 📊 Processing statistics
+
+**Example**:
+
+```bash
+# Debug with full validation
+frontend-standards-checker check --all-files --debug --verbose
+```
+
+#### `--verbose`
+
+**Description**: Displays detailed information during validation, including each processed file and statistics per zone.
+
+**Works well with**:
+
+- `--all-files` for complete reviews
+- `--debug` for deep troubleshooting
+- `--zones` for specific analysis
+
+### Zone and Configuration Options
+
+#### `--zones <zone1> <zone2>`
+
+**Practical examples**:
+
+```bash
+# Validate multiple zones
+frontend-standards-checker check --zones src components utils
+
+# Validate a specific zone with all files
+frontend-standards-checker check --all-files --zones src
+
+# Validate specific apps in a monorepo
+frontend-standards-checker check --zones apps/web apps/mobile
+```
+
+#### `--config <path>`
+
+**Examples**:
+
+```bash
+# Custom configuration
+frontend-standards-checker check --config ./config/custom-standards.mjs
+
+# Environment-specific configuration
+frontend-standards-checker check --config ./configs/production.mjs
+```
+
+### Practical Use Cases
+
+#### 🔄 Daily Development
+
+```bash
+# Fast validation of current changes
+yarn standards
+```
+
+#### 🚀 Pre-Release
+
+```bash
+# Complete validation before release
+yarn standards -- --all-files --verbose
+```
+
+#### 🐛 Troubleshooting
+
+```bash
+# Full debug with maximum information
+yarn standards -- --all-files --debug --verbose --zones src
+```
+
+#### 🏗️ CI/CD
+
+```bash
+# Complete validation for pipeline
+frontend-standards-checker check --all-files --verbose
+```
+
+#### 📊 Quality Audit
+
+```bash
+# Full review with detailed report
+frontend-standards-checker check --all-files --verbose > audit-report.log
+```
+
+---
+
+## 🎯 Active Example to Test
 
 ```javascript
-// Copia este código en checkFrontendStandards.config.js para empezar a probar
+// Copy this code into checkFrontendStandards.config.js to start testing
 
 export default [
   {
@@ -964,117 +1049,117 @@ export default [
 ]
 ```
 
-## 💡 Consejos
+## 💡 Tips
 
-1. **Empieza simple** - Usa la Sección 1 para agregar reglas básicas
-2. **Una sección a la vez** - No mezcles diferentes tipos de configuración
-3. **Prueba gradualmente** - Agrega reglas de una en una para verificar que funcionan
-4. **Personaliza los mensajes** - Haz que los mensajes sean claros y útiles para tu equipo
-5. **Documenta tus reglas** - Agrega comentarios explicando por qué cada regla es importante
+1. **Start simple** - Use Section 1 to add basic rules
+2. **One section at a time** - Don't mix different types of configuration
+3. **Test gradually** - Add rules one by one to verify they work
+4. **Customize messages** - Make messages clear and useful for your team
+5. **Document your rules** - Add comments explaining why each rule is important
 
-¡Con esta guía puedes crear cualquier tipo de validación personalizada que necesites para tu proyecto!
+With this guide you can create any type of custom validation you need for your project!
 
-## 📋 Lista Completa de Verificaciones
+## 📋 Complete List of Checks
 
-Esta sección contiene **todas las verificaciones que el script realiza actualmente**. Estas son las reglas por defecto que se ejecutan cuando corres `node checkFrontendStandards.mjs`.
+This section contains **all the checks that the script currently performs**. These are the default rules that run when you execute `node checkFrontendStandards.mjs`.
 
-### 🔍 Reglas de Código Base
+### 🔍 Code Base Rules
 
-| Regla                                   | Descripción                                                                                 | Severidad |
-| --------------------------------------- | ------------------------------------------------------------------------------------------- | --------- |
-| **No console.log**                      | No se permite el uso de `console.log` en código de producción                               | ⚠️ Error  |
-| **No var**                              | Evitar usar `var`, utilizar `let` o `const`                                                 | ⚠️ Error  |
-| **No anonymous functions in callbacks** | Preferir arrow functions o funciones nombradas en callbacks                                 | ⚠️ Error  |
-| **No unused variables**                 | No debe haber variables declaradas pero no utilizadas (@typescript-eslint/no-unused-vars)   | ⚠️ Error  |
-| **No variable shadowing**               | No debe haber sombreado de variables (@typescript-eslint/no-shadow)                         | ⚠️ Error  |
-| **No unnecessary constructors**         | No debe haber constructores vacíos innecesarios (@typescript-eslint/no-useless-constructor) | ⚠️ Error  |
-| **No inline styles**                    | No usar estilos inline, utilizar archivos de estilo separados                               | ⚠️ Error  |
-| **No hardcoded data**                   | No tener datos hardcodeados (URLs, textos, configuraciones)                                 | ⚠️ Error  |
+| Rule                                    | Description                                                                                   | Severity |
+| --------------------------------------- | --------------------------------------------------------------------------------------------- | -------- |
+| **No console.log**                      | console.log usage is not allowed in production code                                           | ⚠️ Error |
+| **No var**                              | Avoid using `var`, use `let` or `const`                                                       | ⚠️ Error |
+| **No anonymous functions in callbacks** | Prefer arrow functions or named functions in callbacks                                        | ⚠️ Error |
+| **No unused variables**                 | There should be no declared but unused variables (@typescript-eslint/no-unused-vars)          | ⚠️ Error |
+| **No variable shadowing**               | There should be no variable shadowing (@typescript-eslint/no-shadow)                          | ⚠️ Error |
+| **No unnecessary constructors**         | There should be no unnecessary empty constructors (@typescript-eslint/no-useless-constructor) | ⚠️ Error |
+| **No inline styles**                    | Don't use inline styles, use separate style files                                             | ⚠️ Error |
+| **No hardcoded data**                   | No hardcoded data (URLs, texts, configurations)                                               | ⚠️ Error |
 
-### 📁 Reglas de Estructura de Archivos
+### 📁 File Structure Rules
 
-| Regla                   | Descripción                                     | Patrón Esperado              |
-| ----------------------- | ----------------------------------------------- | ---------------------------- |
-| **Folder structure**    | Validar estructura mínima de zonas por tipo     | Según `DEFAULT_STRUCTURE`    |
-| **Src structure**       | Validar estructura dentro de `/src/`            | Según `SRC_STRUCTURE`        |
-| **Tree structure**      | Validar árbol de carpetas ideal                 | Según `IDEAL_TREE`           |
-| **Directory naming**    | Directorios deben seguir camelCase o PascalCase | `camelCase` o `PascalCase`   |
-| **Component structure** | Componentes deben tener estructura específica   | `index.tsx` + subdirectorios |
+| Rule                    | Description                                     | Expected Pattern                 |
+| ----------------------- | ----------------------------------------------- | -------------------------------- |
+| **Folder structure**    | Validate minimum zone structure by type         | According to `DEFAULT_STRUCTURE` |
+| **Src structure**       | Validate structure within `/src/`               | According to `SRC_STRUCTURE`     |
+| **Tree structure**      | Validate ideal folder tree                      | According to `IDEAL_TREE`        |
+| **Directory naming**    | Directories must follow camelCase or PascalCase | `camelCase` or `PascalCase`      |
+| **Component structure** | Components must have specific structure         | `index.tsx` + subdirectories     |
 
-### 🏗️ Reglas de Arquitectura
+### 🏗️ Architecture Rules
 
-| Regla                     | Descripción                                              | Aplicación                             |
-| ------------------------- | -------------------------------------------------------- | -------------------------------------- |
-| **Enum outside of types** | Los enums deben estar en directorios `/types/`           | Archivos `.enum.ts`                    |
-| **Hook file extension**   | Hooks deben usar extensión correcta (.ts/.tsx)           | Según contenido JSX                    |
-| **Asset naming**          | Assets deben seguir kebab-case                           | `service-error.svg`                    |
-| **Component hook naming** | Hooks de componentes deben usar extensión correcta       | `.ts` si no hay JSX, `.tsx` si hay JSX |
-| **Function naming**       | Funciones deben seguir camelCase                         | `getUserData`, `handleClick`           |
-| **Interface naming**      | Interfaces exportadas deben empezar con 'I' + PascalCase | `IButtonProps`, `IUserData`            |
+| Rule                      | Description                                          | Application                    |
+| ------------------------- | ---------------------------------------------------- | ------------------------------ |
+| **Enum outside of types** | Enums must be in `/types/` directories               | `.enum.ts` files               |
+| **Hook file extension**   | Hooks must use correct extension (.ts/.tsx)          | According to JSX content       |
+| **Asset naming**          | Assets must follow kebab-case                        | `service-error.svg`            |
+| **Component hook naming** | Component hooks must use correct extension           | `.ts` if no JSX, `.tsx` if JSX |
+| **Function naming**       | Functions must follow camelCase                      | `getUserData`, `handleClick`   |
+| **Interface naming**      | Exported interfaces must start with 'I' + PascalCase | `IButtonProps`, `IUserData`    |
 
-### 📝 Reglas de Nomenclatura
+### 📝 Naming Rules
 
-| Tipo de Archivo | Patrón Requerido                | Ejemplo                    | Ubicación      |
-| --------------- | ------------------------------- | -------------------------- | -------------- |
-| **Componentes** | PascalCase + .tsx               | `UserProfile.tsx`          | `/components/` |
-| **Hooks**       | use + PascalCase + .hook.ts/tsx | `useUserData.hook.ts`      | `/hooks/`      |
-| **Constantes**  | camelCase + .constant.ts        | `apiEndpoints.constant.ts` | `/constants/`  |
-| **Helpers**     | camelCase + .helper.ts          | `formatDate.helper.ts`     | `/helpers/`    |
-| **Types**       | camelCase + .type.ts            | `userProfile.type.ts`      | `/types/`      |
-| **Estilos**     | camelCase + .style.ts           | `userCard.style.ts`        | `/styles/`     |
-| **Enums**       | camelCase + .enum.ts            | `userStatus.enum.ts`       | `/enums/`      |
-| **Assets**      | kebab-case                      | `user-avatar.png`          | `/assets/`     |
+| File Type      | Required Pattern                | Example                    | Location       |
+| -------------- | ------------------------------- | -------------------------- | -------------- |
+| **Components** | PascalCase + .tsx               | `UserProfile.tsx`          | `/components/` |
+| **Hooks**      | use + PascalCase + .hook.ts/tsx | `useUserData.hook.ts`      | `/hooks/`      |
+| **Constants**  | camelCase + .constant.ts        | `apiEndpoints.constant.ts` | `/constants/`  |
+| **Helpers**    | camelCase + .helper.ts          | `formatDate.helper.ts`     | `/helpers/`    |
+| **Types**      | camelCase + .type.ts            | `userProfile.type.ts`      | `/types/`      |
+| **Styles**     | camelCase + .style.ts           | `userCard.style.ts`        | `/styles/`     |
+| **Enums**      | camelCase + .enum.ts            | `userStatus.enum.ts`       | `/enums/`      |
+| **Assets**     | kebab-case                      | `user-avatar.png`          | `/assets/`     |
 
-### 🔧 Reglas de Componentes React
+### 🔧 React Component Rules
 
-| Regla                      | Descripción                                              | Detalles                               |
-| -------------------------- | -------------------------------------------------------- | -------------------------------------- |
-| **Component type naming**  | Archivos de tipos deben terminar en `.type.ts`           | NO `.types.ts`                         |
-| **Component style naming** | Archivos de estilos deben terminar en `.style.ts`        | En directorio `/styles/`               |
-| **Component hook naming**  | Hooks deben usar extensión correcta según contenido      | `.ts` si no hay JSX, `.tsx` si hay JSX |
-| **Function naming**        | Funciones deben seguir camelCase                         | `getUserData`, `handleClick`           |
-| **Interface naming**       | Interfaces exportadas deben empezar con 'I' + PascalCase | `IButtonProps`, `IUserData`            |
+| Rule                       | Description                                          | Details                        |
+| -------------------------- | ---------------------------------------------------- | ------------------------------ |
+| **Component type naming**  | Type files must end in `.type.ts`                    | NOT `.types.ts`                |
+| **Component style naming** | Style files must end in `.style.ts`                  | In `/styles/` directory        |
+| **Component hook naming**  | Hooks must use correct extension based on content    | `.ts` if no JSX, `.tsx` if JSX |
+| **Function naming**        | Functions must follow camelCase                      | `getUserData`, `handleClick`   |
+| **Interface naming**       | Exported interfaces must start with 'I' + PascalCase | `IButtonProps`, `IUserData`    |
 
-### 🎨 Reglas de Estilos
+### 🎨 Style Rules
 
-| Regla                     | Descripción                                      | Ejemplo                       |
-| ------------------------- | ------------------------------------------------ | ----------------------------- |
-| **Style naming**          | Objetos de estilo deben terminar en 'Styles'     | `cardPreviewStyles`           |
-| **Style property naming** | Propiedades de estilo deben ser camelCase        | `backgroundColor`, `fontSize` |
-| **Style file naming**     | Archivos de estilo deben terminar en `.style.ts` | `userCard.style.ts`           |
+| Rule                      | Description                         | Example                       |
+| ------------------------- | ----------------------------------- | ----------------------------- |
+| **Style naming**          | Style objects must end in 'Styles'  | `cardPreviewStyles`           |
+| **Style property naming** | Style properties must be camelCase  | `backgroundColor`, `fontSize` |
+| **Style file naming**     | Style files must end in `.style.ts` | `userCard.style.ts`           |
 
-### 📚 Reglas de Documentación
+### 📚 Documentation Rules
 
-| Regla                                   | Descripción                                                    | Aplicación                    |
-| --------------------------------------- | -------------------------------------------------------------- | ----------------------------- |
-| **Should have TSDoc comments**          | Funciones y clases exportadas deben tener comentarios TSDoc    | Funciones/clases complejas    |
-| **Missing comment in complex function** | Funciones complejas deben tener comentarios explicativos       | Complejidad > umbral definido |
-| **Commented code**                      | No debe haber código comentado (código real, no explicaciones) | Detección inteligente         |
+| Rule                                    | Description                                                       | Application                    |
+| --------------------------------------- | ----------------------------------------------------------------- | ------------------------------ |
+| **Should have TSDoc comments**          | Exported functions and classes must have TSDoc comments           | Complex functions/classes      |
+| **Missing comment in complex function** | Complex functions must have explanatory comments                  | Complexity > defined threshold |
+| **Commented code**                      | There should be no commented code (actual code, not explanations) | Smart detection                |
 
-### ⚙️ Reglas de Configuración
+### ⚙️ Configuration Rules
 
-| Regla                  | Descripción                                                   | Archivos           |
-| ---------------------- | ------------------------------------------------------------- | ------------------ |
-| **Naming**             | Validación general de nomenclatura según tipo de archivo      | Todos los archivos |
-| **Standard structure** | _(Nueva)_ Validar estructura según `estructura standards.txt` | Todo el proyecto   |
+| Rule                   | Description                                                        | Files          |
+| ---------------------- | ------------------------------------------------------------------ | -------------- |
+| **Naming**             | General naming validation according to file type                   | All files      |
+| **Standard structure** | _(New)_ Validate structure according to `estructura standards.txt` | Entire project |
 
-## Resumen de Estadísticas Actuales
+## Current Statistics Summary
 
-Basado en la última ejecución del script:
+Based on the latest script execution:
 
-- **Total de errores encontrados**: 83
-- **Zonas validadas**: apps/auth, apps/configuration, apps/personalization, apps/web
-- **Regla más común**: Component type naming (33.7% de errores)
-- **Top 5 problemas**:
-  1. Component type naming: 28 ocurrencias
-  2. Naming: 24 ocurrencias
-  3. Missing comment in complex function: 15 ocurrencias
-  4. Component structure: 7 ocurrencias
-  5. Should have TSDoc comments: 4 ocurrencias
+- **Total errors found**: 83
+- **Zones validated**: apps/auth, apps/configuration, apps/personalization, apps/web
+- **Most common rule**: Component type naming (33.7% of errors)
+- **Top 5 issues**:
+  1. Component type naming: 28 occurrences
+  2. Naming: 24 occurrences
+  3. Missing comment in complex function: 15 occurrences
+  4. Component structure: 7 occurrences
+  5. Should have TSDoc comments: 4 occurrences
 
-## Estructura de Directorio Estándar
+## Standard Directory Structure
 
-El script valida contra esta estructura estándar definida en `estructura standards.txt`:
+The script validates against this standard structure defined in `estructura standards.txt`:
 
 ```
 src/

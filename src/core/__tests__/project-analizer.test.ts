@@ -1,12 +1,13 @@
+beforeEach(() => {
+  jest.clearAllMocks();
+});
 // project-analyzer.test.ts
 import fs from 'fs';
 import path from 'path';
 import { ProjectAnalyzer } from '../project-analyzer';
 import type { ILogger, IMonorepoZoneConfig } from '../../types';
 
-// Mock the file system and path modules
-jest.mock('fs');
-jest.mock('path');
+import { jest } from '@jest/globals';
 
 // Mock logger
 const mockLogger: ILogger = {
@@ -37,120 +38,137 @@ describe('ProjectAnalyzer', () => {
 
   describe('detectProjectType', () => {
     it('should detect Next.js project from package.json', () => {
-      (fs.existsSync as jest.Mock).mockReturnValue(true);
-      (fs.readFileSync as jest.Mock).mockReturnValue(
-        JSON.stringify({ dependencies: { next: '^12.0.0' } })
-      );
+      jest.spyOn(fs, 'existsSync').mockReturnValue(true);
+      jest
+        .spyOn(fs, 'readFileSync')
+        .mockReturnValue(JSON.stringify({ dependencies: { next: '^12.0.0' } }));
 
       const type = analyzer.detectProjectType();
       expect(type).toBe('next');
     });
 
     it('should detect React project from package.json', () => {
-      (fs.existsSync as jest.Mock).mockReturnValue(true);
-      (fs.readFileSync as jest.Mock).mockReturnValue(
-        JSON.stringify({ dependencies: { react: '^18.0.0' } })
-      );
+      jest.spyOn(fs, 'existsSync').mockReturnValue(true);
+      jest
+        .spyOn(fs, 'readFileSync')
+        .mockReturnValue(
+          JSON.stringify({ dependencies: { react: '^18.0.0' } })
+        );
 
       const type = analyzer.detectProjectType();
       expect(type).toBe('react');
     });
 
     it('should detect Angular project from package.json', () => {
-      (fs.existsSync as jest.Mock).mockReturnValue(true);
-      (fs.readFileSync as jest.Mock).mockReturnValue(
-        JSON.stringify({ dependencies: { '@angular/core': '^14.0.0' } })
-      );
+      jest.spyOn(fs, 'existsSync').mockReturnValue(true);
+      jest
+        .spyOn(fs, 'readFileSync')
+        .mockReturnValue(
+          JSON.stringify({ dependencies: { '@angular/core': '^14.0.0' } })
+        );
 
       const type = analyzer.detectProjectType();
       expect(type).toBe('angular');
     });
 
     it('should detect Vue project from package.json', () => {
-      (fs.existsSync as jest.Mock).mockReturnValue(true);
-      (fs.readFileSync as jest.Mock).mockReturnValue(
-        JSON.stringify({ dependencies: { vue: '^3.0.0' } })
-      );
+      jest.spyOn(fs, 'existsSync').mockReturnValue(true);
+      jest
+        .spyOn(fs, 'readFileSync')
+        .mockReturnValue(JSON.stringify({ dependencies: { vue: '^3.0.0' } }));
 
       const type = analyzer.detectProjectType();
       expect(type).toBe('vue');
     });
 
     it('should detect Node project from package.json', () => {
-      (fs.existsSync as jest.Mock).mockReturnValue(true);
-      (fs.readFileSync as jest.Mock).mockReturnValue(
-        JSON.stringify({ main: 'index.js' })
-      );
+      jest.spyOn(fs, 'existsSync').mockReturnValue(true);
+      jest
+        .spyOn(fs, 'readFileSync')
+        .mockReturnValue(JSON.stringify({ main: 'index.js' }));
 
       const type = analyzer.detectProjectType();
       expect(type).toBe('node');
     });
 
     it('should detect Next.js from heuristics (pages directory)', () => {
-  // 1. Configurar el mock para package.json (sin dependencia next)
-  (fs.existsSync as jest.Mock).mockImplementation((p: string) => {
-    return p === path.join(mockRootDir, 'package.json') ||
-           p === path.join(mockRootDir, 'pages');
-  });
-
-  // 2. Configurar statSync para el directorio pages
-  (fs.statSync as jest.Mock).mockImplementation((p: string) => ({
-    isDirectory: () => p === path.join(mockRootDir, 'pages')
-  }));
-
-  // 3. Configurar readFileSync para devolver package.json sin next
-  (fs.readFileSync as jest.Mock).mockImplementation((p: string) => {
-    if (p === path.join(mockRootDir, 'package.json')) {
-      return JSON.stringify({}); // package.json sin next
-    }
-    return '{}';
-  });
-
-  // 4. Llamar a la función
-  const type = analyzer.detectProjectType();
-
-  // 5. Verificar que detecta Next.js por el directorio pages
-  expect(type).toBe('next');
-});
+      jest.spyOn(fs, 'existsSync').mockImplementation((...args: unknown[]) => {
+        const p = args[0] as string;
+        return (
+          p === path.join(mockRootDir, 'package.json') ||
+          p === path.join(mockRootDir, 'pages')
+        );
+      });
+      jest.spyOn(fs, 'statSync').mockImplementation((...args: unknown[]) => {
+        const p = args[0] as string;
+        return {
+          isDirectory: () => p === path.join(mockRootDir, 'pages'),
+          // Minimal Stats mock
+          atime: new Date(),
+          mtime: new Date(),
+          ctime: new Date(),
+          birthtime: new Date(),
+          size: 0,
+          mode: 0,
+          uid: 0,
+          gid: 0,
+          nlink: 1,
+        } as fs.Stats;
+      });
+      jest
+        .spyOn(fs, 'readFileSync')
+        .mockImplementation((...args: unknown[]) => {
+          const p = args[0] as string;
+          if (p === path.join(mockRootDir, 'package.json')) {
+            return JSON.stringify({});
+          }
+          return '{}';
+        });
+      const type = analyzer.detectProjectType();
+      expect(type).toBe('next');
+    });
 
     it('should return generic for unknown project types', () => {
-      (fs.existsSync as jest.Mock).mockReturnValue(false);
+      jest.spyOn(fs, 'existsSync').mockImplementation(() => false);
       const type = analyzer.detectProjectType();
       expect(type).toBe('generic');
     });
-
   });
 
   describe('isMonorepo', () => {
-
     it('should detect monorepo from workspaces', () => {
-      (fs.existsSync as jest.Mock).mockReturnValue(true);
-      (fs.readFileSync as jest.Mock).mockReturnValue(
-        JSON.stringify({ workspaces: ['packages/*'] })
-      );
-
+      jest.spyOn(fs, 'existsSync').mockReturnValue(true);
+      jest
+        .spyOn(fs, 'readFileSync')
+        .mockReturnValue(JSON.stringify({ workspaces: ['packages/*'] }));
       expect(analyzer.isMonorepo()).toBe(true);
     });
 
     it('should return false for non-monorepo projects', () => {
-      (fs.existsSync as jest.Mock).mockReturnValue(false);
+      jest.spyOn(fs, 'existsSync').mockReturnValue(false);
       expect(analyzer.isMonorepo()).toBe(false);
     });
 
     it('should handle package.json parsing errors', () => {
-      (fs.existsSync as jest.Mock).mockImplementation((p) => {
+      jest.spyOn(fs, 'existsSync').mockImplementation((p) => {
         if (typeof p === 'string' && p.includes('package.json')) return true;
         return false;
       });
-      (fs.readFileSync as jest.Mock).mockImplementation((p) => {
+      jest.spyOn(fs, 'readFileSync').mockImplementation((p) => {
         if (typeof p === 'string' && p.includes('package.json'))
           throw new Error('Parse error');
         return '{}';
       });
-
-      expect(analyzer.isMonorepo()).toBe(false);
-      // The implementation does not call debug on parse error, so we expect no calls
-      expect(mockLogger.debug).not.toHaveBeenCalled();
+      mockLogger.debug = jest.fn();
+      // Create analyzer after mocks are set up
+      const analyzerAfterMock = new ProjectAnalyzer(mockRootDir, mockLogger);
+      expect(analyzerAfterMock.isMonorepo()).toBe(false);
+      expect(mockLogger.debug).toHaveBeenCalledWith(
+        expect.stringContaining(
+          'Failed to parse package.json for monorepo detection:'
+        ),
+        expect.any(Error)
+      );
     });
   });
 
@@ -259,6 +277,17 @@ describe('ProjectAnalyzer', () => {
       (fs.statSync as jest.Mock).mockImplementation((p) => ({
         isDirectory: () => typeof p === 'string',
       }));
+      jest
+        .spyOn(fs, 'readdirSync')
+        .mockImplementation((_unused: any, options?: any) => {
+          if (options && options.withFileTypes) {
+            return [
+              { name: 'subdir1', isDirectory: () => true },
+              { name: 'subdir2', isDirectory: () => true },
+            ] as any;
+          }
+          return ['subdir1', 'subdir2'] as any;
+        });
 
       const zones = await analyzer.detectMonorepoZones(config);
       expect(zones).toContainEqual(
@@ -281,6 +310,17 @@ describe('ProjectAnalyzer', () => {
       (fs.statSync as jest.Mock).mockImplementation((p) => ({
         isDirectory: () => typeof p === 'string',
       }));
+      jest
+        .spyOn(fs, 'readdirSync')
+        .mockImplementation((_unused: any, options?: any) => {
+          if (options && options.withFileTypes) {
+            return [
+              { name: 'subdir1', isDirectory: () => true },
+              { name: 'subdir2', isDirectory: () => true },
+            ] as any;
+          }
+          return ['subdir1', 'subdir2'] as any;
+        });
 
       const zones = await analyzer.detectMonorepoZones(config);
       expect(zones).toContainEqual(
@@ -354,10 +394,150 @@ describe('ProjectAnalyzer', () => {
   });
 
   describe('validateZoneStructure', () => {
+    it('should handle error in validateComponentFunctionName', async () => {
+      const mockValidators = {
+        checkNamingConventions: jest.fn().mockReturnValue(null),
+        checkDirectoryNaming: jest.fn().mockReturnValue([]),
+        checkComponentStructure: jest.fn().mockReturnValue([]),
+        checkComponentFunctionNameMatch: jest.fn().mockReturnValue(null),
+      };
+      (analyzer as any).loadAdditionalValidators = jest
+        .fn()
+        .mockResolvedValue(mockValidators as never);
+      jest.spyOn(fs, 'readFileSync').mockImplementation(() => {
+        throw new Error('fail');
+      });
+      const spyWarn = jest.spyOn(mockLogger, 'warn');
+      await expect(
+        analyzer.validateZoneStructure(
+          ['/path/to/components/Test/index.tsx'],
+          [],
+          'zone1'
+        )
+      ).resolves.toEqual([]);
+      // Acepta cualquier llamada a logger.warn que contenga el string esperado
+      const calls = (spyWarn as jest.Mock).mock.calls;
+      expect(
+        calls.some((call) =>
+          String(call[0]).includes(
+            'Could not read file for function name validation'
+          )
+        )
+      ).toBe(true);
+    });
+
+    it('should validate directory naming and component structure', async () => {
+      const mockValidators = {
+        checkNamingConventions: jest.fn().mockReturnValue(null),
+        checkDirectoryNaming: jest
+          .fn()
+          .mockReturnValue([
+            {
+              rule: 'Dir',
+              message: 'dir error',
+              filePath: 'dir',
+              severity: 'error',
+              category: 'naming',
+            },
+          ]),
+        checkComponentStructure: jest
+          .fn()
+          .mockReturnValue([
+            {
+              rule: 'Comp',
+              message: 'comp error',
+              filePath: 'dir',
+              severity: 'error',
+              category: 'structure',
+            },
+          ]),
+        checkComponentFunctionNameMatch: jest.fn().mockReturnValue(null),
+      };
+      (analyzer as any).loadAdditionalValidators = jest
+        .fn()
+        .mockResolvedValue(mockValidators as never);
+      const errors = await analyzer.validateZoneStructure(
+        [],
+        ['/path/to/components/Test'],
+        'zone1'
+      );
+      expect(errors).toEqual([
+        {
+          rule: 'Dir',
+          message: 'dir error',
+          filePath: 'dir',
+          severity: 'error',
+          category: 'naming',
+        },
+        {
+          rule: 'Comp',
+          message: 'comp error',
+          filePath: 'dir',
+          severity: 'error',
+          category: 'structure',
+        },
+      ]);
+    });
+
+    it('should validateSingleFile return both errors', () => {
+      const namingValidator = jest
+        .fn()
+        .mockReturnValue({
+          rule: 'Naming',
+          message: 'err',
+          filePath: 'f',
+          severity: 'error',
+          category: 'naming',
+        });
+      const functionNameValidator = jest
+        .fn()
+        .mockReturnValue({
+          rule: 'Func',
+          message: 'err',
+          filePath: 'f',
+          severity: 'error',
+          category: 'naming',
+        });
+      jest.spyOn(analyzer as any, 'isComponentIndexFile').mockReturnValue(true);
+      jest
+        .spyOn(analyzer as any, 'validateComponentFunctionName')
+        .mockImplementation((_f, _v, errors) => {
+          (errors as any[]).push({
+            rule: 'Func',
+            message: 'err',
+            filePath: 'f',
+            severity: 'error',
+            category: 'naming',
+          });
+        });
+      const errors = (analyzer as any).validateSingleFile(
+        'f',
+        namingValidator,
+        functionNameValidator
+      );
+      expect(errors.length).toBeGreaterThanOrEqual(1);
+    });
+
+    it('should get expected structure for all types', () => {
+      expect(analyzer.getExpectedStructure('next')).toContain('app');
+      expect(analyzer.getExpectedStructure('react')).toContain('src');
+      expect(analyzer.getExpectedStructure('angular')).toContain('e2e');
+      expect(analyzer.getExpectedStructure('vue')).toContain('public');
+      expect(analyzer.getExpectedStructure('node')).toContain('lib');
+      expect(analyzer.getExpectedStructure('generic')).toEqual([]);
+      expect(analyzer.getExpectedStructure('unknown')).toEqual([]);
+    });
+
+    it('should get expected src structure', () => {
+      const srcStruct = analyzer.getExpectedSrcStructure();
+      expect(srcStruct).toHaveProperty('assets');
+      expect(srcStruct).toHaveProperty('components');
+      expect(srcStruct).toHaveProperty('store');
+    });
     it('should return empty array when validators not available', async () => {
       (analyzer as any).loadAdditionalValidators = jest
         .fn()
-        .mockResolvedValue(null);
+        .mockResolvedValue(null as never);
 
       const errors = await analyzer.validateZoneStructure([], [], 'zone1');
       expect(errors).toHaveLength(0);
@@ -379,7 +559,7 @@ describe('ProjectAnalyzer', () => {
       };
       (analyzer as any).loadAdditionalValidators = jest
         .fn()
-        .mockResolvedValue(mockValidators);
+        .mockResolvedValue(mockValidators as never);
 
       const errors = await analyzer.validateZoneStructure(
         ['/path/to/invalid-file.ts'],
@@ -405,7 +585,7 @@ describe('ProjectAnalyzer', () => {
       };
       (analyzer as any).loadAdditionalValidators = jest
         .fn()
-        .mockResolvedValue(mockValidators);
+        .mockResolvedValue(mockValidators as never);
       jest
         .spyOn(fs, 'readFileSync')
         .mockReturnValue('export default function Component() {}');

@@ -5,7 +5,7 @@ import type {
   IZoneConfiguration,
   IOutputFormat,
 } from './reporter.type.js';
-import type { IValidationError } from './additionaValidators.type.js';
+import type { IValidationError } from './additionalValidators.type';
 
 export interface IRuleEngineInitOptions {
   skipStructure?: boolean;

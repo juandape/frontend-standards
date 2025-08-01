@@ -8,9 +8,9 @@ import type {
   IDefaultRulesStructure,
   IValidationRule,
   IRulesObjectFormat,
-} from '../types';
+} from '../types/index.js';
 import { isReactNativeProject } from '../utils/file-scanner.js';
-import { checkInlineStyles } from './additional-validators.js';
+import { ConfigLoaderHelper } from '../helpers/configLoader.helper.js';
 
 /**
  * Configuration loader and manager
@@ -20,11 +20,27 @@ export class ConfigLoader implements IConfigLoader {
   public readonly rootDir: string;
   public readonly logger: ILogger;
   public readonly configFileName: string;
+  private readonly helper: ConfigLoaderHelper;
 
   constructor(rootDir: string, logger: ILogger) {
     this.rootDir = rootDir;
     this.logger = logger;
-    this.configFileName = 'checkFrontendStandards.config.js';
+    this.configFileName = 'checkFrontendStandards.config.mjs';
+    this.helper = new ConfigLoaderHelper(logger);
+  }
+
+  /**
+   * Resolve the configuration file path
+   * @param customConfigPath Optional custom config path
+   * @returns Resolved config file path
+   */
+  private resolveConfigPath(customConfigPath: string | null = null): string {
+    if (customConfigPath) {
+      return path.isAbsolute(customConfigPath)
+        ? customConfigPath
+        : path.resolve(this.rootDir, customConfigPath);
+    }
+    return path.resolve(this.rootDir, this.configFileName);
   }
 
   /**
@@ -35,49 +51,19 @@ export class ConfigLoader implements IConfigLoader {
   async load(
     customConfigPath: string | null = null
   ): Promise<IStandardsConfiguration> {
-    // Siempre resolver el path absoluto del config
-    let configPath =
-      customConfigPath ?? path.join(this.rootDir, this.configFileName);
-    if (!path.isAbsolute(configPath)) {
-      configPath = path.resolve(this.rootDir, configPath);
+    const configPath = this.resolveConfigPath(customConfigPath);
+
+    if (!fs.existsSync(configPath)) {
+      this.logger.info('📋 Using default configuration');
+      return this.getDefaultConfig();
     }
 
     try {
-      if (fs.existsSync(configPath)) {
-        this.logger.info(`📋 Loading configuration from: ${configPath}`);
-        let customConfig: IConfigurationExport | undefined;
-        let importError: any = null;
-        // Try ESM dynamic import first
-        try {
-          const configModule = await import(`${configPath}?t=${Date.now()}`);
-          customConfig = (configModule as any)?.default ?? configModule;
-        } catch (err) {
-          importError = err;
-          // Try CommonJS require as fallback
-          try {
-            // eslint-disable-next-line @typescript-eslint/no-var-requires
-            const requiredConfig = require(configPath);
-            customConfig = requiredConfig?.default ?? requiredConfig;
-          } catch (requireErr) {
-            const msg =
-              `Failed to load config from ${configPath} with both import and require.\n` +
-              `import error: ${
-                importError instanceof Error
-                  ? importError.message
-                  : String(importError)
-              }\n` +
-              `require error: ${
-                requireErr instanceof Error
-                  ? requireErr.message
-                  : String(requireErr)
-              }`;
-            this.logger.warn(msg);
-            customConfig = undefined;
-          }
-        }
-        if (customConfig) {
-          return this.mergeWithDefaults(customConfig);
-        }
+      this.logger.info(`📋 Loading configuration from: ${configPath}`);
+      const customConfig = await this.helper.tryLoadConfig(configPath);
+
+      if (customConfig) {
+        return this.mergeWithDefaults(customConfig);
       }
     } catch (error) {
       this.logger.warn(
@@ -440,17 +426,16 @@ export class ConfigLoader implements IConfigLoader {
         message:
           'Test files should follow *.test.tsx or *.spec.tsx naming convention',
       },
+
       {
         name: 'Missing index.ts in organization folders',
         category: 'structure',
         severity: 'warning',
         check: (_content: string, filePath: string): boolean => {
-          // Skip configuration files
           if (this.isConfigFile(filePath)) {
             return false;
           }
 
-          // Check if this is a file in an organization folder
           const organizationFolders = [
             '/components/',
             '/types/',
@@ -463,40 +448,41 @@ export class ConfigLoader implements IConfigLoader {
             '/lib/',
           ];
 
-          const isInOrganizationFolder = organizationFolders.some((folder) =>
+          const matchedFolder = organizationFolders.find((folder) =>
             filePath.includes(folder)
           );
 
-          if (!isInOrganizationFolder) {
+          if (!matchedFolder) return false;
+
+          const orgFolderIndex = filePath.indexOf(matchedFolder);
+          const relativePathAfterOrgFolder = filePath.slice(
+            orgFolderIndex + matchedFolder.length
+          );
+          const firstLevelFolder = relativePathAfterOrgFolder.split('/')[0];
+
+          // Si el archivo está directamente dentro del folder organizacional, no requiere index
+          if (
+            !firstLevelFolder ||
+            firstLevelFolder.endsWith('.ts') ||
+            firstLevelFolder.endsWith('.tsx')
+          ) {
             return false;
           }
 
-          const fileName = path.basename(filePath);
+          const baseFolder = path.join(
+            filePath.slice(0, orgFolderIndex + matchedFolder.length),
+            firstLevelFolder
+          );
+          const indexTsPath = path.join(baseFolder, 'index.ts');
+          const indexTsxPath = path.join(baseFolder, 'index.tsx');
 
-          // Skip if this is already an index file
-          if (fileName === 'index.ts' || fileName === 'index.tsx') {
-            return false;
-          }
+          const hasIndexTs = fs.existsSync(indexTsPath);
+          const hasIndexTsx = fs.existsSync(indexTsxPath);
 
-          // Get the immediate parent directory of the file
-          const parentDir = path.dirname(filePath);
-
-          // Check if there's an index.ts or index.tsx in the same directory
-          const indexTsPath = path.join(parentDir, 'index.ts');
-          const indexTsxPath = path.join(parentDir, 'index.tsx');
-
-          try {
-            const fs = require('fs');
-            const hasIndexTs = fs.existsSync(indexTsPath);
-            const hasIndexTsx = fs.existsSync(indexTsxPath);
-
-            return !hasIndexTs && !hasIndexTsx;
-          } catch {
-            return true;
-          }
+          return !hasIndexTs && !hasIndexTsx;
         },
         message:
-          'Organization folders (components, types, hooks, constants, etc.) should have an index.ts file for exports',
+          'Organization subfolders (like /components/Foo/) should contain an index.ts or index.tsx file for exports.',
       },
     ];
   }
@@ -507,6 +493,34 @@ export class ConfigLoader implements IConfigLoader {
    */
   private getNamingRules(): IValidationRule[] {
     return [
+      {
+        name: 'Constant export naming UPPERCASE',
+        category: 'naming',
+        severity: 'error',
+        check: (content: string, filePath: string): number[] => {
+          // Solo aplicar a archivos .constant.ts
+          if (!filePath.endsWith('.constant.ts')) {
+            return [];
+          }
+          const lines = content.split('\n');
+          const violationLines: number[] = [];
+          // Buscar export const NOMBRE = ...
+          const exportConstRegex = /^\s*export\s+const\s+(\w+)\s*=/;
+          lines.forEach((line, idx) => {
+            const match = exportConstRegex.exec(line);
+            if (match && typeof match[1] === 'string') {
+              const constName = match[1];
+              // Debe ser UPPERCASE (letras, números y guiones bajos)
+              if (!/^([A-Z0-9_]+)$/.test(constName)) {
+                violationLines.push(idx + 1);
+              }
+            }
+          });
+          return violationLines;
+        },
+        message:
+          'Constant names exported in .constant.ts files must be UPPERCASE (e.g., export const DEFAULT_MIN_WAIT_TIME)',
+      },
       {
         name: 'Component naming',
         category: 'naming',
@@ -619,15 +633,29 @@ export class ConfigLoader implements IConfigLoader {
           }
 
           const fileName = path.basename(filePath);
+          const normalizedPath = filePath.replace(/\\/g, '/');
 
           // Allow index.ts/index.tsx files in types directories (used for exporting types)
           if (fileName === 'index.ts' || fileName === 'index.tsx') {
             return false;
           }
 
+          // Excepción: permitir .d.ts directamente bajo /types/ (plural) o /type/ (singular)
+          if (
+            fileName.endsWith('.d.ts') &&
+            /\/(types|type)\/[a-zA-Z0-9_-]+\.d\.ts$/.test(normalizedPath)
+          ) {
+            return false;
+          }
+
+          // Si es .d.ts en cualquier otro lugar (subcarpetas, etc.), debe marcar error
+          if (fileName.endsWith('.d.ts')) {
+            return true;
+          }
+
           // Type files should be camelCase and end with .type.ts or .types.ts
           if (
-            filePath.includes('/types/') ||
+            normalizedPath.includes('/types/') ||
             fileName.endsWith('.type.ts') ||
             fileName.endsWith('.types.ts')
           ) {
@@ -848,25 +876,29 @@ export class ConfigLoader implements IConfigLoader {
         name: 'Interface naming with I prefix',
         category: 'naming',
         severity: 'error',
-        check: (content: string): boolean => {
-          // Check for interface declarations that don't start with I
-          const interfaceRegex = /interface\s+([A-Z][a-zA-Z0-9]*)/g;
-          let match;
-
-          while ((match = interfaceRegex.exec(content)) !== null) {
-            const interfaceName = match[1];
-            if (!interfaceName) continue;
-
-            // Interface must start with "I" followed by PascalCase
-            if (
-              !interfaceName.startsWith('I') ||
-              !/^I[A-Z][a-zA-Z0-9]*$/.test(interfaceName)
-            ) {
-              return true;
-            }
+        check: (content: string): number[] => {
+          // Omitir cualquier archivo que contenga 'declare module'
+          if (/declare\s+module/.test(content)) {
+            return [];
           }
-
-          return false;
+          // Check for interface declarations that don't start with I
+          const lines = content.split('\n');
+          const violationLines: number[] = [];
+          const interfaceRegex = /^\s*interface\s+([A-Z][a-zA-Z0-9]*)/;
+          lines.forEach((line, idx) => {
+            const match = interfaceRegex.exec(line);
+            if (match && typeof match[1] === 'string') {
+              const interfaceName = match[1];
+              // Interface must start with "I" followed by PascalCase
+              if (
+                !interfaceName.startsWith('I') ||
+                !/^I[A-Z][a-zA-Z0-9]*$/.test(interfaceName)
+              ) {
+                violationLines.push(idx + 1);
+              }
+            }
+          });
+          return violationLines;
         },
         message:
           'Interfaces must be prefixed with "I" followed by PascalCase (e.g., IGlobalStateHashProviderProps)',
@@ -879,61 +911,10 @@ export class ConfigLoader implements IConfigLoader {
    * @returns Content rules
    */
   private getContentRules(): IValidationRule[] {
-    // Robust circular dependency detection using a dependency graph (in-memory, per run)
-    // This is a simplified version, not as powerful as madge, but avoids false positives and detects real cycles
-    // Use a module-level cache to avoid rebuilding the graph for every file
+    // Variables y funciones para la regla de dependencias circulares
+    const helper = this.helper;
     let dependencyGraph: Record<string, Set<string>> = {};
     let graphBuiltFor: string | null = null;
-    // Use the top-level fs and path imports for ESM compatibility
-
-    function buildDependencyGraph(
-      filePath: string,
-      extensions: string[]
-    ): void {
-      const visitedFiles: Set<string> = new Set();
-      dependencyGraph = {};
-      function visit(f: string) {
-        if (visitedFiles.has(f)) return;
-        visitedFiles.add(f);
-        let content = '';
-        try {
-          content = fs.readFileSync(f, 'utf8');
-        } catch {
-          return;
-        }
-        const fileDir = path.dirname(f);
-        const imports =
-          content.match(/import.*from\s+['"]([^'\"]+)['"]/g) || [];
-        for (const imp of imports) {
-          const importRegex = /from\s+['"]([^'\"]+)['"]/;
-          const importMatch = importRegex.exec(imp);
-          if (importMatch?.[1]) {
-            const importPath = importMatch[1];
-            if (importPath.startsWith('./') || importPath.startsWith('../')) {
-              let resolvedImport = path.resolve(fileDir, importPath);
-              // Try all extensions
-              let found = false;
-              for (const ext of extensions) {
-                if (fs.existsSync(resolvedImport + ext)) {
-                  resolvedImport = resolvedImport + ext;
-                  found = true;
-                  break;
-                }
-              }
-              if (!found && fs.existsSync(resolvedImport)) {
-                found = true;
-              }
-              if (found) {
-                if (!dependencyGraph[f]) dependencyGraph[f] = new Set();
-                dependencyGraph[f].add(resolvedImport);
-                visit(resolvedImport);
-              }
-            }
-          }
-        }
-      }
-      visit(filePath);
-    }
 
     function hasCircularDependency(
       startFile: string,
@@ -953,14 +934,53 @@ export class ConfigLoader implements IConfigLoader {
 
     return [
       {
-        name: 'No circular dependencies',
+        name: 'No console.log',
         category: 'content',
         severity: 'error',
+        check: (content: string): number[] => {
+          const lines = content.split('\n');
+          const violationLines: number[] = [];
+          let inJSDoc = false;
+          let inMultiLineComment = false;
+          lines.forEach((line, idx) => {
+            const trimmed = line.trim();
+            // Detect start/end of JSDoc
+            if (trimmed.startsWith('/**')) inJSDoc = true;
+            if (inJSDoc && trimmed.includes('*/')) {
+              inJSDoc = false;
+              return;
+            }
+            // Detect start/end of multiline comment (not JSDoc)
+            if (trimmed.startsWith('/*') && !trimmed.startsWith('/**'))
+              inMultiLineComment = true;
+            if (inMultiLineComment && trimmed.includes('*/')) {
+              inMultiLineComment = false;
+              return;
+            }
+            // Skip if inside any comment block
+            if (inJSDoc || inMultiLineComment) return;
+            // Skip single line comments
+            if (trimmed.startsWith('//')) return;
+            // Only flag true console.log outside comments
+            if (/console\.log\s*\(/.test(line)) {
+              violationLines.push(idx + 1);
+            }
+          });
+          return violationLines;
+        },
+        message:
+          'The use of console.log is not allowed. Remove debug statements from production code.',
+      },
+      // ...rest of reglas...
+      {
+        name: 'No circular dependencies',
+        category: 'content',
+        severity: 'warning',
         check: (_content: string, filePath: string): boolean => {
           const extensions = ['.js', '.ts', '.jsx', '.tsx'];
           // Only rebuild the graph if for a new root file
           if (graphBuiltFor !== filePath) {
-            buildDependencyGraph(filePath, extensions);
+            helper.buildDependencyGraph(filePath, extensions, dependencyGraph);
             graphBuiltFor = filePath;
           }
           return hasCircularDependency(filePath, filePath, new Set([filePath]));
@@ -969,79 +989,44 @@ export class ConfigLoader implements IConfigLoader {
           'Potential circular dependency detected. Refactor to avoid circular imports (direct or indirect).',
       },
       {
-        name: 'No console.log',
-        category: 'content',
-        severity: 'error',
-        check: (content: string, filePath: string): boolean => {
-          // Si es React Native, aplicar la regla (excepto debug/dev/tests)
-          if (isReactNativeProject(filePath)) {
-            if (
-              filePath.includes('debug') ||
-              filePath.includes('dev') ||
-              filePath.includes('__tests__')
-            ) {
-              return false;
-            }
-            return content.includes('console.log');
-          }
-          // Para otros proyectos, mantener la lógica actual
-          if (
-            filePath.includes('debug') ||
-            filePath.includes('dev') ||
-            filePath.includes('__tests__')
-          ) {
-            return false;
-          }
-          const lines = content.split('\n');
-          let inJSDoc = false;
-          let inMultiLineComment = false;
-          for (const line of lines) {
-            // Track JSDoc comment state
-            if (/^\s*\/\*\*/.test(line)) {
-              inJSDoc = true;
-              continue;
-            }
-            if (inJSDoc && /\*\//.test(line)) {
-              inJSDoc = false;
-              continue;
-            }
-
-            // Track multi-line comment state
-            if (/^\s*\/\*/.test(line) && !/^\s*\/\*\*/.test(line)) {
-              inMultiLineComment = true;
-              continue;
-            }
-            if (inMultiLineComment && /\*\//.test(line)) {
-              inMultiLineComment = false;
-              continue;
-            }
-
-            // Skip if we're inside any comment block
-            if (inJSDoc || inMultiLineComment || /^\s*\*/.test(line)) {
-              continue;
-            }
-
-            // Skip single-line comments
-            if (/^\s*\/\//.test(line)) {
-              continue;
-            }
-
-            // Now check for console statements in actual code
-            if (/console\.(log|warn|error|info|debug)/.test(line)) {
-              return true;
-            }
-          }
-          return false;
-        },
-        message: 'Remove console statements before committing to production',
-      },
-      {
         name: 'No inline styles',
         category: 'content',
-        severity: 'error',
-        check: (content: string, filePath: string): boolean => {
-          const errors = checkInlineStyles(content, filePath);
-          return errors.length > 0;
+        check: (content: string, filePath: string): number[] => {
+          // Skip files inside Svg folders for React Native projects
+          const isRNProject = isReactNativeProject(filePath);
+          if (isRNProject && /\/Svg\//.test(filePath)) {
+            return [];
+          }
+          // Detecta estilos en línea en JSX/TSX
+          const lines = content.split('\n');
+          const violationLines: number[] = [];
+          // Solo marcar style={{ ... }} y nunca style={variable}
+          const inlineStyleRegex = /style\s*=\s*\{\{[^}]*\}\}/;
+          let inJSDoc = false;
+          let inMultiLineComment = false;
+          lines.forEach((line, idx) => {
+            const trimmed = line.trim();
+            // Detect start/end of JSDoc
+            if (trimmed.startsWith('/**')) inJSDoc = true;
+            if (inJSDoc && trimmed.includes('*/')) {
+              inJSDoc = false;
+              return;
+            }
+            // Detect start/end of multiline comment (not JSDoc)
+            if (trimmed.startsWith('/*') && !trimmed.startsWith('/**'))
+              inMultiLineComment = true;
+            if (inMultiLineComment && trimmed.includes('*/')) {
+              inMultiLineComment = false;
+              return;
+            }
+            // Skip if inside any comment block
+            if (inJSDoc || inMultiLineComment) return;
+            // Only flag true inline style objects outside comments
+            if (inlineStyleRegex.test(line)) {
+              violationLines.push(idx + 1);
+            }
+          });
+          return violationLines;
         },
         message: 'Avoid inline styles, use CSS classes or styled components',
       },
@@ -1049,44 +1034,52 @@ export class ConfigLoader implements IConfigLoader {
         name: 'No var',
         category: 'content',
         severity: 'error',
-        check: (content: string): boolean => {
-          return /\bvar\s+/.test(content);
+        check: (content: string): number[] => {
+          const lines = content.split('\n');
+          const violationLines: number[] = [];
+          lines.forEach((line, idx) => {
+            if (/\bvar\s+/.test(line)) {
+              violationLines.push(idx + 1);
+            }
+          });
+          return violationLines;
         },
         message: 'Use let or const instead of var',
       },
       {
         name: 'No any type',
         category: 'typescript',
-        severity: 'error',
-        check: (content: string, filePath: string): boolean => {
-          // Skip configuration files
+        // La severidad se determina en tiempo de ejecución en el sistema de reporte
+        severity: 'warning',
+        check: (content: string, filePath: string): number[] => {
+          // Detectar si es proyecto React Native
+          const isRNProject = isReactNativeProject(filePath);
+          // Skip configuración y type declaration files
           if (this.isConfigFile(filePath)) {
-            return false;
+            return [];
           }
-
-          // Skip type declaration files
-          if (content.includes('declare')) return false;
-
-          // Allow 'any' in props/interfaces for icon/component props (common in React Native)
+          if (content.includes('declare')) return [];
+          // Permitir 'any' en props/interfaces para icon/component en RN
           if (
             /icon\s*:\s*any|Icon\s*:\s*any|component\s*:\s*any/.test(content)
           ) {
-            return false;
+            return [];
           }
-
-          // Check for explicit any usage (excluding comments)
+          // Buscar 'any' explícito (excluyendo comentarios)
           const lines = content.split('\n');
-          return lines.some((line) => {
+          const violationLines: number[] = [];
+          lines.forEach((line, idx) => {
             const trimmed = line.trim();
-            // Skip comments
-            if (trimmed.startsWith('//') || trimmed.startsWith('*'))
-              return false;
-
-            // Check for 'any' as a type annotation
-            return /:\s*any\b|<any>|Array<any>|Promise<any>|\bas\s+any\b/.test(
-              line
-            );
+            if (trimmed.startsWith('//') || trimmed.startsWith('*')) return;
+            if (
+              /:\s*any\b|<any>|Array<any>|Promise<any>|\bas\s+any\b/.test(line)
+            ) {
+              violationLines.push(idx + 1);
+            }
           });
+          // @ts-ignore: Custom property para el sistema de reporte
+          (violationLines as any).severity = isRNProject ? 'warning' : 'error';
+          return violationLines;
         },
         message:
           'Avoid using "any" type. Use specific types or unknown instead',
@@ -1111,18 +1104,20 @@ export class ConfigLoader implements IConfigLoader {
         name: 'Image alt text',
         category: 'accessibility',
         severity: 'warning',
-        check: (content: string): boolean => {
-          const imgRegex = /<img[^>]*>/gi;
-          let match: RegExpExecArray | null;
-
-          while ((match = imgRegex.exec(content)) !== null) {
-            const imgTag = match[0];
-            if (!imgTag.includes('alt=')) {
-              return true;
+        check: (content: string): number[] => {
+          const lines = content.split('\n');
+          const violationLines: number[] = [];
+          lines.forEach((line, idx) => {
+            const imgRegex = /<img[^>]*>/gi;
+            let match: RegExpExecArray | null;
+            while ((match = imgRegex.exec(line)) !== null) {
+              const imgTag = match[0];
+              if (!imgTag.includes('alt=')) {
+                violationLines.push(idx + 1);
+              }
             }
-          }
-
-          return false;
+          });
+          return violationLines;
         },
         message: 'Images should have alt text for accessibility',
       },
@@ -1130,8 +1125,18 @@ export class ConfigLoader implements IConfigLoader {
         name: 'No alert',
         category: 'content',
         severity: 'error',
-        check: (content: string): boolean => {
-          return /\balert\s*\(/.test(content);
+        check: (content: string): number[] => {
+          const lines = content.split('\n');
+          const violationLines: number[] = [];
+          lines.forEach((line, idx) => {
+            // Excluye solo Alert.alert(
+            if (/\balert\s*\(/.test(line) || /window\.alert\s*\(/.test(line)) {
+              if (!/Alert\.alert\s*\(/.test(line)) {
+                violationLines.push(idx + 1);
+              }
+            }
+          });
+          return violationLines;
         },
         message:
           'The use of alert() is not allowed. Use proper notifications or toast messages instead.',
@@ -1140,10 +1145,15 @@ export class ConfigLoader implements IConfigLoader {
         name: 'No hardcoded URLs',
         category: 'content',
         severity: 'error',
-        check: (content: string, filePath: string): boolean => {
+        check: (content: string, filePath: string): number[] => {
           // Skip configuration files
           if (this.isConfigFile(filePath)) {
-            return false;
+            return [];
+          }
+
+          // Excepción: permitir URLs en archivos .constant.ts
+          if (filePath?.endsWith('.constant.ts')) {
+            return [];
           }
 
           // Skip setup and test files
@@ -1152,13 +1162,13 @@ export class ConfigLoader implements IConfigLoader {
               filePath
             );
           if (isSetupFile) {
-            return false;
+            return [];
           }
 
           // Detect if this is a React Native project
           const isRNProject = isReactNativeProject(filePath);
 
-          // For React Native projects, be more permissive with SVG components
+          // For React Native projects, be more permisivo con componentes SVG
           if (isRNProject) {
             // Skip SVG components that often have legitimate xmlns URLs
             if (
@@ -1166,22 +1176,25 @@ export class ConfigLoader implements IConfigLoader {
               filePath.includes('/Svg/') ||
               filePath.includes('.svg')
             ) {
-              return false;
+              return [];
             }
           }
 
           // Check for hardcoded URLs but exclude common valid cases
-          const hasHardcodedURL = /https?:\/\/[^\s"'`]+/.test(content);
-          const isInComment = content.split('\n').some((line) => {
+          const violationLines: number[] = [];
+          const lines = content.split('\n');
+          lines.forEach((line, idx) => {
             const urlMatch = /https?:\/\/[^\s"'`]+/.exec(line);
             if (urlMatch) {
               const beforeUrl = line.substring(0, urlMatch.index);
-              return /\/\//.test(beforeUrl) || /\/\*/.test(beforeUrl);
+              const isComment =
+                /\/\//.test(beforeUrl) || /\/\*/.test(beforeUrl);
+              if (!isComment) {
+                violationLines.push(idx + 1);
+              }
             }
-            return false;
           });
-
-          return hasHardcodedURL && !isInComment;
+          return violationLines;
         },
         message:
           'No hardcoded URLs allowed. Use environment variables or constants.',
@@ -1204,8 +1217,15 @@ export class ConfigLoader implements IConfigLoader {
         name: 'No jQuery',
         category: 'content',
         severity: 'error',
-        check: (content: string): boolean => {
-          return /\$\s*\(|jQuery/.test(content);
+        check: (content: string): number[] => {
+          const lines = content.split('\n');
+          const violationLines: number[] = [];
+          lines.forEach((line, idx) => {
+            if (/\$\s*\(|jQuery/.test(line)) {
+              violationLines.push(idx + 1);
+            }
+          });
+          return violationLines;
         },
         message:
           'jQuery is not allowed. Use modern JavaScript, React, or other framework methods instead.',
@@ -1249,7 +1269,7 @@ export class ConfigLoader implements IConfigLoader {
         name: 'No merge conflicts markers',
         category: 'content',
         severity: 'error',
-        check: (content: string): boolean => {
+        check: (content: string): number[] => {
           // Check for Git merge conflict markers
           const conflictMarkers = [
             '<<<<<<< HEAD',
@@ -1257,8 +1277,14 @@ export class ConfigLoader implements IConfigLoader {
             '>>>>>>> ',
             '<<<<<<< ',
           ];
-
-          return conflictMarkers.some((marker) => content.includes(marker));
+          const lines = content.split('\n');
+          const violationLines: number[] = [];
+          lines.forEach((line, idx) => {
+            if (conflictMarkers.some((marker) => line.includes(marker))) {
+              violationLines.push(idx + 1);
+            }
+          });
+          return violationLines;
         },
         message:
           'Git merge conflict markers found. Resolve all conflicts before committing.',
@@ -1267,27 +1293,59 @@ export class ConfigLoader implements IConfigLoader {
         name: 'No committed credentials',
         category: 'content',
         severity: 'error',
-        check: (content: string, filePath: string): boolean => {
+        check: (content: string, filePath: string): number[] => {
           // Skip configuration files
           if (this.isConfigFile(filePath)) {
-            return false;
+            return [];
           }
 
           // Skip environment files that might legitimately contain environment variables
           if (/(env|\.env)/.test(filePath)) {
-            return false;
+            return [];
           }
 
-          // Check for potential credentials or sensitive data
+          // Helper: check if a string is high entropy (looks random)
+          function isHighEntropy(str: string): boolean {
+            // At least 20 chars, contains upper, lower, and number or symbol
+            if (str.length < 20) return false;
+            const hasUpper = /[A-Z]/.test(str);
+            const hasLower = /[a-z]/.test(str);
+            const hasDigit = /\d/.test(str);
+            const hasSymbol = /[^A-Za-z0-9]/.test(str);
+            let classes = 0;
+            if (hasUpper) classes++;
+            if (hasLower) classes++;
+            if (hasDigit) classes++;
+            if (hasSymbol) classes++;
+            return classes >= 3;
+          }
+
+          // Only flag if the value looks like a real credential (not an event name)
           const credentialPatterns = [
-            /password\s*[:=]\s*['"][^'"]{6,}['"]/i,
-            /secret\s*[:=]\s*['"][^'"]{10,}['"]/i,
-            /token\s*[:=]\s*['"][^'"]{20,}['"]/i,
-            /api[_-]?key\s*[:=]\s*['"][^'"]{15,}['"]/i,
-            /private[_-]?key\s*[:=]\s*['"][^'"]{50,}['"]/i,
+            /password\s*[:=]\s*['"]([^'"]+)['"]/i,
+            /secret\s*[:=]\s*['"]([^'"]+)['"]/i,
+            /token\s*[:=]\s*['"]([^'"]+)['"]/i,
+            /api[_-]?key\s*[:=]\s*['"]([^'"]+)['"]/i,
+            /private[_-]?key\s*[:=]\s*['"]([^'"]+)['"]/i,
           ];
 
-          return credentialPatterns.some((pattern) => pattern.test(content));
+          const lines = content.split('\n');
+          const violationLines: number[] = [];
+          lines.forEach((line, idx) => {
+            for (const pattern of credentialPatterns) {
+              const match = pattern.exec(line);
+              if (match?.[1]) {
+                const value = match[1];
+                // Ignore if value is all lowercase/underscore or short (likely event name)
+                if (/^[a-z0-9_-]+$/.test(value) && value.length < 40) return;
+                // Only flag if value is high entropy
+                if (isHighEntropy(value)) {
+                  violationLines.push(idx + 1);
+                }
+              }
+            }
+          });
+          return violationLines;
         },
         message:
           'Potential credentials or sensitive data detected. Use environment variables instead.',
@@ -1501,39 +1559,42 @@ export class ConfigLoader implements IConfigLoader {
         name: 'JSDoc for complex functions',
         category: 'documentation',
         severity: 'info',
-        check: (content: string, filePath: string): boolean => {
-          // Skip config files, test files, and setup files
+        check: (content: string, filePath: string): number[] => {
           if (
             /(config|setup|mock|__tests__|\.test\.|\.spec\.|jest\.|tailwind\.|sentry)/.test(
               filePath
             )
           ) {
-            return false;
+            return [];
           }
-
-          // Only check for VERY complex functions (500+ characters instead of 150-200)
           const complexFunctionPatterns = [
-            /function\s+[a-zA-Z_$][a-zA-Z0-9_$]*\s*\([^)]*\)\s*\{[\s\S]{500,}?\}/g, // Very substantial functions only
-            /(export\s+)?(const|function)\s+[a-zA-Z_$][a-zA-Z0-9_$]*.*=.*\([^)]*\)\s*=>\s*\{[\s\S]{400,}?\}/g, // Very substantial arrow functions
+            /function\s+[a-zA-Z_$][a-zA-Z0-9_$]*\s*\([^)]*\)\s*\{[\s\S]{500,}?\}/g,
+            /(export\s+)?(const|function)\s+[a-zA-Z_$][a-zA-Z0-9_$]*.{0,100}?=.*\([^)]{0,100}?\)\s*=>\s*\{[\s\S]{1,1000}\}/g,
           ];
-
+          const violationLines: number[] = [];
           for (const pattern of complexFunctionPatterns) {
             const matches = Array.from(content.matchAll(pattern));
             for (const match of matches) {
               const beforeFunction = content.substring(0, match.index || 0);
               const lastLines = beforeFunction
                 .split('\n')
-                .slice(-15) // Buscar más líneas hacia atrás
+                .slice(-15)
                 .join('\n');
-
-              // Mejorar la detección de JSDoc: buscar /** seguido de */ y luego espacios/newlines
-              if (!/\/\*\*[\s\S]*?\*\/\s*(\n\s*)*$/.test(lastLines)) {
-                return true;
+              if (
+                !/\/\*\*[^*]{0,1000}\*\/[ \t]{0,20}(?:\n[ \t]{0,20}){0,5}$/.test(
+                  lastLines
+                )
+              ) {
+                // Calcular la línea de inicio de la función
+                const functionStartIdx = match.index || 0;
+                const functionStartLine = content
+                  .substring(0, functionStartIdx)
+                  .split('\n').length;
+                violationLines.push(functionStartLine);
               }
             }
           }
-
-          return false;
+          return violationLines;
         },
         message:
           'Very complex functions (500+ chars) should have JSDoc comments explaining their behavior',
@@ -1542,24 +1603,7 @@ export class ConfigLoader implements IConfigLoader {
         name: 'English-only comments',
         category: 'documentation',
         severity: 'error',
-        check: (content: string): boolean => {
-          // Extraer todos los comentarios (tanto de línea como de bloque)
-          const singleLineComments = content.match(/\/\/.*$/gm) || [];
-          const blockComments = content.match(/\/\*[\s\S]*?\*\//g) || [];
-          const jsdocComments = content.match(/\/\*\*[\s\S]*?\*\//g) || [];
-
-          // Combinar todos los comentarios
-          const allComments = [
-            ...singleLineComments,
-            ...blockComments,
-            ...jsdocComments,
-          ];
-
-          if (allComments.length === 0) {
-            return false; // No hay comentarios que revisar
-          }
-
-          // Lista de palabras comunes en español que no deberían estar en comentarios en inglés
+        check: (content: string): number[] => {
           const spanishWords = [
             'de',
             'la',
@@ -1657,8 +1701,6 @@ export class ConfigLoader implements IConfigLoader {
             'comoquiera',
             'cuandoquiera',
           ];
-
-          // Palabras técnicas que pueden parecer españolas pero son válidas en código
           const validTechTerms = [
             'constructor',
             'static',
@@ -1701,33 +1743,48 @@ export class ConfigLoader implements IConfigLoader {
             'apollo',
             'graphql',
           ];
-
-          // Regex para encontrar palabras completas (no partes de palabras)
           const wordBoundaryPattern = (word: string) =>
             new RegExp(`\\b${word}\\b`, 'i');
-
-          // Verificar cada comentario por palabras en español
-          return allComments.some((comment) => {
-            // Ignorar URLs, imports/exports y partes de código
+          function containsSpanishWord(comment: string): boolean {
             const cleanComment = comment
-              .replace(/https?:\/\/[^\s)]+/g, '') // URLs
-              .replace(/import\s+.*from\s+['"][^'"]+['"]/g, '') // imports
-              .replace(/export\s+.*from\s+['"][^'"]+['"]/g, '') // exports
-              .replace(/(['"])(?:(?=(\\?))\2.)*?\1/g, ''); // strings
-
-            // Revisar por palabras en español
-            return spanishWords.some((word) => {
+              .replace(/https?:\/\/[^\s)]+/g, '')
+              .replace(/import\s+.{1,200}?from\s+['"][^'"]+['"]/g, '')
+              .replace(/export\s+.{1,200}?from\s+['"][^'"]+['"]/g, '')
+              .replace(/(['"])(?:(?=(\\?))\2.)*?\1/g, '');
+            for (const word of spanishWords) {
               const pattern = wordBoundaryPattern(word);
-              // Evitar falsos positivos con términos técnicos válidos
               if (pattern.test(cleanComment)) {
-                // Si encuentra una palabra española, verificar que no sea un término técnico válido
-                return !validTechTerms.some((term) =>
-                  cleanComment.includes(term)
-                );
+                if (
+                  !validTechTerms.some((term) => cleanComment.includes(term))
+                ) {
+                  return true;
+                }
               }
-              return false;
-            });
+            }
+            return false;
+          }
+          const lines = content.split('\n');
+          const violationLines: number[] = [];
+          lines.forEach((line, idx) => {
+            // Buscar comentarios de línea y bloque en cada línea
+            const singleLineCommentRegex = /\/\/(.{1,300})?$/;
+            const singleLineCommentMatch = singleLineCommentRegex.exec(line);
+            const blockCommentRegex = /\/\*([\s\S]*?)\*\//;
+            const blockCommentMatch = blockCommentRegex.exec(line);
+            if (
+              singleLineCommentMatch &&
+              containsSpanishWord(singleLineCommentMatch[0])
+            ) {
+              violationLines.push(idx + 1);
+            }
+            if (
+              blockCommentMatch &&
+              containsSpanishWord(blockCommentMatch[0])
+            ) {
+              violationLines.push(idx + 1);
+            }
           });
+          return violationLines;
         },
         message:
           'Comments and JSDoc must be written in English only. Avoid using Spanish or other non-English languages in comments.',
@@ -1747,7 +1804,8 @@ export class ConfigLoader implements IConfigLoader {
         check: (content: string): boolean => {
           // Look for interface declarations that define actual union types
           // Not just properties that happen to have union types
-          const interfaceDeclarationRegex = /interface\s+\w+[^{]*\{([^}]*)\}/g;
+          const interfaceDeclarationRegex =
+            /interface\s+\w{1,100}[^{]{0,100}\{[^}\n]{0,2000}\}/g;
           let match;
 
           while ((match = interfaceDeclarationRegex.exec(content)) !== null) {
@@ -1811,7 +1869,7 @@ export class ConfigLoader implements IConfigLoader {
         category: 'typescript',
         severity: 'info', // Cambiado de 'warning' a 'info'
         check: (content: string): boolean => {
-          const genericMatches = content.match(/<([^>]+)>/g);
+          const genericMatches = content.match(/<([^>]{1,50})>/g);
           if (!genericMatches) return false;
 
           // Solo verificar generics muy obvios como <a>, <b>, <x>
@@ -1845,6 +1903,10 @@ export class ConfigLoader implements IConfigLoader {
         category: 'react',
         severity: 'error',
         check: (content: string, filePath: string): boolean => {
+          // Excluir archivos que terminen en .hook.ts o .hook.tsx
+          if (filePath.endsWith('.hook.ts') || filePath.endsWith('.hook.tsx')) {
+            return false;
+          }
           if (!filePath.includes('/app/') || !filePath.endsWith('.tsx'))
             return false;
 
@@ -1877,7 +1939,7 @@ export class ConfigLoader implements IConfigLoader {
         severity: 'warning',
         check: (content: string): boolean => {
           const hookRegex =
-            /use(Effect|Callback|Memo)\s*\(\s*[^,]+,\s*\[\s*\]/g;
+            /use(Effect|Callback|Memo)\s*\(\s*[^,\n]{1,100},\s*\[\s*\]/g;
           return hookRegex.test(content);
         },
         message:
@@ -1906,8 +1968,15 @@ export class ConfigLoader implements IConfigLoader {
         name: 'Avoid React.FC',
         category: 'react',
         severity: 'warning',
-        check: (content: string): boolean => {
-          return /React\.FC|React\.FunctionComponent/.test(content);
+        check: (content: string): number[] => {
+          const lines = content.split('\n');
+          const violationLines: number[] = [];
+          lines.forEach((line, idx) => {
+            if (/React\.FC|React\.FunctionComponent/.test(line)) {
+              violationLines.push(idx + 1);
+            }
+          });
+          return violationLines;
         },
         message:
           'Avoid using React.FC, use regular function declaration or arrow function with explicit props typing',
@@ -2067,185 +2136,30 @@ export class ConfigLoader implements IConfigLoader {
         category: 'imports',
         severity: 'error',
         check: (content: string, filePath: string): boolean => {
-          // Skip if this is an index file
-          if (
-            path.basename(filePath) === 'index.ts' ||
-            path.basename(filePath) === 'index.tsx' ||
-            path.basename(filePath) === 'index.js' ||
-            path.basename(filePath) === 'index.jsx'
-          ) {
-            return false;
-          }
-
-          const currentDir = path.dirname(filePath);
-          const fileName = path.basename(filePath);
-
-          // Get all imports from current file
-          const importRegex =
-            /import\s+(?:(?:{[^}]*})|(?:[\w*]+))\s+from\s+['"`]([^'"`]+)['"`]/g;
-          let match;
-          let foundViolation = false;
-
-          // Variables for storing detected violation details for better error messages
-          let detectedSymbol = '';
-          let detectedFile = '';
-
-          while ((match = importRegex.exec(content)) !== null) {
-            const importPath = match[1];
-
-            // Only check relative imports that go through index
-            if (importPath === './' || importPath === '.') {
-              try {
-                const fs = require('fs');
-
-                // Find the index file in the current directory
-                let indexContent = '';
-
-                for (const ext of ['ts', 'tsx', 'js', 'jsx']) {
-                  const testPath = path.join(currentDir, `index.${ext}`);
-                  if (fs.existsSync(testPath)) {
-                    indexContent = fs.readFileSync(testPath, 'utf8');
-                    break;
-                  }
-                }
-
-                if (indexContent) {
-                  // Extract the imported symbol names
-                  const importedSymbols: string[] = [];
-                  const symbolsMatch = match[0].match(
-                    /import\s+(?:{([^}]*)}|(\w+))/
-                  );
-
-                  if (symbolsMatch) {
-                    if (symbolsMatch[1]) {
-                      // Named imports in curly braces
-                      importedSymbols.push(
-                        ...symbolsMatch[1].split(',').map((s) => s.trim())
-                      );
-                    } else if (symbolsMatch[2]) {
-                      // Default import
-                      importedSymbols.push(symbolsMatch[2]);
-                    }
-                  }
-
-                  // Look for the imported symbols in the index exports
-                  const dirFiles = fs.readdirSync(currentDir);
-
-                  for (const dirFile of dirFiles) {
-                    // Skip index files and current file
-                    if (dirFile.startsWith('index.') || dirFile === fileName) {
-                      continue;
-                    }
-
-                    const dirFileWithoutExt = dirFile.replace(
-                      /\.(ts|tsx|js|jsx)$/,
-                      ''
-                    );
-
-                    // Check if the file is exported in index
-                    const exportPatterns = [
-                      `export * from './${dirFileWithoutExt}'`,
-                      `export * from "./${dirFileWithoutExt}"`,
-                      `export { default } from './${dirFileWithoutExt}'`,
-                      `export { default } from "./${dirFileWithoutExt}"`,
-                      `export { default as ${dirFileWithoutExt} }`,
-                      `export * as ${dirFileWithoutExt}`,
-                    ];
-
-                    // Check for named exports as well
-                    const namedExportMatches = indexContent.match(
-                      new RegExp(
-                        `export\\s+{([^}]*)}\\s+from\\s+['"]\\.\/${dirFileWithoutExt}['"]`,
-                        'g'
-                      )
-                    );
-
-                    if (namedExportMatches) {
-                      for (const namedExport of namedExportMatches) {
-                        exportPatterns.push(namedExport);
-                      }
-                    }
-
-                    const isExported = exportPatterns.some((pattern) =>
-                      indexContent.includes(pattern)
-                    );
-
-                    if (isExported) {
-                      // Check if any of the imported symbols come from this file
-                      for (const symbol of importedSymbols) {
-                        // For default exports
-                        if (
-                          symbol === dirFileWithoutExt ||
-                          indexContent.includes(
-                            `export { default as ${symbol} } from './${dirFileWithoutExt}'`
-                          ) ||
-                          indexContent.includes(
-                            `export { default as ${symbol} } from "./${dirFileWithoutExt}"`
-                          )
-                        ) {
-                          foundViolation = true;
-                          detectedSymbol = symbol;
-                          detectedFile = dirFileWithoutExt;
-                          break;
-                        }
-
-                        // For named exports
-                        if (
-                          indexContent.includes(
-                            `export { ${symbol} } from './${dirFileWithoutExt}'`
-                          ) ||
-                          indexContent.includes(
-                            `export { ${symbol} } from "./${dirFileWithoutExt}"`
-                          ) ||
-                          namedExportMatches?.some((exp) =>
-                            exp.includes(symbol)
-                          )
-                        ) {
-                          foundViolation = true;
-                          detectedSymbol = symbol;
-                          detectedFile = dirFileWithoutExt;
-                          break;
-                        }
-                      }
-
-                      if (foundViolation) {
-                        // Use the detected symbol and file in the error message
-                        if (detectedSymbol && detectedFile) {
-                          return true;
-                        }
-                        break;
-                      }
-                    }
-                  }
-                }
-              } catch (error) {
-                // Ignore file system errors
-                return false;
-              }
-            }
-          }
-
-          return foundViolation;
+          return this.helper.checkDirectImports(content, filePath);
         },
-        message: `Archivos al mismo nivel deben importarse directamente, no a través del index. Reemplace import { Component } from "." con import { Component } from "./component"`,
+        message: `Files to import should be done directly, not through the index. Replace import { Component } from "." with import { Component } from "./component"`,
       },
       {
         name: 'Import order',
         category: 'structure',
         severity: 'warning',
-        check: (content: string): boolean => {
+        check: (content: string): number[] => {
           const lines = content.split('\n');
-          const imports = lines.filter((line) =>
-            line.trim().startsWith('import')
-          );
+          const importLines: { line: string; idx: number }[] = [];
+          lines.forEach((line, idx) => {
+            if (line.trim().startsWith('import')) {
+              importLines.push({ line, idx });
+            }
+          });
 
-          if (imports.length < 2) return false;
+          if (importLines.length < 2) return [];
 
           let lastType = 0; // 0: external, 1: internal, 2: relative
+          const violationLines: number[] = [];
 
-          for (const importLine of imports) {
+          for (const { line: importLine, idx } of importLines) {
             let currentType = 0;
-
             if (
               importLine.includes("from './") ||
               importLine.includes("from '../")
@@ -2257,14 +2171,12 @@ export class ConfigLoader implements IConfigLoader {
             ) {
               currentType = 1; // internal alias
             }
-
             if (currentType < lastType) {
-              return true; // Wrong order
+              violationLines.push(idx + 1); // Línea donde el orden es incorrecto
             }
             lastType = currentType;
           }
-
-          return false;
+          return violationLines;
         },
         message:
           'Imports should be ordered: external packages, internal aliases, relative imports',
@@ -2353,9 +2265,9 @@ export class ConfigLoader implements IConfigLoader {
         severity: 'warning',
         check: (content: string): boolean => {
           const largeLibraryImports = [
-            /import\s+.*\s+from\s+['"`]lodash['"`]/,
-            /import\s+.*\s+from\s+['"`]moment['"`]/,
-            /import\s+.*\s+from\s+['"`]@mui\/icons-material['"`]/,
+            /import[ \t\w{}*]{1,100}\s+from\s+['"`]lodash['"`]/,
+            /import[ \t\w{}*]{1,100}\s+from\s+['"`]moment['"`]/,
+            /import[ \t\w{}*]{1,100}\s+from\s+['"`]@mui\/icons-material['"`]/,
           ];
 
           return largeLibraryImports.some((regex) => regex.test(content));
@@ -2372,7 +2284,7 @@ export class ConfigLoader implements IConfigLoader {
             return false;
 
           const objectLiteralInProps =
-            /(?:style|className|data-\w+)\s*=\s*\{[^}]*\{[^}]*\}[^}]*\}/g;
+            /(?:style|className|data-\w+)\s*=\s*\{[^}\n]{0,100}\{[^}\n]{0,100}\}[^}\n]{0,100}\}/g;
           return objectLiteralInProps.test(content);
         },
         message:
@@ -2561,7 +2473,7 @@ export class ConfigLoader implements IConfigLoader {
    * Extract imported names from an import line
    */
   private extractImportedNames(importLine: string): string[] {
-    const importRegex = /import\s+(.+?)\s+from/;
+    const importRegex = /import\s+([\w\s,{}*]+)\s+from/;
     const importMatch = importRegex.exec(importLine);
     if (!importMatch?.[1]) return [];
 
@@ -2582,7 +2494,7 @@ export class ConfigLoader implements IConfigLoader {
     }
     // Handle named imports: import { useState, useEffect } from 'react'
     else if (importPart.includes('{')) {
-      const namedImportsRegex = /\{([^}]+)\}/;
+      const namedImportsRegex = /\{([^}\n]{1,200})\}/;
       const namedImportsMatch = namedImportsRegex.exec(importPart);
       if (namedImportsMatch?.[1]) {
         importedNames = namedImportsMatch[1].split(',').map((name) => {
@@ -2590,7 +2502,7 @@ export class ConfigLoader implements IConfigLoader {
           return name
             .trim()
             .replace(/^type\s+/, '')
-            .replace(/\s+as\s+\w+/, '');
+            .replace(/\s{1,5}as\s{1,5}\w+/, '');
         });
       }
 

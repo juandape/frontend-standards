@@ -1,3 +1,4 @@
+/* eslint-disable import/no-unused-modules */
 /**
  * @fileoverview Configuration file for checkFrontendStandards.mjs
  *
@@ -22,7 +23,7 @@
  * - Simplest approach for adding a few custom rules
  *
  * @author Juan David Peña
- * @version 4.9.0
+ * @license MIT
  * @since 2024-01-15
  * @see {@link ./checkFrontendStandards.mjs} Main validation script
  * @see {@link ./checkFrontendStandards.types.js} Type definitions
@@ -76,26 +77,32 @@ export default {
   // Merge custom rules with default rules (default: true)
   merge: true,
 
-  // Por defecto, revisar solo los archivos que se van a agregar al commit (default: true)
-  // Si se establece en false, se revisarán todos los archivos del proyecto
-  // Si no se especifican zonas o onlyZone, solo se revisarán los archivos modificados
-  onlyChangedFiles: false, // Default: true = solo archivos en commit, false = TODAS las zonas y archivos
+  // By default, only check files staged for commit (default: true)
+  // If set to false, all project files will be checked
+  // NOTE: The CLI flags --all-files and --only-changed-files take precedence over this setting
+  //
+  // Options precedence:
+  //   1. --all-files (CLI) - Highest precedence, always processes all files
+  //   2. --only-changed-files (CLI) - Forces only staged files
+  //   3. onlyChangedFiles (file config) - This option
+  //   4. Default value (true - only staged files)
+  onlyChangedFiles: true, // Default: true = only files in commit, false = ALL zones and files
 
   // Zone configuration
   zones: {
     // Whether to include 'packages' directory in validation (default: false)
     includePackages: false,
 
-    // 🎯 NUEVA OPCIÓN: Revisar solo una zona específica
-    // Si se especifica, ignorará todas las demás zonas y solo procesará esta
-    // onlyZone: 'auth', // Ejemplo: 'auth', 'src', 'components', 'pages', etc.
-    // onlyZone: 'src/auth',     // Para zona dentro de src
-    // onlyZone: 'app/(auth)',   // Para Next.js App Router
-    // onlyZone: 'packages/ui',  // Para monorepos
+    // 🎯 NEW OPTION: Review only a specific zone
+    // If specified, it will ignore all other zones and only process this one
+    // onlyZone: 'auth', // Example: 'auth', 'src', 'components', 'pages', etc.
+    // onlyZone: 'src/auth',     // For zone within src
+    // onlyZone: 'app/(auth)',   // For Next.js App Router
+    // onlyZone: 'packages/ui',  // For monorepos
 
-    // Custom zones to include in validation (se ignora si onlyZone está definido)
-    // Si se especifican customZones, se revisarán todos los archivos en esas zonas
-    // ignorando la opción onlyChangedFiles
+    // Custom zones to include in validation (ignored if onlyZone is set)
+    // If specified, all files in these zones will be checked
+    // ignoring the onlyChangedFiles option
     customZones: [
       // 'custom-folder',
       // 'another-folder'
@@ -116,89 +123,31 @@ export default {
     //   check: (content) => false, // Never triggers
     //   message: 'This rule is disabled.',
     // },
-    // Desactivar la regla de console.log
+    // Disable the console.log rule
     // {
     //   name: 'No console.log',
-    //   check: () => false, // Nunca se activará
-    //   message: 'Regla desactivada',
+    //   check: () => false, // Never triggers
+    //   message: 'Rule disabled',
     // },
-    // Desactivar la regla de comentarios solo en inglés
+    // Disable the English-only comments rule
     // {
     //   name: 'English-only comments',
     //   check: () => false,
-    //   message: 'Regla desactivada',
+    //   message: 'Rule disabled',
     // },
   ],
+
+  // 💡 Practical usage examples:
+  //
+  // For daily development (only staged files):
+  //   frontend-standards-checker check
+  //
+  // For complete project review:
+  //   frontend-standards-checker check --all-files
+  //
+  // To fully validate a specific zone:
+  //   frontend-standards-checker check --all-files --zones src
+  //
+  // For CI/CD (complete validation with verbose):
+  //   frontend-standards-checker check --all-files --verbose
 };
-
-// Alternative configurations:
-
-// 1. Export only custom rules (replaces all default rules)
-// export default {
-//   merge: false,
-//   rules: [
-//     {
-//       name: 'Custom rule only',
-//       check: (content) => content.includes('bad-pattern'),
-//       message: 'This is a custom validation.',
-//     },
-//   ],
-// }
-
-// 2. Export a function that receives default rules
-// export default function(defaultRules) {
-//   return [
-//     ...defaultRules,
-//     {
-//       name: 'Dynamic custom rule',
-//       check: (content) => content.includes('dynamic-pattern'),
-//       message: 'This rule was added dynamically.',
-//     },
-//   ]
-// }
-
-// 3. Export array of rules directly (merges with defaults)
-// export default [
-//   {
-//     name: 'Array-based rule',
-//     check: (content) => content.includes('array-pattern'),
-//     message: 'This rule comes from an array export.',
-//   },
-// ]
-
-// 4. Example with packages enabled
-// export default {
-//   zones: {
-//     includePackages: true, // This will include packages/ in validation
-//     customZones: ['shared', 'tools'], // Additional folders to validate
-//   },
-//   rules: [
-//     // Custom rules here
-//   ],
-// }
-
-// 5. 🎯 NUEVO: Example with onlyZone - revisar solo una zona específica
-// export default {
-//   zones: {
-//     onlyZone: 'auth', // Solo revisar la zona de autenticación
-// onlyZone: 'src/components', // Solo componentes
-// onlyZone: 'pages', // Solo páginas
-// onlyZone: 'app/(dashboard)', // Next.js App Router
-// onlyZone: 'packages/ui/src', // Monorepo específico
-//   },
-//   rules: [
-// Reglas específicas para la zona
-//   ],
-// }
-
-// 6. 🔍 NUEVO: Validar todas las zonas y archivos (no solo los del commit)
-// export default {
-//   // Cambia a false para validar TODOS los archivos (por defecto es true)
-//   onlyChangedFiles: false,
-//
-//   // Opcionalmente, configura zonas específicas
-//   zones: {
-//     includePackages: true, // Incluir carpeta packages/ en monorepos
-//     customZones: ['src', 'app', 'components'] // Zonas adicionales
-//   }
-// }

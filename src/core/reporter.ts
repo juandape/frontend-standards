@@ -1,6 +1,5 @@
 import fs from 'fs';
 import path from 'path';
-import { execSync } from 'child_process';
 import type {
   IReporter,
   ILogger,
@@ -11,15 +10,28 @@ import type {
   ISummaryItem,
   IReportGenerationResult,
 } from '../types';
+import { getGitLastAuthor } from '../helpers/index.js';
 
 /**
  * Reporter for generating detailed validation reports
  */
 export class Reporter implements IReporter {
+  /**
+   * Determina si un archivo es de Jest (test/spec)
+   */
+  private isJestFile(filePath: string): boolean {
+    const lowerPath = filePath.toLowerCase();
+    return (
+      /\.(test|spec)\.[jt]sx?$/.test(lowerPath) ||
+      /__tests__/.test(lowerPath) ||
+      lowerPath.includes('jest')
+    );
+  }
   public readonly rootDir: string;
   public outputPath: string;
   public logDir: string;
   public readonly logger: ILogger;
+  public includeCollaborators: boolean = true;
   private _originalZoneErrors: Record<string, IValidationError[]> = {};
 
   private getFileMeta(filePath: string): {
@@ -32,19 +44,17 @@ export class Reporter implements IReporter {
       const absPath = path.isAbsolute(filePath)
         ? filePath
         : path.resolve(this.rootDir, filePath);
+
       if (fs.existsSync(absPath)) {
         const stats = fs.statSync(absPath);
         modDate = stats.mtime
           ? stats.mtime.toLocaleString('es-ES', { timeZone: 'America/Bogota' })
           : modDate;
-        // Get last author using git log
-        try {
-          const gitAuthor = execSync(
-            `git log -1 --pretty=format:'%an' -- "${absPath}"`,
-            { cwd: this.rootDir, encoding: 'utf8' }
-          ).trim();
-          if (gitAuthor) lastAuthor = gitAuthor;
-        } catch {}
+        if (this.includeCollaborators) {
+          lastAuthor = getGitLastAuthor(absPath, this.rootDir);
+        } else {
+          lastAuthor = 'Deactivated by user';
+        }
       }
     } catch {}
     return { modDate, lastAuthor };
@@ -52,7 +62,7 @@ export class Reporter implements IReporter {
 
   constructor(rootDir: string, outputPath: string | null, logger: ILogger) {
     this.rootDir = rootDir;
-    // Siempre crear una subcarpeta nueva con fecha y hora exacta
+    // Restore logDir to dated subfolder for original behavior
     const now = new Date();
     const pad = (n: number) => n.toString().padStart(2, '0');
     const folderName = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(
@@ -81,7 +91,11 @@ export class Reporter implements IReporter {
     this.setOriginalZoneErrors(zoneErrors);
 
     const reportData = this.processErrors(zoneErrors);
-    const reportContent = this.formatReport(reportData, projectInfo, config);
+    const reportContent = await this.formatReport(
+      reportData,
+      projectInfo,
+      config
+    );
 
     await this.saveReport(reportContent);
 
@@ -124,13 +138,22 @@ export class Reporter implements IReporter {
       totalCheckedByZone[zone] = 0;
 
       for (const error of errors) {
+        // Exclude Jest files
+        if (this.isJestFile(error.filePath)) {
+          continue;
+        }
         totalCheckedByZone[zone]++;
 
         if (error.message.startsWith('✅')) {
           oksByZone[zone].push(error.message.replace('✅ ', ''));
         } else if (error.message.startsWith('Present:')) {
           oksByZone[zone].push(error.message.replace('Present:', '').trim());
-        } else if (error.severity === 'error') {
+        } else if (
+          error.severity === 'error' &&
+          !error.message.startsWith('✅') &&
+          !error.message.startsWith('Present:')
+        ) {
+          // Only count errors that would be shown in detailed violations
           errorsByZone[zone]++;
           totalErrors++;
           errorsByRule[error.rule] = (errorsByRule[error.rule] ?? 0) + 1;
@@ -188,22 +211,38 @@ export class Reporter implements IReporter {
   /**
    * Format the complete report
    */
-  formatReport(
+  async formatReport(
     reportData: IProcessedReportData,
     projectInfo: IProjectAnalysisResult,
     _config: IStandardsConfiguration
-  ): string {
+  ): Promise<string> {
     const lines: string[] = [];
 
     this.addReportHeader(lines, projectInfo);
 
-    if (reportData.totalErrors === 0) {
+    const validationsPassed = reportData.totalErrors === 0;
+    const hasWarnings = reportData.totalWarnings > 0;
+    const hasInfos = reportData.totalInfos > 0;
+
+    if (validationsPassed && !hasWarnings && !hasInfos) {
       lines.push('✅ ALL VALIDATIONS PASSED!');
       lines.push('');
       lines.push(
         'Congratulations! Your project complies with all defined frontend standards.'
       );
       return lines.join('\n');
+    }
+
+    if (validationsPassed) {
+      if (hasWarnings && hasInfos) {
+        lines.push(
+          '⚠️ No errors found, but there are warnings and suggestions.\n'
+        );
+      } else if (hasWarnings) {
+        lines.push('🟡 No errors found, but there are warnings.\n');
+      } else if (hasInfos) {
+        lines.push('ℹ️ No errors found, but there are suggestions.\n');
+      }
     }
 
     this.addSummarySection(lines, reportData);
@@ -310,19 +349,22 @@ export class Reporter implements IReporter {
         (e) =>
           !e.message.startsWith('✅') &&
           e.severity === 'error' &&
-          !e.message.startsWith('Present:')
+          !e.message.startsWith('Present:') &&
+          !this.isJestFile(e.filePath)
       );
-
       if (actualErrors.length > 0) {
         lines.push(`📂 Zone: ${zone}`);
 
         for (const error of actualErrors) {
-          const relPath = path.relative(this.rootDir, error.filePath);
+          // Print absolute path for VS Code link compatibility in subfolder
+          const absPath = path.isAbsolute(error.filePath)
+            ? error.filePath
+            : path.resolve(this.rootDir, error.filePath);
           const fileLocation = error.line
-            ? `${relPath}:${error.line}`
-            : relPath;
+            ? `${absPath}:${error.line}`
+            : absPath;
           const meta = this.getFileMeta(error.filePath);
-          lines.push(`\n  📄 ${fileLocation}`);
+          lines.push(`\n 📄  ${fileLocation}`);
           lines.push(`     Rule: ${error.rule}`);
           lines.push(`     Issue: ${error.message}`);
           lines.push(`     Last modification: ${meta.modDate}`);
@@ -332,6 +374,7 @@ export class Reporter implements IReporter {
       }
     }
   }
+
   /**
    * Add detailed warnings section
    */
@@ -347,19 +390,22 @@ export class Reporter implements IReporter {
         (e) =>
           !e.message.startsWith('✅') &&
           e.severity === 'warning' &&
-          !e.message.startsWith('Present:')
+          !e.message.startsWith('Present:') &&
+          !this.isJestFile(e.filePath)
       );
 
       if (actualWarnings.length > 0) {
         lines.push(`📂 Zone: ${zone}`);
 
         for (const warning of actualWarnings) {
-          const relPath = path.relative(this.rootDir, warning.filePath);
+          const absPath = path.isAbsolute(warning.filePath)
+            ? warning.filePath
+            : path.resolve(this.rootDir, warning.filePath);
           const fileLocation = warning.line
-            ? `${relPath}:${warning.line}`
-            : relPath;
+            ? `${absPath}:${warning.line}`
+            : absPath;
           const meta = this.getFileMeta(warning.filePath);
-          lines.push(`\n  📄 ${fileLocation}`);
+          lines.push(`\n 📄  ${fileLocation}`);
           lines.push(`     Rule: ${warning.rule}`);
           lines.push(`     Issue: ${warning.message}`);
           lines.push(`     Last modification: ${meta.modDate}`);
@@ -374,7 +420,6 @@ export class Reporter implements IReporter {
    * Add detailed info suggestions section
    */
   addDetailedInfosSection(lines: string[]): void {
-    lines.push('\n');
     lines.push('-'.repeat(26));
     lines.push('DETAILED INFO SUGGESTIONS:');
     lines.push('-'.repeat(26));
@@ -385,19 +430,22 @@ export class Reporter implements IReporter {
         (e) =>
           !e.message.startsWith('✅') &&
           e.severity === 'info' &&
-          !e.message.startsWith('Present:')
+          !e.message.startsWith('Present:') &&
+          !this.isJestFile(e.filePath)
       );
 
       if (actualInfos.length > 0) {
         lines.push(`📂 Zone: ${zone}`);
 
         for (const info of actualInfos) {
-          const relPath = path.relative(this.rootDir, info.filePath);
-          const fileLocation = info.line ? `${relPath}:${info.line}` : relPath;
+          const absPath = path.isAbsolute(info.filePath)
+            ? info.filePath
+            : path.resolve(this.rootDir, info.filePath);
+          const fileLocation = info.line ? `${absPath}:${info.line}` : absPath;
           const meta = this.getFileMeta(info.filePath);
-          lines.push(`\n  📄 ${fileLocation}`);
+          lines.push(`\n 📄  ${fileLocation}`);
           lines.push(`     Rule: ${info.rule}`);
-          lines.push(`     Suggestion: ${info.message}`);
+          lines.push(`     Issue: ${info.message}`);
           lines.push(`     Last modification: ${meta.modDate}`);
           lines.push(`     Last collaborator: ${meta.lastAuthor}`);
           lines.push('     ' + '-'.repeat(50));
@@ -409,49 +457,44 @@ export class Reporter implements IReporter {
   /**
    * Add statistics section
    */
-  addStatisticsSection(lines: string[], reportData: IProcessedReportData): void {
+  addStatisticsSection(
+    lines: string[],
+    reportData: IProcessedReportData
+  ): void {
     if (reportData.summary.length > 0) {
       lines.push('\n');
       lines.push('-'.repeat(17));
       lines.push('ERROR STATISTICS:');
       lines.push('-'.repeat(17));
-
       for (const stat of reportData.summary) {
         lines.push(
           `• ${stat.rule}: ${stat.count} occurrences (${stat.percentage}%)`
         );
       }
-
       lines.push(`\nTotal violations: ${reportData.totalErrors}`);
     }
-
     if (reportData.warningSummary.length > 0) {
       lines.push('\n');
       lines.push('-'.repeat(19));
       lines.push('WARNING STATISTICS:');
       lines.push('-'.repeat(19));
-
       for (const stat of reportData.warningSummary) {
         lines.push(
           `• ${stat.rule}: ${stat.count} occurrences (${stat.percentage}%)`
         );
       }
-
       lines.push(`\nTotal warnings: ${reportData.totalWarnings}`);
     }
-
     if (reportData.infoSummary.length > 0) {
       lines.push('\n');
       lines.push('-'.repeat(28));
       lines.push('INFO SUGGESTIONS STATISTICS:');
       lines.push('-'.repeat(28));
-
       for (const stat of reportData.infoSummary) {
         lines.push(
           `• ${stat.rule}: ${stat.count} occurrences (${stat.percentage}%)`
         );
       }
-
       lines.push(`\nTotal info suggestions: ${reportData.totalInfos}`);
     }
   }
@@ -483,9 +526,8 @@ export class Reporter implements IReporter {
       if (!fs.existsSync(this.logDir)) {
         fs.mkdirSync(this.logDir, { recursive: true });
       }
-      // Get last modification date and last collaborator (if possible)
+      // Get last modification date
       let modDate = 'No date';
-      // Removed lastAuthor logic
       try {
         if (fs.existsSync(this.outputPath)) {
           const stats = fs.statSync(this.outputPath);
@@ -495,11 +537,7 @@ export class Reporter implements IReporter {
               })
             : modDate;
         }
-        // Try to get last author using git
-        // Removed execSync import as collaborator logic is gone
-        // Removed the gitLog assignment as collaborator logic is gone
       } catch {}
-
       // Add info to log content (at the end)
       const logWithMeta = `${content}\n\n---\nLast modification: ${modDate}`;
       fs.writeFileSync(this.outputPath, logWithMeta, 'utf8');
@@ -518,6 +556,14 @@ export class Reporter implements IReporter {
         path.join(
           this.rootDir,
           'node_modules',
+          'frontend-standards-checker',
+          'bin',
+          'frontend-standards-log-viewer.html'
+        ),
+        path.join(
+          this.rootDir,
+          'node_modules',
+          '@dcefront',
           'frontend-standards-checker',
           'bin',
           'frontend-standards-log-viewer.html'

@@ -1,6 +1,6 @@
 {
   "name": "frontend-standards-checker",
-  "version": "0.0.7",
+  "version": "1.0.96",
   "description": "A comprehensive frontend standards validation tool with TypeScript support",
   "type": "module",
   "main": "dist/src/index.js",
@@ -27,7 +27,7 @@
     "dist",
     "README.md",
     "LICENSE",
-    "checkFrontendStandards.config.js",
+    "checkFrontendStandards.config.mjs",
     "checkFrontendStandards.COMPLETE-GUIDE.md",
     "bin/frontend-standards-log-viewer.html"
   ],
@@ -35,6 +35,7 @@
     "build": "tsc && chmod +x dist/bin/cli.js && cp bin/frontend-standards-log-viewer.html dist/bin/ && cp checkFrontendStandards.COMPLETE-GUIDE.md dist/",
     "build:watch": "tsc --watch",
     "watch": "npm run build:watch",
+    "pub": "npm publish",
     "dev": "tsx --watch src/index.ts",
     "start": "node dist/src/index.js",
     "cli": "tsx bin/cli.ts",
@@ -43,10 +44,8 @@
     "lint": "echo 'Linting temporarily disabled - TypeScript provides type checking'",
     "test": "jest --coverage",
     "clean": "rm -rf dist",
-    "postinstall": "npm run build 2>/dev/null || yarn build 2>/dev/null || (echo 'Build step skipped - using pre-built files'; exit 0); echo '\n🎉 Frontend Standards Checker instalado correctamente!\n\n📋 Comandos disponibles:\n   npm run standards (o yarn standards)\n   npm run standards -- --zones src components\n   npm run standards -- --verbose\n\n📖 Configuración: Edita checkFrontendStandards.config.js\n💡 Documentación completa: https://github.com/juandape/frontend-standards\n'",
-    "prepare": "npm run build 2>/dev/null || yarn build 2>/dev/null || echo 'Prepare failed'",
-    "prepublishOnly": "npm run clean && npm run build",
-    "standards": "frontend-standards-checker"
+    "postinstall": "npm run build 2>/dev/null || yarn build 2>/dev/null || (echo 'Build step skipped - using pre-built files'; exit 0); echo '\n🎉 Frontend Standards Checker instalado correctamente!\n\n📋 Comandos disponibles:\n   npm run standards (o yarn standards)\n   npm run standards -- --zones src components\n   npm run standards -- --verbose\n\n📖 Configuración: Edita checkFrontendStandards.config.mjs\n💡 Documentación completa: https://github.com/juandape/frontend-standards\n'",
+    "prepare": "husky install || true"
   },
   "keywords": [
     "frontend",
@@ -63,14 +62,18 @@
     "acorn-walk": "^8.3.2",
     "chalk": "^5.3.0",
     "commander": "^11.1.0",
+    "inquirer": "^12.8.2",
+    "nthline": "^1.0.2",
     "typescript": "^5.3.0"
   },
   "devDependencies": {
     "@types/jest": "^30.0.0",
     "@types/node": "^24.0.14",
+    "@types/which": "^3.0.4",
     "@typescript-eslint/eslint-plugin": "^6.21.0",
     "@typescript-eslint/parser": "^6.21.0",
     "eslint": "^8.57.1",
+    "husky": "^9.1.7",
     "jest": "^30.0.4",
     "ts-jest": "^29.4.0",
     "tsx": "^4.6.0"

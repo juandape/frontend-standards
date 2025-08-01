@@ -183,54 +183,43 @@ install_local_copy() {
         log_info "Viewer already exists in bin: $VIEWER_DEST_BIN"
     fi
 
-    # Usar scripts de React Native para todos los tipos de proyecto
-    add_scripts_react_native
+    # Add standards script and pre-commit hook for all project types
+    add_standards_script_and_hook
 }
 
-# Agregar scripts para React Native (método de copia directa)
-add_scripts_react_native() {
-    log_info "Adding scripts to package.json for React Native..."
 
-    # Volver al directorio del proyecto
+# Add standards script and pre-commit hook for any project type
+add_standards_script_and_hook() {
+    log_info "Adding standards script to package.json for all project types..."
+
     cd "$ORIGINAL_DIR"
-
-    # Obtener path absoluto del directorio actual
     PROJECT_ABS_PATH=$(pwd)
 
-    # Usar Node.js para modificar package.json de forma segura
     node -e "
     const fs = require('fs');
     const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
-
     if (!pkg.scripts) pkg.scripts = {};
-
-    const projectPath = '$PROJECT_ABS_PATH';
-    const configPath = projectPath + '/checkFrontendStandards.config.js';
-
-    const scriptsToAdd = {
-        'standards': 'node frontend-standards-full/dist/bin/cli.js --config \"' + configPath + '\"',
-        'standards:zones': 'node frontend-standards-full/dist/bin/cli.js --zones --config \"' + configPath + '\"',
-        'standards:verbose': 'node frontend-standards-full/dist/bin/cli.js --verbose --config \"' + configPath + '\"',
-        'standards:all': 'node frontend-standards-full/dist/bin/cli.js --config \"' + configPath + '\"',
-        'standards:init': 'node frontend-standards-full/bin/copy-frontend-standards-files.cjs'
-    };
-
-    let added = [];
-    for (const [script, command] of Object.entries(scriptsToAdd)) {
-        if (!pkg.scripts[script]) {
-            pkg.scripts[script] = command;
-            added.push(script);
-        }
+    if (!pkg.scripts['standards']) {
+        pkg.scripts['standards'] = 'frontend-standards-checker';
     }
-
     fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2) + '\n');
-
-    if (added.length > 0) {
-        console.log('✅ Scripts added:', added.join(', '));
-    } else {
-        console.log('ℹ️  Scripts already exist, no changes made.');
-    }
     "
+
+    PRE_COMMIT_FILE=".husky/pre-commit"
+    if [ ! -f "$PRE_COMMIT_FILE" ]; then
+        mkdir -p .husky
+        echo "#!/bin/sh" > "$PRE_COMMIT_FILE"
+        echo "yarn standards" >> "$PRE_COMMIT_FILE"
+        chmod +x "$PRE_COMMIT_FILE"
+        log_success "Created .husky/pre-commit and added 'yarn standards'"
+    else
+        if ! grep -q "yarn standards" "$PRE_COMMIT_FILE"; then
+            echo "yarn standards" >> "$PRE_COMMIT_FILE"
+            log_success "Added 'yarn standards' to .husky/pre-commit"
+        else
+            log_info "'yarn standards' already present in .husky/pre-commit"
+        fi
+    fi
 }
 
 # Crear archivo de configuración
@@ -238,12 +227,12 @@ create_config_file() {
     # Volver al directorio del proyecto
     cd "$ORIGINAL_DIR"
 
-    if [ ! -f "checkFrontendStandards.config.js" ]; then
-        log_info "Create checkFrontendStandards.config.js..."
+    if [ ! -f "checkFrontendStandards.config.mjs" ]; then
+        log_info "Create checkFrontendStandards.config.mjs..."
 
         if [ "$IS_REACT_NATIVE" = true ]; then
             # Configuración optimizada para React Native
-            cat > checkFrontendStandards.config.js << 'EOF'
+            cat > checkFrontendStandards.config.mjs << 'EOF'
 // Frontend Standards Config - React Native
 /**
  * @fileoverview Configuration file for checkFrontendStandards.mjs
@@ -268,7 +257,6 @@ create_config_file() {
  * - Export array of rules directly (automatically merges with defaults)
  * - Simplest approach for adding a few custom rules
  * @author Juan David Peña
- * @version 4.10.0
  * @since 2024-01-15
     * @license MIT
  * @see {@link ./checkFrontendStandards.types.js} Type definitions
@@ -320,7 +308,7 @@ module.exports = {
 EOF
         else
             # Configuración estándar
-            cat > checkFrontendStandards.config.js << 'EOF'
+            cat > checkFrontendStandards.config.mjs << 'EOF'
 // Frontend Standards Config
 /**
  * @fileoverview Configuration file for checkFrontendStandards.mjs
@@ -346,7 +334,6 @@ EOF
  * - Simplest approach for adding a few custom rules
  *
  * @author Juan David Peña
- * @version 4.10.0
  * @since 2024-01-15
     * @license MIT
  * @see {@link ./checkFrontendStandards.types.js} Type definitions
@@ -530,7 +517,7 @@ export default {
 EOF
         fi
 
-        log_success "Configuration file created: checkFrontendStandards.config.js"
+        log_success "Configuration file created: checkFrontendStandards.config.mjs"
     else
         log_info "Configuration file already exists"
     fi
@@ -568,13 +555,12 @@ if grep -q "standards" package.json; then
     log_success "Scripts added successfully to package.json"
 else
     log_warning "Scripts not added to package.json. Verifying..."
-    # Intentar agregar scripts manualmente - ahora siempre usa react native scripts
-    add_scripts_react_native
+    add_standards_script_and_hook
 fi
 
 # Verificar archivo de configuración
-if [ -f "checkFrontendStandards.config.js" ]; then
-    log_success "Configuration file created successfully"
+if [ -f "checkFrontendStandards.config.mjs" ]; then
+    log_success "Configuration file created successfully: checkFrontendStandards.config.mjs"
 else
     log_warning "Recreating configuration file..."
     create_config_file
@@ -615,7 +601,7 @@ if [ "$PACKAGE_MANAGER" = "yarn" ]; then
 fi
 echo ""
 echo "📁 Created files:"
-echo "   ✅ checkFrontendStandards.config.js"
+echo "   ✅ checkFrontendStandards.config.mjs"
 echo "   ✅ checkFrontendStandards.COMPLETE-GUIDE.md"
 echo "   ✅ frontend-standards-full/ (full installation)"
 echo "   ✅ .gitignore (updated with installed files)"
@@ -631,9 +617,6 @@ add_to_gitignore() {
     fi
     # List of paths to ignore
     IGNORE_LIST=(
-        "frontend-standards-full/"
-        "checkFrontendStandards.COMPLETE-GUIDE.md"
-        "checkFrontendStandards.config.js"
         "logs-standards-validations/"
 
     )
@@ -658,7 +641,7 @@ else
     echo "   $PACKAGE_MANAGER run standards     # Use file configuration (onlyChangedFiles)"
 fi
 echo ""
-echo "💡 Configure behavior in: checkFrontendStandards.config.js"
+echo "💡 Configure behavior in: checkFrontendStandards.config.mjs"
 echo "   onlyChangedFiles: true  → Only changed files"
 echo "   onlyChangedFiles: false → All files"
 echo "📖 Add custom rules in the 'rules' section"

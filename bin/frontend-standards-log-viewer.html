@@ -14,6 +14,39 @@
         <div class="p-6 border-b">
           <h2 class="text-2xl font-bold text-blue-600">Logs Viewer</h2>
           <p class="text-sm text-gray-500">Frontend Standards</p>
+          <div
+            id="manualLogUpload"
+            class="hidden mt-4 flex flex-col items-center"
+          >
+            <div
+              id="dropZone"
+              class="mb-2 w-64 h-24 flex flex-col items-center justify-center border-2 border-dashed border-blue-400 rounded-lg bg-blue-50 text-blue-700 cursor-pointer transition hover:bg-blue-100"
+            >
+              <svg
+                class="w-8 h-8 mb-1 text-blue-400"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  d="M7 16v-4a4 4 0 014-4h2a4 4 0 014 4v4m-4 4v-4m0 0l-2 2m2-2l2 2"
+                />
+              </svg>
+              <span id="dropZoneText" class="text-sm select-none px-3 text-center"
+                >Drag & Drop your log file here or click to select</span
+              >
+              <input
+                type="file"
+                id="logFileInput"
+                accept=".log,.txt"
+                class="hidden"
+              />
+            </div>
+            <div id="manualLogError" class="text-xs text-red-600 mt-2"></div>
+          </div>
         </div>
         <div class="px-6 py-4">
           <div id="sidebarRules" class="space-y-6"></div>
@@ -128,42 +161,119 @@
             window.addEventListener('DOMContentLoaded', () => {
 
         document.getElementById('exportCsvBtn').addEventListener('click', exportLogToCSV);
-              fetch('frontend-standards.log')
-                .then(response => {
-                  if (!response.ok) throw new Error('No se encontró el archivo de log.')
-                  return response.text()
-                })
-                .then(text => {
-                  logData = text
+        // Escaping function to prevent XSS
+        function escapeHTML(str) {
+          if (!str) return '';
+          return String(str)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;');
+        }
 
-                  const matchDate = logData.match(/^Generated:\s*(.+)$/m)
-                  sidebarDate.textContent = matchDate ? `Generated: ${matchDate[1]}` : ''
+        fetch('frontend-standards.log')
+          .then(response => {
+            if (!response.ok) throw new Error('Log not found.')
+            return response.text()
+          })
+          .then(text => {
+            logData = text
+            processLogData()
+          })
+          .catch(err => {
+            sidebarDate.textContent = ''
+            summarySection.classList.remove('hidden')
+            summaryInfo.innerHTML = `<div class="text-red-600">Fetch error: ${escapeHTML(err.message)}<br>You can upload the log manually.</div>`
+            document.getElementById('manualLogUpload').classList.remove('hidden')
+            console.warn('Log loading error:', err.message)
+          })
 
+        function processLogData() {
+          const matchDate = logData.match(/^Generated:\s*(.+)$/m)
+          sidebarDate.textContent = matchDate ? `Generated: ${matchDate[1]}` : ''
 
-                  const matchProject = logData.match(/^Project:\s*(.+)$/m)
-                  const matchType = logData.match(/^Project Type:\s*(.+)$/m)
-                  const matchMonorepo = logData.match(/^Monorepo:\s*(.+)$/m)
+          const matchProject = logData.match(/^Project:\s*(.+)$/m)
+          const matchType = logData.match(/^Project Type:\s*(.+)$/m)
+          const matchMonorepo = logData.match(/^Monorepo:\s*(.+)$/m)
 
-                  sidebarProjectInfo.innerHTML = `
-                    <div><span class="font-semibold text-gray-700">Project:</span> ${matchProject ? matchProject[1] : '-'}</div>
-                    <div><span class="font-semibold text-gray-700">Project Type:</span> ${matchType ? matchType[1] : '-'}</div>
-                    <div><span class="font-semibold text-gray-700">Monorepo:</span> ${matchMonorepo ? matchMonorepo[1] : '-'}</div>
-                  `
-                  if (!logData.trim()) {
-                    summarySection.classList.remove('hidden')
-                    summaryInfo.innerHTML = '<div class="text-red-600">No se encontró información en el log.</div>'
-                    return
-                  }
-                  parseGroupedData()
-                  renderSidebarRules()
-                  renderSummary()
-                })
-                .catch(err => {
-                  sidebarDate.textContent = ''
-                  summarySection.classList.remove('hidden')
-                  summaryInfo.innerHTML = `<div class="text-red-600">No se pudo cargar el log: ${err.message}</div>`
-                  console.warn('Log loading error:', err.message)
-                })
+          sidebarProjectInfo.innerHTML = `
+            <div><span class="font-semibold text-gray-700">Project:</span> ${escapeHTML(matchProject ? matchProject[1] : '-')}</div>
+            <div><span class="font-semibold text-gray-700">Project Type:</span> ${escapeHTML(matchType ? matchType[1] : '-')}</div>
+            <div><span class="font-semibold text-gray-700">Monorepo:</span> ${escapeHTML(matchMonorepo ? matchMonorepo[1] : '-')}</div>
+          `
+          if (!logData.trim()) {
+            summarySection.classList.remove('hidden')
+            summaryInfo.innerHTML = '<div class="text-red-600">No information found in the log.</div>'
+            return
+          }
+          parseGroupedData()
+          renderSidebarRules()
+          renderSummary()
+        }
+
+        // Manual log upload logic with drag & drop
+        const logFileInput = document.getElementById('logFileInput')
+        const dropZone = document.getElementById('dropZone')
+        const dropZoneText = document.getElementById('dropZoneText')
+        const loadLogBtn = document.getElementById('loadLogBtn')
+        const manualLogError = document.getElementById('manualLogError')
+
+        function handleFile(file) {
+          manualLogError.textContent = ''
+          if (!file) {
+            manualLogError.textContent = 'Selecciona un archivo de log.'
+            return
+          }
+          const reader = new FileReader()
+          reader.onload = function(e) {
+            logData = e.target.result
+            document.getElementById('manualLogUpload').classList.add('hidden')
+            processLogData()
+          }
+          reader.onerror = function() {
+            manualLogError.textContent = 'Error al leer el archivo.'
+          }
+          reader.readAsText(file)
+        }
+
+        if (dropZone && logFileInput) {
+          // Click to open file dialog
+          dropZone.addEventListener('click', () => logFileInput.click())
+          // File selected via dialog
+          logFileInput.addEventListener('change', (e) => {
+            if (logFileInput.files && logFileInput.files[0]) {
+              handleFile(logFileInput.files[0])
+            }
+          })
+          // Drag over
+          dropZone.addEventListener('dragover', (e) => {
+            e.preventDefault()
+            dropZone.classList.add('bg-blue-200', 'border-blue-600')
+          })
+          dropZone.addEventListener('dragleave', (e) => {
+            e.preventDefault()
+            dropZone.classList.remove('bg-blue-200', 'border-blue-600')
+          })
+          // Drop file
+          dropZone.addEventListener('drop', (e) => {
+            e.preventDefault()
+            dropZone.classList.remove('bg-blue-200', 'border-blue-600')
+            if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+              handleFile(e.dataTransfer.files[0])
+            }
+          })
+        }
+
+        if (loadLogBtn) {
+          loadLogBtn.addEventListener('click', () => {
+            if (logFileInput.files && logFileInput.files[0]) {
+              handleFile(logFileInput.files[0])
+            } else {
+              manualLogError.textContent = 'Selecciona un archivo de log.'
+            }
+          })
+        }
             })
 
             function parseGroupedData() {
