@@ -77,32 +77,32 @@ export default {
   // Merge custom rules with default rules (default: true)
   merge: true,
 
-  // Por defecto, revisar solo los archivos que se van a agregar al commit (default: true)
-  // Si se establece en false, se revisarán todos los archivos del proyecto
-  // NOTA: Los flags CLI --all-files y --only-changed-files tienen precedencia sobre esta configuración
+  // By default, only check files staged for commit (default: true)
+  // If set to false, all project files will be checked
+  // NOTE: The CLI flags --all-files and --only-changed-files take precedence over this setting
   //
-  // Precedencia de opciones:
-  //   1. --all-files (CLI) - Mayor precedencia, siempre procesa todos los archivos
-  //   2. --only-changed-files (CLI) - Fuerza solo archivos staged
-  //   3. onlyChangedFiles (configuración del archivo) - Esta opción
-  //   4. Valor por defecto (true - solo archivos staged)
-  onlyChangedFiles: true, // Default: true = solo archivos en commit, false = TODAS las zonas y archivos
+  // Options precedence:
+  //   1. --all-files (CLI) - Highest precedence, always processes all files
+  //   2. --only-changed-files (CLI) - Forces only staged files
+  //   3. onlyChangedFiles (file config) - This option
+  //   4. Default value (true - only staged files)
+  onlyChangedFiles: true, // Default: true = only files in commit, false = ALL zones and files
 
   // Zone configuration
   zones: {
     // Whether to include 'packages' directory in validation (default: false)
     includePackages: false,
 
-    // 🎯 NUEVA OPCIÓN: Revisar solo una zona específica
-    // Si se especifica, ignorará todas las demás zonas y solo procesará esta
-    // onlyZone: 'auth', // Ejemplo: 'auth', 'src', 'components', 'pages', etc.
-    // onlyZone: 'src/auth',     // Para zona dentro de src
-    // onlyZone: 'app/(auth)',   // Para Next.js App Router
-    // onlyZone: 'packages/ui',  // Para monorepos
+    // 🎯 NEW OPTION: Review only a specific zone
+    // If specified, it will ignore all other zones and only process this one
+    // onlyZone: 'auth', // Example: 'auth', 'src', 'components', 'pages', etc.
+    // onlyZone: 'src/auth',     // For zone within src
+    // onlyZone: 'app/(auth)',   // For Next.js App Router
+    // onlyZone: 'packages/ui',  // For monorepos
 
-    // Custom zones to include in validation (se ignora si onlyZone está definido)
-    // Si se especifican customZones, se revisarán todos los archivos en esas zonas
-    // ignorando la opción onlyChangedFiles
+    // Custom zones to include in validation (ignored if onlyZone is set)
+    // If specified, all files in these zones will be checked
+    // ignoring the onlyChangedFiles option
     customZones: [
       // 'custom-folder',
       // 'another-folder'
@@ -123,31 +123,31 @@ export default {
     //   check: (content) => false, // Never triggers
     //   message: 'This rule is disabled.',
     // },
-    // Desactivar la regla de console.log
+    // Disable the console.log rule
     // {
     //   name: 'No console.log',
-    //   check: () => false, // Nunca se activará
-    //   message: 'Regla desactivada',
+    //   check: () => false, // Never triggers
+    //   message: 'Rule disabled',
     // },
-    // Desactivar la regla de comentarios solo en inglés
+    // Disable the English-only comments rule
     // {
     //   name: 'English-only comments',
     //   check: () => false,
-    //   message: 'Regla desactivada',
+    //   message: 'Rule disabled',
     // },
   ],
 
-  // 💡 EJEMPLOS DE USO PRÁCTICO:
+  // 💡 Practical usage examples:
   //
-  // Para desarrollo diario (solo archivos staged):
+  // For daily development (only staged files):
   //   frontend-standards-checker check
   //
-  // Para revisión completa del proyecto:
+  // For complete project review:
   //   frontend-standards-checker check --all-files
   //
-  // Para validar zona específica completamente:
+  // To fully validate a specific zone:
   //   frontend-standards-checker check --all-files --zones src
   //
-  // Para CI/CD (validación completa con verbose):
+  // For CI/CD (complete validation with verbose):
   //   frontend-standards-checker check --all-files --verbose
 };

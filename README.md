@@ -1,49 +1,49 @@
 # Frontend Standards Checker
 
-Una herramienta escalable y modular para validar estándares de frontend en proyectos JavaScript/TypeScript. **Versión con validadores mejorados, mensajes de error enriquecidos y compatibilidad total para React Native. Visualización de reportes en HTML.**
+A scalable and modular tool for validating frontend standards in JavaScript/TypeScript projects. **Version with improved validators, enriched error messages and full compatibility for React Native. HTML report visualization.**
 
-## 🚀 Características
+## 🚀 Features
 
-- **Arquitectura modular**: Cada componente tiene una responsabilidad específica
-- **Escalable**: Fácil agregar nuevas reglas y validadores
-- **Configurable**: Configuración flexible mediante archivo de configuración
-- **CLI amigable**: Interfaz de línea de comandos con opciones detalladas y precedencia de flags
-- **Reportes detallados**: Genera reportes comprensivos con secciones para errors, warnings e info
-- **Soporte para monorepos**: Detecta y valida múltiples zonas automáticamente
-- **🆕 Control granular de archivos**: Flag `--all-files` para validación completa vs `--only-changed-files` para validación incremental
-- **🆕 Precedencia de opciones**: Los flags CLI tienen precedencia sobre configuración de archivos
-- **🆕 Modo debug avanzado**: Opción `--debug` con información detallada del proceso de escaneo
-- **🆕 Validación selectiva**: Opción `onlyZone` para validar solo módulos específicos
-- **🆕 Validación eficiente**: Por defecto solo valida archivos en staging para commit (`onlyChangedFiles: true`)
-- **🆕 TypeScript nativo**: Tipos estrictos, autocompletado y mejor experiencia de desarrollo
-- **🆕 Instalación inteligente**: Detecta React Native y adapta la instalación automáticamente
-- **🆕 Validadores avanzados**: Mensajes de error enriquecidos con número de línea, nombre de carpeta y función para reglas clave (ej. coincidencia de nombre de componente)
-- **🆕 Mejoras de precisión**: Validación más precisa para componentes, hooks y estructura de carpetas
-- **🆕 Comando init**: `frontend-standards-init` para copiar archivos de configuración
-- **🆕 Soporte para múltiples entornos**: Configuración automática para diferentes entornos de desarrollo
-- **🆕 Soporte para React Native**: Configuración optimizada para proyectos React Native, incluyendo exclusiones de carpetas nativas y reglas específicas
-- **🆕 Soporte para Yarn PnP**: Compatible con proyectos que usan Yarn Plug'n'Play
-- **🆕 Soporte para dependencias privadas**: Instalación alternativa para proyectos con registries privados
-- **🆕 Mejoras de compatibilidad**: Instalación robusta para proyectos con dependencias complejas (React Native, monorepos con dependencias privadas)
-- **🆕 Mejoras en la documentación**: Ejemplos y guías actualizadas para facilitar la integración
-- **🆕 Nuevas reglas de validación**: Reglas adicionales para mejorar la calidad del código
-- **🆕 Generación de reportes**: Carpeta `logs-standards-validations` para almacenar los reportes generados con fecha y hora y último colaborador que modificó el archivo
-- **🆕 Visor html**: Herramienta para visualizar los reportes de validación en formato HTML
-- **🆕 Exportación a CSV**: Posibilidad de exportar los reportes a formato CSV para análisis externo
+- **Modular architecture**: Each component has a specific responsibility
+- **Scalable**: Easy to add new rules and validators
+- **Configurable**: Flexible configuration through configuration file
+- **Friendly CLI**: Command line interface with detailed options and flag precedence
+- **Detailed reports**: Generates comprehensive reports with sections for errors, warnings and info
+- **Monorepo support**: Automatically detects and validates multiple zones
+- **🆕 Granular file control**: `--all-files` flag for complete validation vs `--only-changed-files` for incremental validation
+- **🆕 Options precedence**: CLI flags take precedence over file configuration
+- **🆕 Advanced debug mode**: `--debug` option with detailed information about the scanning process
+- **🆕 Selective validation**: `onlyZone` option to validate only specific modules
+- **🆕 Efficient validation**: By default only validates files staged for commit (`onlyChangedFiles: true`)
+- **🆕 Native TypeScript**: Strict types, autocompletion and better development experience
+- **🆕 Smart installation**: Detects React Native and adapts installation automatically
+- **🆕 Advanced validators**: Enriched error messages with line number, folder name and function for key rules (e.g. component name matching)
+- **🆕 Precision improvements**: More precise validation for components, hooks and folder structure
+- **🆕 Init command**: `frontend-standards-init` to copy configuration files
+- **🆕 Multi-environment support**: Automatic configuration for different development environments
+- **🆕 React Native support**: Optimized configuration for React Native projects, including native folder exclusions and specific rules
+- **🆕 Yarn PnP support**: Compatible with projects using Yarn Plug'n'Play
+- **🆕 Private dependencies support**: Alternative installation for projects with private registries
+- **🆕 Compatibility improvements**: Robust installation for projects with complex dependencies (React Native, monorepos with private dependencies)
+- **🆕 Documentation improvements**: Updated examples and guides to facilitate integration
+- **🆕 New validation rules**: Additional rules to improve code quality
+- **🆕 Report generation**: `logs-standards-validations` folder to store generated reports with date and time and last collaborator who modified the file
+- **🆕 HTML viewer**: Tool to visualize validation reports in HTML format
+- **🆕 CSV export**: Possibility to export reports to CSV format for external analysis
 
-## 📦 Instalación Rápida
+## 📦 Quick Installation
 
-### Instalación estándar (Recomendado)
+### Standard installation (Recommended)
 
 ```bash
-# Con Yarn
+# With Yarn
 yarn add --dev frontend-standards-checker@latest
 
-# Con NPM
+# With NPM
 npm install --save-dev frontend-standards-checker@latest
 ```
 
-### Scripts en package.json
+### Scripts in package.json
 
 ```json
 {
@@ -58,178 +58,178 @@ npm install --save-dev frontend-standards-checker@latest
 }
 ```
 
-**Nota importante:**
+**Important note:**
 
-- Instala siempre desde npm usando los comandos anteriores.
-- No uses tarballs locales ni referencias workspace para evitar errores de instalación.
+- Always install from npm using the commands above.
+- Don't use local tarballs or workspace references to avoid installation errors.
 
-⚠️ **Importante:**
+⚠️ **Important:**
 
-Importa únicamente desde el punto de entrada principal (`frontend-standards-checker`) o desde los módulos explícitamente exportados en la sección `exports` de `package.json`.
-No importes nunca desde directorios internos como `src/helpers` o `dist/src/helpers`, ya que esto causará errores de importación de directorios no soportados en Node.js ES Modules.
-Si necesitas ampliar la funcionalidad, solicita la exportación explícita del módulo requerido.
+Import only from the main entry point (`frontend-standards-checker`) or from modules explicitly exported in the `exports` section of `package.json`.
+Never import from internal directories like `src/helpers` or `dist/src/helpers`, as this will cause import errors for directories not supported in Node.js ES Modules.
+If you need to extend functionality, request explicit export of the required module.
 
-- El paquete incluye todos los archivos necesarios y es compatible con monorepos, Next.js, Vite y React Native.
+- The package includes all necessary files and is compatible with monorepos, Next.js, Vite and React Native.
 
-### Completa la configuración tras instalar
+### Complete setup after installation
 
 ```bash
-# Ejecuta este comando para agregar el script y actualizar .gitignore automáticamente
+# Run this command to add the script and update .gitignore automatically
 npx frontend-standards-checker init
-# o
+# or
 yarn frontend-standards-checker init
 ```
 
-Esto agregará el script `standards` a tu package.json y actualizará .gitignore con los archivos relevantes.
+This will add the `standards` script to your package.json and update .gitignore with relevant files.
 
-## 🚀 Uso Rápido
+## 🚀 Quick Usage
 
-### Comandos Principales
+### Main Commands
 
 ```bash
-# Validación estándar (solo archivos staged para commit)
-yarn standards        # o npm run standards
+# Standard validation (only staged files for commit)
+yarn standards        # or npm run standards
 
-# Validar zonas específicas (solo archivos staged)
-yarn standards:zones  # o npm run standards:zones
+# Validate specific zones (only staged files)
+yarn standards:zones  # or npm run standards:zones
 
-# Modo verbose (más detalles, solo archivos staged)
-yarn standards:verbose  # o npm run standards:verbose
+# Verbose mode (more details, only staged files)
+yarn standards:verbose  # or npm run standards:verbose
 
-# Validar TODOS los archivos del proyecto (ignora staging)
-yarn standards:all    # o npm run standards:all
+# Validate ALL project files (ignores staging)
+yarn standards:all    # or npm run standards:all
 
-# Modo debug con información detallada
-yarn standards:debug  # o npm run standards:debug
+# Debug mode with detailed information
+yarn standards:debug  # or npm run standards:debug
 
-# Configurar proyecto inicial
-yarn standards:init   # o npm run standards:init
+# Setup initial project
+yarn standards:init   # or npm run standards:init
 ```
 
-## 📚 Documentación Completa
+## 📚 Complete Documentation
 
-**Para configuración avanzada, ejemplos prácticos y troubleshooting:**
+**For advanced configuration, practical examples and troubleshooting:**
 
-👉 **[Ver Guía Completa de Configuración](./checkFrontendStandards.COMPLETE-GUIDE.md)**
-👉 **[Ver Guía de Instalación Detallada](./INSTALL-GUIDE.md)**
+👉 **[View Complete Configuration Guide](./checkFrontendStandards.COMPLETE-GUIDE.md)**
+👉 **[View Detailed Installation Guide](./INSTALL-GUIDE.md)**
 
-La guía completa incluye:
+The complete guide includes:
 
-- ✅ Instalación paso a paso (npm y yarn)
-- ⚙️ Ejemplos de configuración para React, Next.js, monorepos
-- 🔧 Configuración avanzada de reglas y zonas
-- 🐛 Troubleshooting y comandos de debug
-- 📋 Lista completa de validaciones disponibles (60 reglas en total)
-- 🆕 Configuración de `onlyChangedFiles` y `onlyZone`
-- 🆕 Interacción entre diferentes opciones de configuración
-- 🆕 Niveles de severidad actualizados (ERROR/WARNING/INFO)
+- ✅ Step-by-step installation (npm and yarn)
+- ⚙️ Configuration examples for React, Next.js, monorepos
+- 🔧 Advanced rules and zones configuration
+- 🐛 Troubleshooting and debug commands
+- 📋 Complete list of available validations (60 rules total)
+- 🆕 Configuration of `onlyChangedFiles` and `onlyZone`
+- 🆕 Interaction between different configuration options
+- 🆕 Updated severity levels (ERROR/WARNING/INFO)
 
-#### Configuración simplificada archivo checkFrontendStandards.config.js
+#### Simplified configuration file checkFrontendStandards.config.js
 
 ```javascript
-// checkFrontendStandards.config.js - Configuración para React Native
+// checkFrontendStandards.config.js - Configuration for React Native
 module.exports = {
   zones: { includePackages: false, customZones: ['src'] },
   extensions: ['.js', '.ts', '.jsx', '.tsx'],
   ignorePatterns: ['android', 'ios', 'node_modules'],
-  onlyChangedFiles: false, // Validar todos los archivos
+  onlyChangedFiles: false, // Validate all files
   rules: [
-    // Reglas personalizadas específicas para React Native
+    // Custom rules specific for React Native
   ]
 };
 ```
 
-### Validación Eficiente con onlyChangedFiles
+### Efficient Validation with onlyChangedFiles
 
-Por defecto, la herramienta ahora solo valida archivos que están preparados para commit (staged):
+By default, the tool now only validates files that are staged for commit:
 
 ```javascript
-// checkFrontendStandards.config.js - Este es el comportamiento predeterminado
+// checkFrontendStandards.config.js - This is the default behavior
 export default {
-  onlyChangedFiles: true, // Por defecto es true
+  onlyChangedFiles: true, // Default is true
 }
 ```
 
-**Opciones para validar todos los archivos:**
+**Options to validate all files:**
 
 ```bash
-# Opción 1: Flag CLI (recomendado) - Anula la configuración
+# Option 1: CLI flag (recommended) - Overrides configuration
 frontend-standards-checker check --all-files
 
-# Opción 2: Flag CLI con zona específica
+# Option 2: CLI flag with specific zone
 frontend-standards-checker check --all-files --zones src
 
-# Opción 3: Configuración permanente en archivo config
+# Option 3: Permanent configuration in config file
 export default {
   onlyChangedFiles: false
 }
 ```
 
-**Precedencia de opciones:**
+**Options precedence:**
 
-1. `--all-files` (CLI) - **Mayor precedencia**
+1. `--all-files` (CLI) - **Highest precedence**
 2. `--only-changed-files` (CLI)
-3. `onlyChangedFiles` (configuración del archivo)
-4. Valor por defecto (`true`)
+3. `onlyChangedFiles` (file configuration)
+4. Default value (`true`)
 
-**Ejemplos prácticos:**
+**Practical examples:**
 
 ```bash
-# Solo archivos staged (comportamiento por defecto)
+# Only staged files (default behavior)
 yarn standards
 
-# Todos los archivos (útil para CI/CD o revisión completa)
+# All files (useful for CI/CD or complete review)
 yarn standards -- --all-files
 
-# Todos los archivos en zona específica
+# All files in specific zone
 yarn standards -- --all-files --zones src components
 
-# Forzar solo archivos staged aunque config diga false
+# Force only staged files even if config says false
 yarn standards -- --only-changed-files
 ```
 
-### Reglas Actualizadas a ERROR
+### Rules Updated to ERROR
 
-Las siguientes reglas ahora son consideradas errores críticos:
+The following rules are now considered critical errors:
 
-- **"No console.log"** - Prohibido el uso de console.log en código de producción
-- **"No inline styles"** - Los estilos inline están prohibidos, usar CSS o styled-components
+- **"No console.log"** - Prohibited use of console.log in production code
+- **"No inline styles"** - Inline styles are prohibited, use CSS or styled-components
 
-### Validación por Zonas
+### Zone Validation
 
-Valida únicamente una zona específica, ignorando todas las demás:
+Validate only one specific zone, ignoring all others:
 
 ```javascript
-// Validar solo módulo de autenticación
+// Validate only authentication module
 export default {
   zones: { onlyZone: 'auth' }
 };
 ```
 
 ```bash
-# Validar zonas específicas con todos los archivos
+# Validate specific zones with all files
 frontend-standards-checker check --all-files --zones apps/frontend packages/ui
 
-# Modo verbose solo con archivos staged
+# Verbose mode only with staged files
 frontend-standards-checker check --verbose
 
-# Saltar validaciones específicas con todos los archivos
+# Skip specific validations with all files
 frontend-standards-checker check --all-files --skip-structure --skip-naming
 
-# Configuración personalizada con debug
+# Custom configuration with debug
 frontend-standards-checker check --config ./my-config.js --debug --verbose
 
-# Combinación de opciones avanzadas
+# Advanced options combination
 frontend-standards-checker check --all-files --zones src --verbose --debug
 ```
 
-### Como módulo
+### As a module
 
 ```javascript
 import { FrontendStandardsChecker } from './src/index.js';
 
 const checker = new FrontendStandardsChecker({
-  onlyChangedFiles: true, // Por defecto solo archivos en commit
+  onlyChangedFiles: true, // Default only files in commit
   zones: ['apps/frontend'],
   verbose: true,
   skipStructure: false
@@ -239,28 +239,28 @@ const results = await checker.run();
 console.log(`Found ${results.totalErrors} violations`);
 ```
 
-### Comando CLI para configuración
+### CLI command for configuration
 
 ```bash
-# Agregar script y actualizar .gitignore
+# Add script and update .gitignore
 npx frontend-standards-checker init
-# o
+# or
 yarn frontend-standards-checker init
 ```
 
-Luego puedes usar:
+Then you can use:
 
 ```bash
-yarn standards        # o npm run standards
+yarn standards        # or npm run standards
 ```
 
-## ⚙️ Configuración
+## ⚙️ Configuration
 
-Crea un archivo `checkFrontendStandards.config.js` en la raíz de tu proyecto:
+Create a `checkFrontendStandards.config.js` file in your project root:
 
 ```javascript
 export default {
-  // Reglas personalizadas (se agregan a las predeterminadas)
+  // Custom rules (added to defaults)
   rules: [
     {
       name: 'Custom rule',
@@ -269,16 +269,16 @@ export default {
     }
   ],
 
-  // Configuración de zonas
+  // Zone configuration
   zones: {
     includePackages: true,
     customZones: ['libs', 'tools']
   },
 
-  // Extensiones de archivo a validar
+  // File extensions to validate
   extensions: ['.js', '.ts', '.jsx', '.tsx'],
 
-  // Patrones a ignorar
+  // Patterns to ignore
   ignorePatterns: [
     'build',
     'dist',
@@ -287,27 +287,27 @@ export default {
 };
 ```
 
-### Configuración avanzada con función
+### Advanced configuration with function
 
 ```javascript
 export default function(defaultRules) {
   return {
     rules: [
-      // Modificar reglas existentes
+      // Modify existing rules
       ...defaultRules.filter(rule => rule.name !== 'No console.log'),
 
-      // Agregar reglas personalizadas
+      // Add custom rules
       {
         name: 'My custom rule',
         check: (content, filePath) => {
-          // Lógica personalizada
+          // Custom logic
           return content.includes('bad-pattern');
         },
         message: 'Custom validation failed'
       }
     ],
 
-    // Configuración adicional
+    // Additional configuration
     zones: {
       includePackages: false
     }
@@ -315,32 +315,31 @@ export default function(defaultRules) {
 }
 ```
 
-## 🔧 Configuración para React Native
+## 🔧 Configuration for React Native
 
-Frontend Standards v4.9.0 incluye configuración optimizada para proyectos React Native:
+Frontend Standards v4.9.0 includes optimized configuration for React Native projects:
 
-### Archivo de configuración recomendado
+### Recommended configuration file
 
-````javascript
 ```javascript
 // checkFrontendStandards.config.js
 module.exports = {
-  // Configuración específica para React Native
+  // React Native specific configuration
   zones: {
     includePackages: false,
-    customZones: ['src'] // Solo validar carpeta src
+    customZones: ['src'] // Only validate src folder
   },
 
-  // Extensiones de archivo a validar
+  // File extensions to validate
   extensions: ['.js', '.ts', '.jsx', '.tsx'],
 
-  // Patrones a ignorar específicos para React Native
+  // React Native specific ignore patterns
   ignorePatterns: [
-    'android',           // Código nativo Android
-    'ios',              // Código nativo iOS
+    'android',           // Android native code
+    'ios',              // iOS native code
     'build',
     'dist',
-    '*.config.js',      // Archivos de configuración
+    '*.config.js',      // Configuration files
     'metro.config.js',
     'babel.config.js',
     'react-native.config.js',
@@ -350,16 +349,16 @@ module.exports = {
     'node_modules'
   ],
 
-  // Validar todos los archivos por defecto (recomendado para React Native)
-  // Alternativamente, usa --all-files en CLI para casos específicos
+  // Validate all files by default (recommended for React Native)
+  // Alternatively, use --all-files in CLI for specific cases
   onlyChangedFiles: false,
 
-  // Reglas personalizadas para React Native
+  // Custom rules for React Native
   rules: [
     {
       name: 'React Native - No console.log in production',
       check: (content, filePath) => {
-        // Permitir console.log en archivos de desarrollo/debug
+        // Allow console.log in development/debug files
         if (filePath.includes('debug') || filePath.includes('dev')) {
           return false;
         }
@@ -370,205 +369,199 @@ module.exports = {
     }
   ]
 };
-````
+```
 
-**Comandos recomendados para React Native:**
+**Recommended commands for React Native:**
 
 ```bash
-# Validación completa (todos los archivos)
+# Complete validation (all files)
 yarn standards
 
-# Solo validar src/ con todos los archivos
+# Only validate src/ with all files
 yarn standards -- --zones src
 
-# Validación rápida solo de archivos modificados
+# Quick validation only of modified files
 yarn standards -- --only-changed-files
 
-# Debug mode para troubleshooting
+# Debug mode for troubleshooting
 yarn standards -- --all-files --debug --verbose
 ```
 
-```
+## 🏗️ Architecture
 
-## 🏗️ Arquitectura
-
-El proyecto está estructurado de manera modular:
+The project is structured in a modular way:
 
 ```
-
 src/
-├── index.js # Clase principal y punto de entrada
+├── index.js               # Main class and entry point
 ├── core/
-│ ├── config-loader.js # Carga y manejo de configuración
-│ ├── project-analyzer.js # Análisis de estructura del proyecto
-│ ├── rule-engine.js # Motor de validación de reglas
-│ └── reporter.js # Generación de reportes
+│   ├── config-loader.js   # Configuration loading and management
+│   ├── project-analyzer.js # Project structure analysis
+│   ├── rule-engine.js     # Rule validation engine
+│   └── reporter.js        # Report generation
 └── utils/
-├── file-scanner.js # Escaneo y filtrado de archivos
-└── logger.js # Sistema de logging
-
+    ├── file-scanner.js    # File scanning and filtering
+    └── logger.js          # Logging system
 ```
 
-### Componentes principales
+### Main components
 
 #### FrontendStandardsChecker
 
-La clase principal que orquesta todo el proceso de validación.
+The main class that orchestrates the entire validation process.
 
 #### ConfigLoader
 
-Maneja la carga de configuración desde archivos personalizados y proporciona configuración por defecto.
+Handles configuration loading from custom files and provides default configuration.
 
 #### ProjectAnalyzer
 
-Analiza la estructura del proyecto, detecta si es monorepo, identifica zonas y tipos de proyecto.
+Analyze the project structure, detect if it is a monorepo, identify zones and project types.
 
 #### RuleEngine
 
-Motor de validación que ejecuta reglas contra archivos y contenido.
+Validation engine that executes rules against files and content.
 
 #### Reporter
 
-Genera reportes detallados en múltiples formatos.
+Generates detailed reports in multiple formats.
 
 #### FileScanner
 
-Utilidad para escanear archivos y directorios con patrones de exclusión.
+Utility for scanning files and directories with exclusion patterns.
 
 #### Logger
 
-Sistema de logging consistente con niveles configurables.
+Consistent logging system with configurable levels.
 
-## 📝 Reglas por defecto
+## 📝 Default rules
 
-- **No console.log**: Previene console.log en código de producción
-- **No var**: Fuerza uso de let/const en lugar de var
-- **No funciones anónimas en callbacks**: Prefiere arrow functions
-- **No variables sin usar**: Detecta variables declaradas pero no utilizadas
-- **Convención de nombres de interfaces**: Interfaces deben empezar con 'I'
-- **Estilos inline**: Prohíbe estilos inline
-- **Código comentado**: Detecta código comentado
-- **Datos hardcodeados**: Identifica datos hardcodeados
-- **Comentarios en funciones complejas**: Requiere documentación en funciones complejas
-- **Convenciones de nombres**: Valida naming conventions por tipo de archivo
+- **No console.log**: Prevents console.log in production code
+- **No var**: Forces use of let/const instead of var
+- **No anonymous functions in callbacks**: Prefers arrow functions
+- **No unused variables**: Detects declared but unused variables
+- **Interface naming convention**: Interfaces must start with 'I'
+- **Inline styles**: Prohibits inline styles
+- **Commented code**: Detects commented code
+- **Hardcoded data**: Identifies hardcoded data
+- **Comments in complex functions**: Requires documentation in complex functions
+- **Naming conventions**: Validates naming conventions by file type
 
-## 📊 Resumen de Reglas
+## 📊 Rules Summary
 
-La herramienta incluye un total de **60 reglas** organizadas por nivel de severidad:
+The tool includes a total of **60 rules** organized by severity level:
 
-### 🔴 Reglas de Error (25 total)
+### 🔴 Error Rules (25 total)
 
-_Las reglas de error indican problemas críticos que pueden romper el código o impedir la compilación._
+_Error rules indicate critical problems that can break code or prevent compilation._
 
-- **Naming**: Nomenclatura de componentes, hooks, tipos, helpers, estilos, assets
-- **Content/TypeScript**: No var, no any, no alert, no console.log, no estilos inline
-- **Accesibilidad**: Botones con nombres accesibles, inputs con labels
-- **React**: Key prop en listas, directivas client component
+- **Naming**: Component, hooks, types, helpers, styles, assets naming
+- **Content/TypeScript**: No var, no any, no alert, no console.log, no inline styles
+- **Accessibility**: Accessible button names, inputs with labels
+- **React**: Key prop in lists, client component directives
 
-### 🟡 Reglas de Warning (19 total)
+### 🟡 Warning Rules (19 total)
 
-_Las reglas de warning señalan mejores prácticas importantes que deberían seguirse._
+_Warning rules point out important best practices that should be followed._
 
-- **Structure**: Estructura de carpetas, límites de tamaño de componentes
-- **React/Performance**: Dependencias de hooks, interfaces para props, evitar React.FC
-- **Imports**: Orden de imports, imports absolutos, no imports sin uso
+- **Structure**: Folder structure, component size limits
+- **React/Performance**: Hook dependencies, interfaces for props, avoid React.FC
+- **Imports**: Import order, absolute imports, no unused imports
 
-### 🔵 Reglas de Info (16 total)
+### 🔵 Info Rules (16 total)
 
-_Las reglas de info proporcionan sugerencias y optimizaciones opcionales._
+_Info rules provide suggestions and optional optimizations._
 
-- **Documentation**: JSDoc para funciones complejas, comentarios TSDoc
-- **TypeScript**: Tipos de retorno explícitos, naming de genéricos
-- **Performance**: React.memo para componentes puros, imports específicos
-- **Accessibility**: Nombres accesibles para links, manejo de focus, contraste de color
+- **Documentation**: JSDoc for complex functions, TSDoc comments
+- **TypeScript**: Explicit return types, generic naming
+- **Performance**: React.memo for pure components, specific imports
+- **Accessibility**: Accessible names for links, focus handling, color contrast
 
-> **👉 Para ver la lista completa de reglas detalladas, revisa [rules-list.md](./rules-list.md)**
+> **👉 To see the complete list of detailed rules, check [rules-list.md](./rules-list.md)**
 
-## 🎯 Opciones de CLI
+## 🎯 CLI Options
 
 ```
-
 Options:
--z, --zones <zones...> Zonas específicas a verificar (separadas por espacios)
--c, --config <path> Ruta a archivo de configuración personalizado
--v, --verbose Mostrar salida detallada
---debug Mostrar información de debug sobre escaneo de archivos
---skip-structure Saltar validación de estructura de directorios
---skip-naming Saltar validación de convenciones de nombres
---skip-content Saltar validación de contenido
---only-changed-files Solo verificar archivos preparados para commit (por defecto: true)
---all-files Verificar todos los archivos del proyecto, no solo los staged (anula config)
--h, --help Mostrar ayuda para comandos
+  -z, --zones <zones...>        Specific zones to check (space separated)
+  -c, --config <path>           Path to custom configuration file
+  -v, --verbose                 Show detailed output
+  --debug                       Show debug information about file scanning
+  --skip-structure              Skip directory structure validation
+  --skip-naming                 Skip naming convention validation
+  --skip-content                Skip content validation
+  --only-changed-files          Only check files staged for commit (default: true)
+  --all-files                   Check all project files, not just staged ones (overrides config)
+  -h, --help                    Display help for commands
+```
 
-````
+### New CLI options
 
-### Nuevas opciones de CLI
+- **`--all-files`**: 🆕 Forces validation of all project files, ignoring the `onlyChangedFiles` configuration regardless of whether there are staged files or not.
+- **`--only-changed-files`**: Forces validation only of files staged for commit.
+- **`--debug`**: Shows detailed information about the file scanning process.
 
-- **`--all-files`**: 🆕 Fuerza la validación de todos los archivos del proyecto, ignorando la configuración `onlyChangedFiles` y sin importar si hay archivos staged o no.
-- **`--only-changed-files`**: Fuerza la validación solo de archivos staged para commit.
-- **`--debug`**: Muestra información detallada sobre el proceso de escaneo de archivos.
-
-### Ejemplos de uso
+### Usage examples
 
 ```bash
-# Validar solo archivos staged (comportamiento por defecto)
+# Validate only staged files (default behavior)
 frontend-standards-checker check
 
-# Validar TODOS los archivos del proyecto
+# Validate ALL project files
 frontend-standards-checker check --all-files
 
-# Validar todos los archivos en zonas específicas
+# Validate all files in specific zones
 frontend-standards-checker check --all-files --zones src components
 
-# Modo debug con todos los archivos
+# Debug mode with all files
 frontend-standards-checker check --all-files --debug --verbose
 
-# Solo archivos staged con zonas específicas
+# Only staged files with specific zones
 frontend-standards-checker check --only-changed-files --zones apps/web
-````
+```
 
-## 🔧 Desarrollo
+## 🔧 Development
 
-### Agregar nuevas reglas
+### Adding new rules
 
-1. Crea una nueva regla en el `RuleEngine`:
+1. Create a new rule in the `RuleEngine`:
 
 ```javascript
-// En src/core/rule-engine.js
+// In src/core/rule-engine.js
 this.validators.set('my-validator', this.validateMyRule.bind(this));
 
 async validateMyRule(content, filePath) {
   const errors = [];
-  // Tu lógica de validación aquí
+  // Your validation logic here
   return errors;
 }
 ```
 
-2. O agrega reglas a través de configuración:
+2. Or add rules through configuration:
 
 ```javascript
-// En checkFrontendStandards.config.js
+// In checkFrontendStandards.config.js
 export default {
   rules: [
     {
-      name: 'Mi regla personalizada',
+      name: 'My custom rule',
       check: (content, filePath) => {
-        // Lógica de validación
-        return content.includes('patron-prohibido');
+        // Validation logic
+        return content.includes('forbidden-pattern');
       },
-      message: 'Este patrón no está permitido'
+      message: 'This pattern is not allowed'
     }
   ]
 };
 ```
 
-### Agregar nuevos validadores
+### Adding new validators
 
-Los validadores especializados se pueden agregar en `RuleEngine.initializeValidators()`:
+Specialized validators can be added in `RuleEngine.initializeValidators()`:
 
 ```javascript
 initializeValidators() {
-  // Validadores existentes...
-  this.validators.set('mi-validador', this.validateMiRegla.bind(this));
+  // Existing validators...
+  this.validators.set('my-validator', this.validateMyRule.bind(this));
 }
 ```
