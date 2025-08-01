@@ -161,7 +161,7 @@ describe('RuleEngine', () => {
 
     ruleEngine = new RuleEngine(mockLogger);
   });
-
+  
   describe('edge cases and error branches', () => {
     it('should handle fs.readFileSync error in validateFile', async () => {
       readFileSyncImpl = () => {
@@ -403,7 +403,6 @@ describe('RuleEngine', () => {
         },
       ];
       ruleEngine.initialize({ rules: mockRules });
-
       // Redefinir el mock para este test
       readFileSyncImpl = (_p: any) => 'const test = 123;';
 
