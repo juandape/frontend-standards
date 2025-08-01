@@ -1,3 +1,4 @@
+/* eslint-disable import/no-unused-modules */
 /**
  * @fileoverview Configuration file for checkFrontendStandards.mjs
  *
@@ -129,4 +130,4 @@ export default {
     //   message: 'Regla desactivada',
     // },
   ],
-};
+}
