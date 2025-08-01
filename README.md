@@ -1,6 +1,6 @@
 # Frontend Standards Checker
 
-Una herramienta escalable y modular para validar estándares de frontend en proyectos JavaScript/TypeScript. **Versión 0.0.8 con validadores mejorados, mensajes de error enriquecidos y compatibilidad total para React Native. Visualización de reportes en HTML.**
+Una herramienta escalable y modular para validar estándares de frontend en proyectos JavaScript/TypeScript. **Versión con validadores mejorados, mensajes de error enriquecidos y compatibilidad total para React Native. Visualización de reportes en HTML.**
 
 ## 🚀 Características
 
