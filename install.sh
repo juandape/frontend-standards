@@ -1,7 +1,6 @@
 #!/bin/bash
 
 # Frontend Standards Checker - Automatic Installation Script
-# Version 4.9.1
 
 set -e
 
@@ -138,11 +137,11 @@ install_method() {
     fi
 }
 
-# Instalación con copia local (funciona en todos los casos)
+# Local copy installation (works in all cases)
 install_local_copy() {
     log_info "Using direct copy method..."
 
-    # Volver al directorio original
+    # Return to original directory
     cd "$ORIGINAL_DIR"
 
     if [ -d "frontend-standards-full" ]; then
@@ -153,11 +152,11 @@ install_local_copy() {
     cp -r "$TEMP_DIR" frontend-standards-full
     log_success "Frontend Standards copied to ./frontend-standards-full/"
 
-    # Instalar dependencias en el directorio copiado si es necesario
+    # Install dependencies in the copied directory if necessary
     log_info "Configuring local installation..."
     cd frontend-standards-full
 
-    # Solo instalar dependencias si no existen dist o archivos compilados
+    # Only install dependencies if dist or compiled files don't exist
     if [ ! -d "dist" ] && [ ! -f "bin/cli.js" ]; then
         log_info "Installing local dependencies..."
         if command -v yarn &> /dev/null; then
@@ -208,203 +207,112 @@ add_standards_script_and_hook() {
     PRE_COMMIT_FILE=".husky/pre-commit"
     if [ ! -f "$PRE_COMMIT_FILE" ]; then
         mkdir -p .husky
-        echo "#!/bin/sh" > "$PRE_COMMIT_FILE"
-        echo "yarn standards" >> "$PRE_COMMIT_FILE"
+        cat > "$PRE_COMMIT_FILE" << 'EOF'
+#!/bin/sh
+echo "Running pre-commit checks..."
+
+# Execute standards check and capture exit code
+echo "" | yarn standards --only-changed-files
+exit_code=$?
+
+if [ $exit_code -ne 0 ]; then
+  echo "Frontend standards check failed. Please fix the errors before committing."
+  exit 1
+fi
+
+echo "All checks passed. Proceeding with commit."
+EOF
         chmod +x "$PRE_COMMIT_FILE"
-        log_success "Created .husky/pre-commit and added 'yarn standards'"
+        log_success "Created .husky/pre-commit with robust standards check"
     else
-        if ! grep -q "yarn standards" "$PRE_COMMIT_FILE"; then
-            echo "yarn standards" >> "$PRE_COMMIT_FILE"
-            log_success "Added 'yarn standards' to .husky/pre-commit"
+        # Check if yarn standards exists but not the robust version
+        if grep -q "yarn standards" "$PRE_COMMIT_FILE" && ! grep -q "echo.*yarn standards.*only-changed-files" "$PRE_COMMIT_FILE"; then
+            # Replace simple yarn standards with robust version
+            sed -i.bak '/^[[:space:]]*yarn standards[[:space:]]*$/c\
+# Execute standards check and capture exit code\
+echo "" | yarn standards --only-changed-files\
+exit_code=$?\
+\
+if [ $exit_code -ne 0 ]; then\
+  echo "Frontend standards check failed. Please fix the errors before committing."\
+  exit 1\
+fi' "$PRE_COMMIT_FILE"
+            rm -f "$PRE_COMMIT_FILE.bak"
+            log_success "Updated yarn standards to robust version in .husky/pre-commit"
+        elif ! grep -q "yarn standards" "$PRE_COMMIT_FILE"; then
+            # Add standards check if not present
+            cat >> "$PRE_COMMIT_FILE" << 'EOF'
+
+# Execute standards check and capture exit code
+echo "" | yarn standards --only-changed-files
+exit_code=$?
+
+if [ $exit_code -ne 0 ]; then
+  echo "Frontend standards check failed. Please fix the errors before committing."
+  exit 1
+fi
+EOF
+            log_success "Added robust standards check to .husky/pre-commit"
         else
-            log_info "'yarn standards' already present in .husky/pre-commit"
+            log_info "Robust standards check already present in .husky/pre-commit"
         fi
     fi
 }
 
-# Crear archivo de configuración
+# Create configuration file
 create_config_file() {
-    # Volver al directorio del proyecto
+    # Return to project directory
     cd "$ORIGINAL_DIR"
 
     if [ ! -f "checkFrontendStandards.config.mjs" ]; then
         log_info "Create checkFrontendStandards.config.mjs..."
 
-        if [ "$IS_REACT_NATIVE" = true ]; then
-            # Configuración optimizada para React Native
             cat > checkFrontendStandards.config.mjs << 'EOF'
-// Frontend Standards Config - React Native
+/* eslint-disable import/no-unused-modules */
 /**
  * @fileoverview Configuration file for checkFrontendStandards.mjs
  *
- * This file allows you to customize rules and zones for the frontend standards validation script.
- * Multiple configuration patterns are supported for maximum flexibility:
+ * **Rule Structure:**
+ * Each rule must have:
+ * - `name`: Unique identifier (string)
+ * - `check`: Function that returns true for violations (content, filePath) => boolean | number[]
+ * - `message`: Error message shown to users (string)
+ * - `category`: Optional grouping ('structure', 'naming', 'content', 'style', 'documentation', etc.)
+ * - `severity`: Optional level ('error', 'warning', 'info')
  *
- * **Object Configuration:**
+ * **Configuration Options:**
  * - `merge`: Boolean to control if custom rules merge with defaults
- * - `onlyChangedFiles`: 🆕 Boolean to only check files staged for commit (default: true)
+ * - `onlyChangedFiles`: Boolean to only check files staged for commit (default: true)
  * - `zones`: Object to configure which directories to validate
- *   - `includePackages`: Include packages/ directory in monorepos
- *   - `customZones`: Array of additional directories to validate
- *   - `onlyZone`: String to validate only one specific zone (ignores all others)
  * - `rules`: Array of custom validation rules
  *
- * **Function Configuration:**
- * - Export a function that receives default rules and returns modified rules
- * - Allows dynamic rule generation and conditional logic
- *
- * **Array Configuration:**
- * - Export array of rules directly (automatically merges with defaults)
- * - Simplest approach for adding a few custom rules
  * @author Juan David Peña
- * @since 2024-01-15
-    * @license MIT
- * @see {@link ./checkFrontendStandards.types.js} Type definitions
- */
-module.exports = {
-  zones: {
-    includePackages: false,
-    customZones: ['src'] // Solo validar directorio src
-  },
-  extensions: ['.js', '.ts', '.jsx', '.tsx'],
-  ignorePatterns: [
-    'android/**',
-    'ios/**',
-    'build/**',
-    'dist/**',
-    'node_modules/**',
-    '*.config.js',
-    '__tests__/**',
-    '*.test.*',
-    '*.spec.*',
-    'frontend-standards-full/**'
-  ],
-  onlyChangedFiles: true, // true: only changed files | false: all files
-  rules: [
-    // Example: Basic custom rule
-    // You can add, modify or remove these rules according to your needs
-   // {
-    //  name: 'No console.log in production',
-    //  check: (content, filePath) => {
-    //    // Allow console.log in development/debug files
-    //    if (filePath.includes('debug') || filePath.includes('dev') || filePath.includes('__tests__')) {
-    //      return false;
-    //    }
-    //    return content.includes('console.log');
-    //  },
-    //  message: 'Remove console.log statements before committing to production.',
-    //  level: 'WARNING'
-   // }
-    // Add more personalized rules here according to your project needs
-    // Example:
-    // {
-    //   name: 'Require file header comments',
-    //   check: (content) => !content.startsWith('//') && !content.startsWith('/*'),
-    //   message: 'Files should start with a comment describing their purpose.',
-    //   level: 'INFO'
-    // }
-  ]
-};
-EOF
-        else
-            # Configuración estándar
-            cat > checkFrontendStandards.config.mjs << 'EOF'
-// Frontend Standards Config
-/**
- * @fileoverview Configuration file for checkFrontendStandards.mjs
- *
- * This file allows you to customize rules and zones for the frontend standards validation script.
- * Multiple configuration patterns are supported for maximum flexibility:
- *
- * **Object Configuration:**
- * - `merge`: Boolean to control if custom rules merge with defaults
- * - `onlyChangedFiles`: 🆕 Boolean to only check files staged for commit (default: true)
- * - `zones`: Object to configure which directories to validate
- *   - `includePackages`: Include packages/ directory in monorepos
- *   - `customZones`: Array of additional directories to validate
- *   - `onlyZone`: String to validate only one specific zone (ignores all others)
- * - `rules`: Array of custom validation rules
- *
- * **Function Configuration:**
- * - Export a function that receives default rules and returns modified rules
- * - Allows dynamic rule generation and conditional logic
- *
- * **Array Configuration:**
- * - Export array of rules directly (automatically merges with defaults)
- * - Simplest approach for adding a few custom rules
- *
- * @author Juan David Peña
- * @since 2024-01-15
-    * @license MIT
- * @see {@link ./checkFrontendStandards.types.js} Type definitions
- *
- * @example
- * ```js
- * // Basic configuration with custom rules
- * export default {
- *   merge: true,
- *   zones: { includePackages: false, customZones: ['shared'] },
- *   rules: [{ name: 'Custom rule', check: (content) => false, message: 'Custom' }]
- * }
- * ```
- *
- * @example
- * ```js
- * // 🆕 Only validate specific zone (auth example)
- * export default {
- *   zones: { onlyZone: 'auth' },
- *   rules: [{ name: 'Auth security', check: (content) => false, message: 'Secure auth' }]
- * }
- * ```
- *
- * @example
- * ```js
- * // Function-based configuration for dynamic rules
- * export default function(defaultRules) {
- *   return [...defaultRules, { name: 'Dynamic', check: () => false, message: 'Dynamic rule' }]
- * }
- * ```
- *
- * @example
- * ```js
- * // Array export (merges with defaults)
- * export default [
- *   { name: 'Array rule', check: (content) => false, message: 'From array' }
- * ]
- * ```
+ * @license MIT
  */
 
-/**
- * Default configuration object for frontend standards validation.
- *
- * @type {{
- *   merge: boolean,
- *   zones: import('./checkFrontendStandards.types.js').ZoneConfig,
- *   rules: import('./checkFrontendStandards.types.js').ValidationRule[]
- * }}
- */
 export default {
+  // ==========================================
+  // ⚙️ SYSTEM CONFIGURATION
+  // ==========================================
+
   // Merge custom rules with default rules (default: true)
   merge: true,
 
-  // By default, only checks files staged for commit
-  // If set to false, all files in the project will be checked
-  // If no zones or onlyZone are specified, only modified files will be checked
-  onlyChangedFiles: true, // Default: true = only changed files, false = all files
+  // Only check files staged for commit (default: true)
+  // If set to false, all project files will be checked
+  onlyChangedFiles: true,
 
-  // Zone configuration
   zones: {
     // Whether to include 'packages' directory in validation (default: false)
     includePackages: false,
 
-    // 🎯 NEW OPTION: Review only one specific zone
-    // If specified, it will ignore all other zones and only process this one
+    // Validate only one specific zone
     // onlyZone: 'auth', // Example: 'auth', 'src', 'components', 'pages', etc.
-    // onlyZone: 'src/auth',     // For zone within src
-    // onlyZone: 'app/(auth)',   // For Next.js App Router
-    // onlyZone: 'packages/ui',  // For monorepos
+    // onlyZone: 'src/auth', // For zone within src
+    // onlyZone: 'app/(auth)', // For Next.js App Router
+    // onlyZone: 'packages/ui', // For monorepos
 
-    // Custom zones to include in validation (ignored if onlyZone is set)
+    // Custom zones to include in validation (ignored if onlyZone is defined)
     // If customZones are specified, all files in those zones will be checked
     // ignoring the onlyChangedFiles option
     customZones: [
@@ -413,109 +321,223 @@ export default {
     ],
   },
 
-  // Custom rules to add or override
-  rules: [
-    // Example: Add a custom rule
-    // {
-    //   name: 'No TODO comments',
-    //   check: (content) => content.includes('TODO'),
-    //   message: 'TODO comments should be resolved before committing.',
-    // },
-    // Example: Disable a specific pattern
-    // {
-    //   name: 'Allow console.warn',
-    //   check: (content) => false, // Never triggers
-    //   message: 'This rule is disabled.',
-    // },
-    // Disable the console.log rule
-    // {
-    //   name: 'No console.log',
-    //   check: () => false, // Never triggers
-    //   message: 'Rule disabled',
-    // },
-    // Disable the English-only comments rule
-    // {
-    //   name: 'English-only comments',
-    //   check: () => false,
-    //   message: 'Rule disabled',
-    // },
-  ],
+  // ==========================================
+  // 📋 RULES CONFIGURATION
+  // ==========================================
+  rules: function (defaultRules) {
+    // ==========================================
+    // 🚫 DISABLE EXISTING RULES (CORRECT METHOD)
+    // ==========================================
+    // Filter out rules you want to disable from the 64 available default rules:
+    // Choose from the complete list of available rules:
+    //
+    // 🏗️ STRUCTURE RULES (12 rules):
+    // 'Folder structure', 'Src structure', 'Component size limit',
+    // 'No circular dependencies', 'Missing test files', 'Test file naming convention',
+    // 'Missing index.ts in organization folders', 'GitFlow branch naming convention',
+    // 'Environment-specific configuration', 'Proper release versioning',
+    // 'Platform-specific code organization', 'Sync branch validation'
+    //
+    // 🏷️ NAMING RULES (12 rules):
+    // 'Component naming', 'Hook naming', 'Type naming', 'Constants naming',
+    // 'Helper naming', 'Style naming', 'Assets naming', 'Folder naming convention',
+    // 'Directory naming convention', 'Interface naming with I prefix',
+    // 'Constant export naming UPPERCASE', 'Next.js app router naming'
+    //
+    // 💻 CONTENT RULES (10 rules):
+    // 'No console.log', 'No var', 'No any type', 'No inline styles',
+    // 'No alert', 'No hardcoded URLs', 'Must use async/await', 'No jQuery',
+    // 'No merge conflicts markers', 'No committed credentials'
+    //
+    // ⚛️ REACT RULES (7 rules):
+    // 'Client component directive', 'Proper hook dependencies',
+    // 'Component props interface', 'Avoid React.FC', 'Proper key prop in lists',
+    // 'Styled components naming', 'Tailwind CSS preference'
+    //
+    // 🔷 TYPESCRIPT RULES (3 rules):
+    // 'Prefer type over interface for unions', 'Explicit return types for functions',
+    // 'Proper generic naming'
+    //
+    // 📦 IMPORT RULES (5 rules):
+    // 'Direct imports for sibling files', 'Import order', 'Use absolute imports',
+    // 'No default and named imports mixed', 'No unused imports'
+    //
+    // ⚡ PERFORMANCE RULES (5 rules):
+    // 'Next.js Image optimization', 'Avoid inline functions in JSX',
+    // 'Missing React.memo for pure components', 'Large bundle imports',
+    // 'Avoid re-renders with object literals'
+    //
+    // ♿ ACCESSIBILITY RULES (6 rules):
+    // 'Button missing accessible name', 'Form inputs missing labels',
+    // 'Image alt text', 'Links missing accessible names',
+    // 'Missing focus management', 'Color contrast considerations'
+    //
+    // 📖 DOCUMENTATION RULES (4 rules):
+    // 'Missing comment in complex function', 'Should have TSDoc comments',
+    // 'JSDoc for complex functions', 'English-only comments'
+
+    // Examples of commonly disabled rules (CORRECT METHOD):
+    const disabledRules = [
+      // 'No console.log',           // Allow console.log statements
+      // 'No any type',             // Allow TypeScript any type
+      // 'English-only comments',   // Allow non-English comments
+      // 'Component naming',        // Disable component naming rules
+      // 'Missing test files',      // Don't require test files
+    ];
+
+    const filteredRules = defaultRules.filter(
+      (rule) => !disabledRules.includes(rule.name)
+    );
+
+    // ==========================================
+    // 🔄 MODIFY EXISTING RULES
+    // ==========================================
+    const modifiedRules = filteredRules.map((rule) => {
+      // Example: Change rule severity
+      // if (rule.name === 'No any type') {
+      //   return { ...rule, severity: 'warning' }; // Change from error to warning
+      // }
+
+      // Example: Customize rule message
+      // if (rule.name === 'Component naming') {
+      //   return {
+      //     ...rule,
+      //     message: 'Components should use PascalCase naming convention.',
+      //   };
+      // }
+
+      return rule;
+    });
+
+    // ==========================================
+    // 🎯 CUSTOM CONTENT RULES
+    // ==========================================
+    const customRules = [
+      // {
+      //   name: 'No hardcoded URLs',
+      //   category: 'content',
+      //   severity: 'warning',
+      //   check: (content) => /https?:\/\/[^\s'"]+/.test(content),
+      //   message: 'Use environment variables for URLs.',
+      // },
+      // {
+      //   name: 'Custom hook naming',
+      //   category: 'naming',
+      //   severity: 'error',
+      //   check: (content, filePath) => {
+      //     if (!filePath.endsWith('.tsx') && !filePath.endsWith('.ts')) return false;
+      //     return /const\s+\w+\s*=\s*use\w+/.test(content) && !/const\s+use\w+/.test(content);
+      //   },
+      //   message: 'Custom hooks should start with "use".',
+      // },
+      // {
+      //   name: 'No pending tasks',
+      //   category: 'content',
+      //   severity: 'warning',
+      //   check: (content) => content.includes('TASK'),
+      //   message: 'Resolve pending tasks before committing.',
+      // },
+      // ==========================================
+      // 🔍 ADVANCED REGEX RULES
+      // ==========================================
+      // {
+      //   name: 'No debug statements',
+      //   category: 'content',
+      //   severity: 'error',
+      //   check: (content) => {
+      //     const debugRegex = /(?:^|[^\/\*])(?:console\.(?:debug|trace)|debugger)/gm;
+      //     return debugRegex.test(content);
+      //   },
+      //   message: 'Remove debug statements from production code.',
+      // },
+      // {
+      //   name: 'No hardcoded secrets',
+      //   category: 'security',
+      //   severity: 'error',
+      //   check: (content) => {
+      //     const secretPatterns = [
+      //       /(?:password|secret|key|token)\s*[:=]\s*['"][^'"]{8,}['"]/gi,
+      //       /(?:api[_-]?key|access[_-]?token)\s*[:=]\s*['"][^'"]+['"]/gi,
+      //     ];
+      //     return secretPatterns.some(pattern => pattern.test(content));
+      //   },
+      //   message: 'Use environment variables for secrets.',
+      // },
+      // ==========================================
+      // 📁 FILE-SPECIFIC RULES
+      // ==========================================
+      // {
+      //   name: 'Component prop types',
+      //   category: 'typescript',
+      //   severity: 'error',
+      //   check: (content, filePath) => {
+      //     if (!filePath.includes('/components/') || !filePath.endsWith('.tsx')) {
+      //       return false;
+      //     }
+      //     const hasProps = /(?:function|const)\s+\w+.*\(\s*\{\s*\w+/.test(content);
+      //     const hasInterface = /interface\s+\w+Props/.test(content);
+      //     const hasType = /type\s+\w+Props/.test(content);
+      //     return hasProps && !hasInterface && !hasType;
+      //   },
+      //   message: 'React components with props must define TypeScript interfaces.',
+      // },
+      // ==========================================
+      // 🔒 SECURITY RULES
+      // ==========================================
+      // {
+      //   name: 'Unsafe HTML injection',
+      //   category: 'security',
+      //   severity: 'error',
+      //   check: (content) => {
+      //     const dangerousHTML = /dangerouslySetInnerHTML\s*=\s*{\s*{?\s*__html:/g;
+      //     const hasSanitization = /DOMPurify|sanitize|xss/gi;
+      //     return dangerousHTML.test(content) && !hasSanitization.test(content);
+      //   },
+      //   message: 'Sanitize HTML content before using dangerouslySetInnerHTML.',
+      // },
+      // ==========================================
+      // 🚀 PERFORMANCE RULES
+      // ==========================================
+      // {
+      //   name: 'React performance',
+      //   category: 'performance',
+      //   severity: 'warning',
+      //   check: (content, filePath) => {
+      //     if (!filePath.endsWith('.tsx') && !filePath.endsWith('.jsx')) {
+      //       return false;
+      //     }
+      //     const inlineFunctionRegex = /\w+\s*=\s*{\s*\([^)]*\)\s*=>/g;
+      //     return inlineFunctionRegex.test(content);
+      //   },
+      //   message: 'Avoid inline functions in JSX props to prevent re-renders.',
+      // },
+      // ==========================================
+      // 🎯 QUICK START EXAMPLES
+      // ==========================================
+      // {
+      //   name: 'No hardcoded URLs',
+      //   category: 'content',
+      //   severity: 'warning',
+      //   check: (content) => /https?:\/\/[^\s'"]+/.test(content),
+      //   message: 'Use environment variables for URLs.',
+      // },
+      // {
+      //   name: 'React hooks naming',
+      //   category: 'naming',
+      //   severity: 'error',
+      //   check: (content, filePath) => {
+      //     if (!filePath.endsWith('.tsx') && !filePath.endsWith('.ts')) return false;
+      //     return /const\s+\w+\s*=\s*use\w+/.test(content) && !/const\s+use\w+/.test(content);
+      //   },
+      //   message: 'Custom hooks should start with "use".',
+      // },
+    ];
+
+    return [...modifiedRules, ...customRules];
+  },
 };
 
-// Alternative configurations:
-
-// 1. Export only custom rules (replaces all default rules)
-// export default {
-//   merge: false,
-//   rules: [
-//     {
-//       name: 'Custom rule only',
-//       check: (content) => content.includes('bad-pattern'),
-//       message: 'This is a custom validation.',
-//     },
-//   ],
-// }
-
-// 2. Export a function that receives default rules
-// export default function(defaultRules) {
-//   return [
-//     ...defaultRules,
-//     {
-//       name: 'Dynamic custom rule',
-//       check: (content) => content.includes('dynamic-pattern'),
-//       message: 'This rule was added dynamically.',
-//     },
-//   ]
-// }
-
-// 3. Export array of rules directly (merges with defaults)
-// export default [
-//   {
-//     name: 'Array-based rule',
-//     check: (content) => content.includes('array-pattern'),
-//     message: 'This rule comes from an array export.',
-//   },
-// ]
-
-// 4. Example with packages enabled
-// export default {
-//   zones: {
-//     includePackages: true, // This will include packages/ in validation
-//     customZones: ['shared', 'tools'], // Additional folders to validate
-//   },
-//   rules: [
-//     // Custom rules here
-//   ],
-// }
-
-// 5. 🎯 NEW: Example with onlyZone - review only one specific zone
-// export default {
-//   zones: {
-//     onlyZone: 'auth', // Only review the authentication zone
-// onlyZone: 'src/components', // Only components
-// onlyZone: 'pages', // Only pages
-// onlyZone: 'app/(dashboard)', // Next.js App Router
-// onlyZone: 'packages/ui/src', // Specific monorepo
-//   },
-//   rules: [
-// Specific rules for the zone
-//   ],
-// }
-
-// 6. 🔍 NEW: Validate all zones and files (not just those in the commit)
-// export default {
-//   // Change to false to validate ALL files (default is true)
-//   onlyChangedFiles: false,
-//
-//   // Optionally, configure specific zones
-//   zones: {
-//     includePackages: true, // Include packages/ folder in monorepos
-//     customZones: ['src', 'app', 'components'] // Additional zones
-//   }
-// }
-
 EOF
-        fi
 
         log_success "Configuration file created: checkFrontendStandards.config.mjs"
     else
@@ -537,8 +559,29 @@ copy_guide() {
     fi
 }
 
+# Add installed files to .gitignore automatically
+add_to_gitignore() {
+    cd "$ORIGINAL_DIR"
+    GITIGNORE_FILE=".gitignore"
+    # Create .gitignore if it doesn't exist
+    if [ ! -f "$GITIGNORE_FILE" ]; then
+        touch "$GITIGNORE_FILE"
+    fi
+    # List of paths to ignore
+    IGNORE_LIST=(
+        "logs-standards-validations/"
+    )
+    for ITEM in "${IGNORE_LIST[@]}"; do
+        if ! grep -qxF "$ITEM" "$GITIGNORE_FILE"; then
+            echo "$ITEM" >> "$GITIGNORE_FILE"
+            log_success "Added to .gitignore: $ITEM"
+        else
+            log_info "$ITEM already in .gitignore"
+        fi
+    done
+}
 
-# Ejecutar instalación
+# Execute installation
 log_info "Installation method based on project type..."
 install_method
 
@@ -546,11 +589,11 @@ log_info "Creating configuration files..."
 create_config_file
 copy_guide
 
-# Verificar que todo se haya instalado correctamente
+# Verify that everything has been installed correctly
 log_info "Verifying installation..."
 cd "$ORIGINAL_DIR"
 
-# Verificar scripts en package.json
+# Verify scripts in package.json
 if grep -q "standards" package.json; then
     log_success "Scripts added successfully to package.json"
 else
@@ -558,7 +601,7 @@ else
     add_standards_script_and_hook
 fi
 
-# Verificar archivo de configuración
+# Verify configuration file
 if [ -f "checkFrontendStandards.config.mjs" ]; then
     log_success "Configuration file created successfully: checkFrontendStandards.config.mjs"
 else
@@ -566,7 +609,7 @@ else
     create_config_file
 fi
 
-# Limpiar
+# Clean up
 log_info "Cleaning up temporary files..."
 rm -rf "$TEMP_DIR"
 
@@ -606,29 +649,6 @@ echo "   ✅ checkFrontendStandards.COMPLETE-GUIDE.md"
 echo "   ✅ frontend-standards-full/ (full installation)"
 echo "   ✅ .gitignore (updated with installed files)"
 echo ""
-
-# Add installed files to .gitignore automatically
-add_to_gitignore() {
-    cd "$ORIGINAL_DIR"
-    GITIGNORE_FILE=".gitignore"
-    # Create .gitignore if it doesn't exist
-    if [ ! -f "$GITIGNORE_FILE" ]; then
-        touch "$GITIGNORE_FILE"
-    fi
-    # List of paths to ignore
-    IGNORE_LIST=(
-        "logs-standards-validations/"
-
-    )
-    for ITEM in "${IGNORE_LIST[@]}"; do
-        if ! grep -qxF "$ITEM" "$GITIGNORE_FILE"; then
-            echo "$ITEM" >> "$GITIGNORE_FILE"
-            log_success "Added to .gitignore: $ITEM"
-        else
-            log_info "$ITEM already in .gitignore"
-        fi
-    done
-}
 
 # Execute function to add to .gitignore
 add_to_gitignore
