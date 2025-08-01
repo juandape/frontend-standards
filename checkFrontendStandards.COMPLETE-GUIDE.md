@@ -6,6 +6,9 @@ Esta guía contiene todos los ejemplos posibles para configurar reglas personali
 
 ## 🆕 Novedades
 
+- **🆕 Flag `--all-files`**: Nueva opción CLI que fuerza la validación de todos los archivos del proyecto, anulando la configuración `onlyChangedFiles` y el staging de Git
+- **🆕 Precedencia de opciones mejorada**: Los flags CLI ahora tienen precedencia sobre la configuración del archivo para mayor flexibilidad
+- **🆕 Modo debug avanzado**: Nueva opción `--debug` que muestra información detallada sobre el proceso de escaneo de archivos
 - Validadores avanzados con mensajes enriquecidos (línea, carpeta, función)
 - Mejoras en la precisión de reglas de componentes y hooks
 - Mensajes de error más claros y útiles para debugging rápido
@@ -21,6 +24,14 @@ Esta guía contiene todos los ejemplos posibles para configurar reglas personali
 - Mejoras en la documentación: ejemplos y guías actualizadas para facilitar la integración
 - Nuevas reglas de validación: reglas adicionales para mejorar la calidad del código
 - Exportación a CSV: posibilidad de exportar los reportes a formato CSV para análisis externo
+
+### 🎯 Casos de uso del nuevo flag `--all-files`
+
+- **CI/CD**: Validación completa del proyecto en pipelines de integración continua
+- **Pre-release**: Revisión completa antes de releases importantes
+- **Onboarding**: Validación completa de proyectos heredados o nuevos desarrolladores
+- **Troubleshooting**: Debug de problemas en archivos específicos que no están staged
+- **Auditorías**: Revisiones completas de calidad de código
 
 ---
 
@@ -115,7 +126,6 @@ npx frontend-standards-init
 ```
 
 Esto copiará la guía completa y el archivo `checkFrontendStandards.config.js` en la raíz de tu proyecto.
-
 
 ## 🚀 Instrucciones de Uso
 
@@ -716,67 +726,298 @@ export default [
 **Para proyectos estándar (monorepos, Next.js, etc.):**
 
 ```bash
-# Validación estándar (solo archivos modificados)
+# Validación estándar (solo archivos staged para commit)
 npm run standards
 
-# Validar zonas específicas
+# Validar zonas específicas (solo archivos staged)
 npm run standards:zones
 
-# Modo verbose (más detalles)
+# Modo verbose (más detalles, solo archivos staged)
 npm run standards:verbose
 
-# Validar TODOS los archivos
+# Validar TODOS los archivos del proyecto
 npm run standards:all
 
-# Copiar archivos de configuración adicionales
+# Modo debug con información detallada
+npm run standards:debug
+
+# Configuración inicial del proyecto
 npm run standards:init
 ```
 
 **Para React Native:**
 
 ```bash
-# Validación estándar
+# Validación estándar (solo archivos staged)
 yarn standards
 
-# Validar zonas específicas
+# Validar zonas específicas (solo archivos staged)
 yarn standards:zones
 
-# Modo verbose
+# Modo verbose (solo archivos staged)
 yarn standards:verbose
 
-# Validar todos los archivos
+# Validar TODOS los archivos
 yarn standards:all
 
-# Copiar configuraciones
+# Debug mode para troubleshooting
+yarn standards:debug
+
+# Configuración inicial
 yarn standards:init
 ```
+
+### Opciones de CLI Avanzadas
+
+**Nuevas opciones disponibles:**
+
+```bash
+# Verificar solo archivos específicos staged
+frontend-standards-checker check --only-changed-files --zones src
+
+# Verificar TODOS los archivos (ignora staging)
+frontend-standards-checker check --all-files
+
+# Verificar todos los archivos en zonas específicas
+frontend-standards-checker check --all-files --zones src components
+
+# Modo debug con información detallada del escaneo
+frontend-standards-checker check --debug --verbose
+
+# Combinación de opciones para CI/CD
+frontend-standards-checker check --all-files --verbose --zones apps/web
+
+# Saltar validaciones específicas
+frontend-standards-checker check --skip-structure --skip-naming
+
+# Configuración personalizada
+frontend-standards-checker check --config ./custom-config.mjs
+```
+
+**Precedencia de opciones `onlyChangedFiles`:**
+
+1. **`--all-files`** (CLI) - Mayor precedencia, siempre procesa todos los archivos
+2. **`--only-changed-files`** (CLI) - Fuerza solo archivos staged
+3. **`onlyChangedFiles: false/true`** (configuración del archivo)
+4. **Valor por defecto** (`true` - solo archivos staged)
+
+**Casos de uso prácticos:**
+
+```bash
+# Desarrollo diario - solo cambios actuales
+yarn standards
+
+# Revisión completa antes de merge/release
+yarn standards:all
+
+# Debug de problemas específicos
+yarn standards -- --all-files --debug --zones src
+
+# CI/CD - validación completa
+yarn standards -- --all-files --verbose
+
+# Validación rápida de zona específica
+yarn standards -- --zones components utils
+```
+
+yarn standards:init
+
+````
 
 ### Opciones de CLI Avanzadas
 
 **Para instalación estándar con argumentos:**
 
 ```bash
-# Validar zonas específicas
+# Validar zonas específicas (solo archivos staged)
 npm run standards -- --zones src components
 
-# Validar solo una zona
+# Validar solo una zona específica
 npm run standards -- --only-zone auth
 
-# Validar todos los archivos (override config)
-npm run standards -- --only-changed-files=false
+# Validar TODOS los archivos (ignora staging y config)
+npm run standards -- --all-files
 
-# Modo verbose con configuración personalizada
-npm run standards -- --verbose --config mi-config.js
-```
+# Validar todos los archivos en zonas específicas
+npm run standards -- --all-files --zones src components
 
-**Para React Native (los comandos ya incluyen configuración externa):**
+# Forzar solo archivos staged (override config si está en false)
+npm run standards -- --only-changed-files
+
+# Modo verbose con todos los archivos
+npm run standards -- --all-files --verbose
+
+# Debug mode con configuración personalizada
+npm run standards -- --all-files --debug --config mi-config.js
+````
+
+**Para React Native (comandos actualizados):**
 
 ```bash
-# Los scripts ya están configurados correctamente
-yarn standards                 # Incluye --config ../checkFrontendStandards.config.js
-yarn standards:zones           # Incluye configuración externa
-yarn standards:verbose         # Con configuración optimizada
+# Solo archivos staged (rápido para desarrollo)
+yarn standards
+
+# Validación completa de todo el proyecto
+yarn standards -- --all-files
+
+# Validar solo src/ completo
+yarn standards -- --all-files --zones src
+
+# Debug mode para troubleshooting
+yarn standards -- --all-files --debug --verbose
 ```
+
+---
+
+## 🚀 Guía Detallada de Opciones CLI
+
+### Opciones de Validación de Archivos
+
+#### `--all-files` (Recomendado para casos específicos)
+
+**Descripción**: Fuerza la validación de TODOS los archivos del proyecto, ignorando el staging de Git y la configuración `onlyChangedFiles`.
+
+**Cuándo usar**:
+
+- ✅ **CI/CD**: Validación completa en pipelines
+- ✅ **Pre-release**: Revisión completa antes de versiones importantes
+- ✅ **Auditorías**: Evaluación completa de calidad de código
+- ✅ **Onboarding**: Validación de proyectos nuevos o heredados
+- ✅ **Troubleshooting**: Debug de archivos que no están staged
+
+**Ejemplos**:
+
+```bash
+# Validación completa del proyecto
+frontend-standards-checker check --all-files
+
+# Validación completa con información detallada
+frontend-standards-checker check --all-files --verbose --debug
+
+# Validación completa de zonas específicas
+frontend-standards-checker check --all-files --zones src components utils
+```
+
+#### `--only-changed-files` (Por defecto)
+
+**Descripción**: Valida únicamente los archivos que están staged para commit en Git.
+
+**Cuándo usar**:
+
+- ✅ **Desarrollo diario**: Validación rápida de cambios actuales
+- ✅ **Pre-commit hooks**: Validación automática antes de commits
+- ✅ **Desarrollo incremental**: Validación eficiente de cambios específicos
+
+**Ejemplos**:
+
+```bash
+# Comportamiento por defecto (no necesita flag)
+frontend-standards-checker check
+
+# Forzar explícitamente (útil si config tiene onlyChangedFiles: false)
+frontend-standards-checker check --only-changed-files
+
+# Con zonas específicas
+frontend-standards-checker check --only-changed-files --zones src
+```
+
+### Opciones de Información y Debug
+
+#### `--debug`
+
+**Descripción**: Muestra información detallada sobre el proceso de escaneo de archivos, patrones de exclusión, y decisiones del motor de validación.
+
+**Información que proporciona**:
+
+- 📁 Archivos encontrados en cada zona
+- 🚫 Patrones de exclusión aplicados
+- ⚙️ Configuración cargada
+- 📊 Estadísticas de procesamiento
+
+**Ejemplo**:
+
+```bash
+# Debug con validación completa
+frontend-standards-checker check --all-files --debug --verbose
+```
+
+#### `--verbose`
+
+**Descripción**: Muestra información detallada durante la validación, incluyendo cada archivo procesado y estadísticas por zona.
+
+**Combina bien con**:
+
+- `--all-files` para revisiones completas
+- `--debug` para troubleshooting profundo
+- `--zones` para análisis específico
+
+### Opciones de Zona y Configuración
+
+#### `--zones <zona1> <zona2>`
+
+**Ejemplos prácticos**:
+
+```bash
+# Validar múltiples zonas
+frontend-standards-checker check --zones src components utils
+
+# Validar zona específica con todos los archivos
+frontend-standards-checker check --all-files --zones src
+
+# Validar apps específicas en monorepo
+frontend-standards-checker check --zones apps/web apps/mobile
+```
+
+#### `--config <ruta>`
+
+**Ejemplos**:
+
+```bash
+# Configuración personalizada
+frontend-standards-checker check --config ./config/custom-standards.mjs
+
+# Configuración específica de entorno
+frontend-standards-checker check --config ./configs/production.mjs
+```
+
+### Casos de Uso Prácticos
+
+#### 🔄 Desarrollo Diario
+
+```bash
+# Validación rápida de cambios actuales
+yarn standards
+```
+
+#### 🚀 Pre-Release
+
+```bash
+# Validación completa antes de release
+yarn standards -- --all-files --verbose
+```
+
+#### 🐛 Troubleshooting
+
+```bash
+# Debug completo con máxima información
+yarn standards -- --all-files --debug --verbose --zones src
+```
+
+#### 🏗️ CI/CD
+
+```bash
+# Validación completa para pipeline
+frontend-standards-checker check --all-files --verbose
+```
+
+#### 📊 Auditoría de Calidad
+
+```bash
+# Revisión completa con reporte detallado
+frontend-standards-checker check --all-files --verbose > audit-report.log
+```
+
+---
 
 ## 🎯 Ejemplo Activo para Probar
 

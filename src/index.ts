@@ -130,6 +130,7 @@ export class FrontendStandardsChecker {
       const hasOnlyZone = config.zones?.onlyZone !== undefined;
 
       if (
+        this.options.onlyChangedFiles !== false &&
         (this.options.onlyChangedFiles || config.onlyChangedFiles) &&
         !hasOnlyZone
       ) {
@@ -144,6 +145,8 @@ export class FrontendStandardsChecker {
         this.logger.info(
           `🎯 Only checking zone: ${config.zones?.onlyZone} (onlyChangedFiles disabled)`
         );
+      } else {
+        this.logger.info('🔍 Checking all files in the project');
       }
 
       for (const zone of zonesToValidate) {

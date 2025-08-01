@@ -73,6 +73,10 @@ program
     '--only-changed-files',
     'Only check files that are staged for commit (default: true)'
   )
+  .option(
+    '--all-files',
+    'Check all files in the project, not just staged files (overrides config)'
+  )
   .action(async (options: ICliOptions) => {
     try {
       console.log(
@@ -93,9 +97,15 @@ program
         skipNaming: options.skipNaming || false,
         skipContent: options.skipContent || false,
       };
-      if (typeof options.onlyChangedFiles === 'boolean') {
+
+      // Handle onlyChangedFiles logic with precedence
+      // --all-files flag overrides both config and --only-changed-files
+      if (options.allFiles) {
+        checkerOptions.onlyChangedFiles = false;
+      } else if (typeof options.onlyChangedFiles === 'boolean') {
         checkerOptions.onlyChangedFiles = options.onlyChangedFiles;
       }
+      // If neither flag is provided, let the config or default handle it
       const checker = new FrontendStandardsChecker(checkerOptions);
 
       const result = await checker.run();
@@ -151,7 +161,9 @@ program
           copyFileSync(file.src, file.dest);
           console.log(chalk.green(`✅ ${file.label} copied: ${file.dest}`));
         } else {
-          console.log(chalk.gray(`ℹ️  ${file.label} already exists: ${file.dest}`));
+          console.log(
+            chalk.gray(`ℹ️  ${file.label} already exists: ${file.dest}`)
+          );
         }
       } catch (e) {
         console.error(chalk.red(`❌ Could not copy ${file.label}:`), e);
@@ -178,9 +190,7 @@ program
     }
 
     // 3. Actualizar .gitignore
-    const ignoreList = [
-      'logs-standards-validations/',
-    ];
+    const ignoreList = ['logs-standards-validations/'];
     try {
       let gitignoreContent = '';
       if (existsSync(gitignorePath)) {
@@ -202,9 +212,7 @@ program
         }
       }
       if (!added) {
-        console.log(
-          chalk.yellow('ℹ️  All items were already in .gitignore.')
-        );
+        console.log(chalk.yellow('ℹ️  All items were already in .gitignore.'));
       }
     } catch (e) {
       console.error(chalk.red('❌ Could not update .gitignore:'), e);

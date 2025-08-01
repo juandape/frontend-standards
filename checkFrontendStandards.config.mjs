@@ -79,7 +79,13 @@ export default {
 
   // Por defecto, revisar solo los archivos que se van a agregar al commit (default: true)
   // Si se establece en false, se revisarán todos los archivos del proyecto
-  // Si no se especifican zonas o onlyZone, solo se revisarán los archivos modificados
+  // NOTA: Los flags CLI --all-files y --only-changed-files tienen precedencia sobre esta configuración
+  //
+  // Precedencia de opciones:
+  //   1. --all-files (CLI) - Mayor precedencia, siempre procesa todos los archivos
+  //   2. --only-changed-files (CLI) - Fuerza solo archivos staged
+  //   3. onlyChangedFiles (configuración del archivo) - Esta opción
+  //   4. Valor por defecto (true - solo archivos staged)
   onlyChangedFiles: true, // Default: true = solo archivos en commit, false = TODAS las zonas y archivos
 
   // Zone configuration
@@ -130,4 +136,18 @@ export default {
     //   message: 'Regla desactivada',
     // },
   ],
-}
+
+  // 💡 EJEMPLOS DE USO PRÁCTICO:
+  //
+  // Para desarrollo diario (solo archivos staged):
+  //   frontend-standards-checker check
+  //
+  // Para revisión completa del proyecto:
+  //   frontend-standards-checker check --all-files
+  //
+  // Para validar zona específica completamente:
+  //   frontend-standards-checker check --all-files --zones src
+  //
+  // Para CI/CD (validación completa con verbose):
+  //   frontend-standards-checker check --all-files --verbose
+};

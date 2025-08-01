@@ -63,6 +63,7 @@ export interface ICliOptions {
   version?: boolean;
   help?: boolean;
   onlyChangedFiles?: boolean;
+  allFiles?: boolean;
 }
 
 export type IAsyncValidationRule = Omit<IValidationRule, 'check'> & {

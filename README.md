@@ -7,9 +7,12 @@ Una herramienta escalable y modular para validar estándares de frontend en proy
 - **Arquitectura modular**: Cada componente tiene una responsabilidad específica
 - **Escalable**: Fácil agregar nuevas reglas y validadores
 - **Configurable**: Configuración flexible mediante archivo de configuración
-- **CLI amigable**: Interfaz de línea de comandos con opciones detalladas
+- **CLI amigable**: Interfaz de línea de comandos con opciones detalladas y precedencia de flags
 - **Reportes detallados**: Genera reportes comprensivos con secciones para errors, warnings e info
 - **Soporte para monorepos**: Detecta y valida múltiples zonas automáticamente
+- **🆕 Control granular de archivos**: Flag `--all-files` para validación completa vs `--only-changed-files` para validación incremental
+- **🆕 Precedencia de opciones**: Los flags CLI tienen precedencia sobre configuración de archivos
+- **🆕 Modo debug avanzado**: Opción `--debug` con información detallada del proceso de escaneo
 - **🆕 Validación selectiva**: Opción `onlyZone` para validar solo módulos específicos
 - **🆕 Validación eficiente**: Por defecto solo valida archivos en staging para commit (`onlyChangedFiles: true`)
 - **🆕 TypeScript nativo**: Tipos estrictos, autocompletado y mejor experiencia de desarrollo
@@ -17,9 +20,9 @@ Una herramienta escalable y modular para validar estándares de frontend en proy
 - **🆕 Validadores avanzados**: Mensajes de error enriquecidos con número de línea, nombre de carpeta y función para reglas clave (ej. coincidencia de nombre de componente)
 - **🆕 Mejoras de precisión**: Validación más precisa para componentes, hooks y estructura de carpetas
 - **🆕 Comando init**: `frontend-standards-init` para copiar archivos de configuración
-- **🆕 Soporte para múltiples entornos**: Configuración automática para diferentes entornos de desarroll
+- **🆕 Soporte para múltiples entornos**: Configuración automática para diferentes entornos de desarrollo
 - **🆕 Soporte para React Native**: Configuración optimizada para proyectos React Native, incluyendo exclusiones de carpetas nativas y reglas específicas
-- **🆕 Soporte para Yarn PnP**: Compatible con proyectos que usan Yarn Plug'n'Pla
+- **🆕 Soporte para Yarn PnP**: Compatible con proyectos que usan Yarn Plug'n'Play
 - **🆕 Soporte para dependencias privadas**: Instalación alternativa para proyectos con registries privados
 - **🆕 Mejoras de compatibilidad**: Instalación robusta para proyectos con dependencias complejas (React Native, monorepos con dependencias privadas)
 - **🆕 Mejoras en la documentación**: Ejemplos y guías actualizadas para facilitar la integración
@@ -45,11 +48,12 @@ npm install --save-dev frontend-standards-checker@latest
 ```json
 {
   "scripts": {
-    "standards": "frontend-standards-checker",
-    "standards:zones": "frontend-standards-checker --zones",
-    "standards:verbose": "frontend-standards-checker --verbose",
-    "standards:all": "frontend-standards-checker --all",
-    "standards:init": "frontend-standards-checker --init"
+    "standards": "frontend-standards-checker check",
+    "standards:zones": "frontend-standards-checker check --zones",
+    "standards:verbose": "frontend-standards-checker check --verbose",
+    "standards:all": "frontend-standards-checker check --all-files",
+    "standards:debug": "frontend-standards-checker check --debug --verbose",
+    "standards:init": "frontend-standards-checker init"
   }
 }
 ```
@@ -83,19 +87,23 @@ Esto agregará el script `standards` a tu package.json y actualizará .gitignore
 ### Comandos Principales
 
 ```bash
-# Validación estándar (solo archivos modificados)
+# Validación estándar (solo archivos staged para commit)
 yarn standards        # o npm run standards
 
-# Validar zonas específicas
+# Validar zonas específicas (solo archivos staged)
 yarn standards:zones  # o npm run standards:zones
 
-# Modo verbose (más detalles)
+# Modo verbose (más detalles, solo archivos staged)
 yarn standards:verbose  # o npm run standards:verbose
 
-# Validar TODOS los archivos (no solo modificados)
+# Validar TODOS los archivos del proyecto (ignora staging)
 yarn standards:all    # o npm run standards:all
 
+# Modo debug con información detallada
+yarn standards:debug  # o npm run standards:debug
 
+# Configurar proyecto inicial
+yarn standards:init   # o npm run standards:init
 ```
 
 ## 📚 Documentación Completa
@@ -142,16 +150,42 @@ export default {
 }
 ```
 
-Para validar todos los archivos del proyecto:
+**Opciones para validar todos los archivos:**
 
 ```bash
-# CLI
-frontend-standards-checker --only-changed-files=false
+# Opción 1: Flag CLI (recomendado) - Anula la configuración
+frontend-standards-checker check --all-files
 
-# Configuración
+# Opción 2: Flag CLI con zona específica
+frontend-standards-checker check --all-files --zones src
+
+# Opción 3: Configuración permanente en archivo config
 export default {
   onlyChangedFiles: false
 }
+```
+
+**Precedencia de opciones:**
+
+1. `--all-files` (CLI) - **Mayor precedencia**
+2. `--only-changed-files` (CLI)
+3. `onlyChangedFiles` (configuración del archivo)
+4. Valor por defecto (`true`)
+
+**Ejemplos prácticos:**
+
+```bash
+# Solo archivos staged (comportamiento por defecto)
+yarn standards
+
+# Todos los archivos (útil para CI/CD o revisión completa)
+yarn standards -- --all-files
+
+# Todos los archivos en zona específica
+yarn standards -- --all-files --zones src components
+
+# Forzar solo archivos staged aunque config diga false
+yarn standards -- --only-changed-files
 ```
 
 ### Reglas Actualizadas a ERROR
@@ -173,17 +207,20 @@ export default {
 ```
 
 ```bash
-# Validar zonas específicas
-./bin/cli.js --zones apps/frontend packages/ui
+# Validar zonas específicas con todos los archivos
+frontend-standards-checker check --all-files --zones apps/frontend packages/ui
 
-# Modo verbose (incluye reglas INFO)
-./bin/cli.js --verbose
+# Modo verbose solo con archivos staged
+frontend-standards-checker check --verbose
 
-# Saltar validaciones específicas
-./bin/cli.js --skip-structure --skip-naming
+# Saltar validaciones específicas con todos los archivos
+frontend-standards-checker check --all-files --skip-structure --skip-naming
 
-# Configuración personalizada
-./bin/cli.js --config ./my-config.js --output ./my-report.log
+# Configuración personalizada con debug
+frontend-standards-checker check --config ./my-config.js --debug --verbose
+
+# Combinación de opciones avanzadas
+frontend-standards-checker check --all-files --zones src --verbose --debug
 ```
 
 ### Como módulo
@@ -284,6 +321,7 @@ Frontend Standards v4.9.0 incluye configuración optimizada para proyectos React
 
 ### Archivo de configuración recomendado
 
+````javascript
 ```javascript
 // checkFrontendStandards.config.js
 module.exports = {
@@ -312,7 +350,8 @@ module.exports = {
     'node_modules'
   ],
 
-  // Validar todos los archivos, no solo staged
+  // Validar todos los archivos por defecto (recomendado para React Native)
+  // Alternativamente, usa --all-files en CLI para casos específicos
   onlyChangedFiles: false,
 
   // Reglas personalizadas para React Native
@@ -331,6 +370,24 @@ module.exports = {
     }
   ]
 };
+````
+
+**Comandos recomendados para React Native:**
+
+```bash
+# Validación completa (todos los archivos)
+yarn standards
+
+# Solo validar src/ con todos los archivos
+yarn standards -- --zones src
+
+# Validación rápida solo de archivos modificados
+yarn standards -- --only-changed-files
+
+# Debug mode para troubleshooting
+yarn standards -- --all-files --debug --verbose
+```
+
 ```
 
 ## 🏗️ Arquitectura
@@ -338,16 +395,18 @@ module.exports = {
 El proyecto está estructurado de manera modular:
 
 ```
+
 src/
-├── index.js                 # Clase principal y punto de entrada
+├── index.js # Clase principal y punto de entrada
 ├── core/
-│   ├── config-loader.js     # Carga y manejo de configuración
-│   ├── project-analyzer.js  # Análisis de estructura del proyecto
-│   ├── rule-engine.js       # Motor de validación de reglas
-│   └── reporter.js          # Generación de reportes
+│ ├── config-loader.js # Carga y manejo de configuración
+│ ├── project-analyzer.js # Análisis de estructura del proyecto
+│ ├── rule-engine.js # Motor de validación de reglas
+│ └── reporter.js # Generación de reportes
 └── utils/
-    ├── file-scanner.js      # Escaneo y filtrado de archivos
-    └── logger.js            # Sistema de logging
+├── file-scanner.js # Escaneo y filtrado de archivos
+└── logger.js # Sistema de logging
+
 ```
 
 ### Componentes principales
@@ -428,17 +487,45 @@ _Las reglas de info proporcionan sugerencias y optimizaciones opcionales._
 ## 🎯 Opciones de CLI
 
 ```
+
 Options:
-  -z, --zones <zones...>     Zonas específicas a verificar
-  -c, --config <path>        Ruta a archivo de configuración personalizado
-  -o, --output <path>        Ruta para archivo de log de salida
-  -v, --verbose              Mostrar salida detallada
-  --skip-structure           Saltar validación de estructura de directorios
-  --skip-naming              Saltar validación de convenciones de nombres
-  --skip-content             Saltar validación de contenido
-  -h, --help                 Mostrar ayuda
-  --version                  Mostrar versión
-```
+-z, --zones <zones...> Zonas específicas a verificar (separadas por espacios)
+-c, --config <path> Ruta a archivo de configuración personalizado
+-v, --verbose Mostrar salida detallada
+--debug Mostrar información de debug sobre escaneo de archivos
+--skip-structure Saltar validación de estructura de directorios
+--skip-naming Saltar validación de convenciones de nombres
+--skip-content Saltar validación de contenido
+--only-changed-files Solo verificar archivos preparados para commit (por defecto: true)
+--all-files Verificar todos los archivos del proyecto, no solo los staged (anula config)
+-h, --help Mostrar ayuda para comandos
+
+````
+
+### Nuevas opciones de CLI
+
+- **`--all-files`**: 🆕 Fuerza la validación de todos los archivos del proyecto, ignorando la configuración `onlyChangedFiles` y sin importar si hay archivos staged o no.
+- **`--only-changed-files`**: Fuerza la validación solo de archivos staged para commit.
+- **`--debug`**: Muestra información detallada sobre el proceso de escaneo de archivos.
+
+### Ejemplos de uso
+
+```bash
+# Validar solo archivos staged (comportamiento por defecto)
+frontend-standards-checker check
+
+# Validar TODOS los archivos del proyecto
+frontend-standards-checker check --all-files
+
+# Validar todos los archivos en zonas específicas
+frontend-standards-checker check --all-files --zones src components
+
+# Modo debug con todos los archivos
+frontend-standards-checker check --all-files --debug --verbose
+
+# Solo archivos staged con zonas específicas
+frontend-standards-checker check --only-changed-files --zones apps/web
+````
 
 ## 🔧 Desarrollo
 
